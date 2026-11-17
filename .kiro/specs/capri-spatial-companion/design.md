@@ -1348,5 +1348,6 @@ The prework produced about 75 testable criteria. Consolidations applied: the thr
 2. **Custom subdomain** for the Hosted_Site (for example `capri.<user's-domain>`). Needed before the first Vercel deploy and before the README CORS snippet can be finalised. The developer asks for it once, then asks the user to add the subdomain in the Vercel project (Settings, Domains), add the `CNAME` record Vercel displays at their DNS provider, and confirm that Vercel shows the domain as verified.
 3. **Dominant hand** default is right. Setup_Page offers a switch.
 4. **Gate H.** The Hermes endpoint, authentication, and one working example call are requested from the user at that step, one item at a time. If they arrive after the cut-line, the demo uses the scripted task and the live adapter lands as Post-MVD.
+   **Resolved (task 21.3):** see "Confirmed surface" in `docs/hermes-integration.md` (bearer auth, chat completions for Tier 2, runs plus fetch-streamed SSE events and approvals for tasks, CORS preflight passing for the Capri origin).
 5. **Vosk grammar strategy** (fragments or utterances) and the point-pose gate default are decided by the Spike results.
 6. **Placeholder VRM** choice. It must be a permissively licensed model (for example CC0 or a VRoid sample under its terms) recorded in `docs/THIRD_PARTY.md` with name, author, source URL, and license.
