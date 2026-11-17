@@ -1,0 +1,1421 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Write the project plan and confirm IWSDK APIs": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837489519
+      },
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837502294
+      },
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837735829
+      }
+    ],
+    "1.2 Scaffold the repository and run pre-flight desk checks": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837489595
+      },
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837741661
+      },
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794838974711
+      }
+    ],
+    "1.3 Build the spike harness": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837489667
+      },
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794838977768
+      },
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794840991525
+      }
+    ],
+    "1.5 Spike item (a): immersive AR session, passthrough, and hand joints": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837489717
+      },
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794841000540
+      },
+      {
+        "executionId": "b54bbce0-2aa1-4cab-86f3-ece91e7d6664",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794858352849
+      }
+    ],
+    "1.6 Spike item (b): planes, semantic labels, mesh, anchors, hit-test, depth": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837489770
+      },
+      {
+        "executionId": "b54bbce0-2aa1-4cab-86f3-ece91e7d6664",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794858359479
+      },
+      {
+        "executionId": "7531b5a8-42aa-4f3e-b345-10528740654b",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794861018603
+      }
+    ],
+    "1.7 Spike item (c): microphone capture during an immersive session": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837489820
+      },
+      {
+        "executionId": "7531b5a8-42aa-4f3e-b345-10528740654b",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794861029313
+      },
+      {
+        "executionId": "7531b5a8-42aa-4f3e-b345-10528740654b",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794861354075
+      }
+    ],
+    "1.8 Spike item (d): vosk-browser with a restricted grammar": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837489877
+      },
+      {
+        "executionId": "7531b5a8-42aa-4f3e-b345-10528740654b",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794861358029
+      },
+      {
+        "executionId": "7531b5a8-42aa-4f3e-b345-10528740654b",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794865566923
+      }
+    ],
+    "1.9 Spike item (e): speechSynthesis availability and voice quality": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837489969
+      },
+      {
+        "executionId": "7531b5a8-42aa-4f3e-b345-10528740654b",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794865573056
+      },
+      {
+        "executionId": "7531b5a8-42aa-4f3e-b345-10528740654b",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794866288464
+      }
+    ],
+    "1.10 Compile the Spike_Report and record capability flags": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490015
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794895872724
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794896095536
+      }
+    ],
+    "2. Hand-off note: Milestone 0 results": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490057
+      }
+    ],
+    "3.1 Configure Vite and the HTTPS dev server": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490104
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794896574325
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794896659361
+      }
+    ],
+    "3.2 Set up test tooling and the domain purity rule": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490155
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794896664550
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794896779515
+      }
+    ],
+    "3.3 Build the composition root and frame loop": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490206
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794896783352
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794897332396
+      }
+    ],
+    "3.5 Implement hand source and hand skeleton rendering": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490252
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794897337771
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794899695128
+      }
+    ],
+    "3.6 Implement the hand-tracking-lost monitor and message panel": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490300
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794899702702
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794899991323
+      }
+    ],
+    "4. Hand-off note: Step 1": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490348
+      }
+    ],
+    "5.1 Add the placeholder VRM, license note, and avatar config": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490396
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794899998109
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794900167898
+      }
+    ],
+    "5.2 Implement pure geometry, look clamp, and blink scheduler": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490442
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794899998394
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794900168705
+      }
+    ],
+    "5.3 Implement spawn and idle placement": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490491
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794900175821
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794900551513
+      }
+    ],
+    "5.8 Implement the avatar loader": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490552
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794900176044
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794900552271
+      }
+    ],
+    "5.9 Implement the procedural animator core": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490600
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794900558061
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794901291789
+      }
+    ],
+    "5.10 Add the developer frame-time overlay": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490643
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794900176115
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794900553129
+      }
+    ],
+    "5.11 Wire the avatar into the app": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490686
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794901295403
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794901996434
+      }
+    ],
+    "6. Hand-off note: Step 2": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490732
+      }
+    ],
+    "7.1 Implement surface mapping and navigation targets": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490781
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794902006616
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794902131991
+      }
+    ],
+    "7.2 Add the destination visibility policy": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490832
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794902007257
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794902132771
+      }
+    ],
+    "7.7 Implement the surface store": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490876
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794902138732
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794902643343
+      }
+    ],
+    "7.8 Implement abilities, locomotion, and the avatar state machine": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490921
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794902138812
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794902644133
+      }
+    ],
+    "7.9 Implement point, sit, and perch gestures": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837490970
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794902648772
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794906537432
+      }
+    ],
+    "7.10 Add developer test controls and wire spatial abilities": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491020
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794906541230
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794907514377
+      }
+    ],
+    "8. Hand-off note: Step 3": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491069
+      }
+    ],
+    "9.1 Define backend interfaces and the mock home reducer": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491123
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794907524524
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794907858102
+      }
+    ],
+    "9.2 Implement the device registry and naming": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491188
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794907524822
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794907858872
+      }
+    ],
+    "9.3 Implement device persistence": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491233
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794907862753
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794908099223
+      }
+    ],
+    "9.5 Implement point capture": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491274
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794907863378
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794908100243
+      }
+    ],
+    "9.7 Build the device marker, device list, and teach flow": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491320
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794908104160
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794908798462
+      }
+    ],
+    "9.8 Wire registration into the app": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491361
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794908802732
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794914598491
+      }
+    ],
+    "10. Hand-off note: Step 4": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491405
+      }
+    ],
+    "11.1 Implement the pinch detector": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491462
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794914604280
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794914904233
+      }
+    ],
+    "11.2 Implement the ray and selector": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491512
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794914909150
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794915387372
+      }
+    ],
+    "11.6 Implement head gaze and the fake hand source": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491558
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794914604546
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794914904133
+      }
+    ],
+    "11.7 Wire pointing into the app": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491602
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794915391577
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794916291223
+      }
+    ],
+    "12. Hand-off note: Step 5": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491649
+      }
+    ],
+    "13.1 Ask the user for the voice engine decision": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491699
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794924015315
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794924204808
+      }
+    ],
+    "13.2 Implement the speech language core": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491754
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794924210443
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794924672752
+      }
+    ],
+    "13.7 Implement the Persona and Banter engine": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491807
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794924679810
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794925640433
+      }
+    ],
+    "13.11 Implement timers, places, and the notify gesture": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491872
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794924210562
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794924672868
+      }
+    ],
+    "13.14 Author the voice manifest and speech output logic": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491914
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794924211130
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794924673593
+      }
+    ],
+    "13.19 Build the dev-time Voice_Script and generate the Voice_Library": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491955
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794924679895
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794925641558
+      }
+    ],
+    "13.20 Implement the audio engine and speech output": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837491997
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794924680332
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794925641931
+      }
+    ],
+    "13.21 Implement microphone capture and the STT engine": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492041
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794924681177
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794925642303
+      }
+    ],
+    "13.23 Build the voice UI panels and seated placement": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492087
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794925654951
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794927688339
+      }
+    ],
+    "13.25 Wire the voice loop and the interim device runner": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492133
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794927692606
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794929050980
+      }
+    ],
+    "14. Hand-off note: Step 6": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492307
+      }
+    ],
+    "15.1 Implement the hack sequence state machine": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492357
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794929060846
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794929517235
+      }
+    ],
+    "15.3 Implement the particle pool": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492403
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794929060983
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794929518754
+      }
+    ],
+    "15.5 Implement the VFX renderers and quality governor": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492457
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794929527611
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794931902831
+      }
+    ],
+    "15.6 Add the VFX sound cues": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492503
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794929061471
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794929518970
+      }
+    ],
+    "15.7 Implement the flick, shrug, and celebrate gestures": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492566
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794929062742
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794929519472
+      }
+    ],
+    "15.8 Replace the interim runner with the hacking sequence": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492611
+      },
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794931907607
+      },
+      {
+        "executionId": "a8b4ff83-1af2-49ef-96f0-aae1aa36d8e3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794934813014
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794935558136
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794935986021
+      }
+    ],
+    "16. Hand-off note: Step 7": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492658
+      }
+    ],
+    "17.1 Implement mode resolution and status mapping": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492706
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794935992830
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794936131081
+      }
+    ],
+    "17.4 Render the three virtual bulbs": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492751
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794936135595
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794936694416
+      }
+    ],
+    "17.5 Implement the full status chips": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492793
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794936136061
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794937051738
+      }
+    ],
+    "17.6 Wire Mock Mode as the default": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492841
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794937058121
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794937627131
+      }
+    ],
+    "18. Hand-off note: Mock Mode": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492889
+      }
+    ],
+    "19.1 Add the agent interface and the scripted mock task": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492936
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794937632734
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794937814547
+      }
+    ],
+    "19.2 Implement the task model": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837492989
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794937632864
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794937815088
+      }
+    ],
+    "19.3 Build the Task_Panel and wire the task flow": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493038
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794937819635
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794938838764
+      }
+    ],
+    "19.5 Add `vercel.json` and the Vercel build script": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493084
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794937819858
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794938839442
+      }
+    ],
+    "19.6 Deploy to Vercel and attach the custom subdomain": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493132
+      },
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794938889746
+      }
+    ],
+    "20. Hand-off note: MVD cut-line reached": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493302
+      }
+    ],
+    "21.1 Gate H, part 1: investigate the real Hermes integration surface": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493361
+      }
+    ],
+    "21.2 Gate H, part 2: ask the user for the Hermes details and WAIT": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493417
+      }
+    ],
+    "21.3 Gate H, part 3: record the confirmed surface and check browser feasibility": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493468
+      }
+    ],
+    "21.4 Implement the contract, spatial context, and tier router": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493514
+      }
+    ],
+    "21.8 Implement the endpoint URL guard": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493566
+      }
+    ],
+    "21.10 Implement the live Hermes adapter from the confirmed surface only": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493619
+      }
+    ],
+    "21.12 Wire Tier 2 into the app": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493669
+      }
+    ],
+    "22. Hand-off note: live Hermes": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493713
+      }
+    ],
+    "23.1 Implement the idle scheduler": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493769
+      }
+    ],
+    "23.3 Add the personality gestures": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493817
+      }
+    ],
+    "23.4 Wire personality into the app": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493864
+      }
+    ],
+    "24. Hand-off note: personality": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493912
+      }
+    ],
+    "25.1 Implement secret redaction and credential types": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837493961
+      }
+    ],
+    "25.2 Implement the credential store": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837494024
+      }
+    ],
+    "25.5 Implement the Home Assistant client": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837494067
+      }
+    ],
+    "25.9 Build the full Setup_Page": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837494110
+      }
+    ],
+    "25.10 Wire Live Mode": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837494155
+      }
+    ],
+    "25.12 Write the Live Mode sections of the README": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837494215
+      }
+    ],
+    "26. Hand-off note: Setup and live Home Assistant": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837494271
+      }
+    ],
+    "27.1 Add the loading screen": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837494332
+      }
+    ],
+    "27.2 Add pause and resume": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837494402
+      }
+    ],
+    "27.3 Tune the audio mix": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837494725
+      }
+    ],
+    "27.4 Add the smoke checks and the check script": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837494778
+      }
+    ],
+    "27.5 Add the smoke checks to the Vercel build": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837494827
+      }
+    ],
+    "27.6 Write the performance note and comfort check": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837494906
+      }
+    ],
+    "27.7 Write the Demo_Path script": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837494980
+      }
+    ],
+    "27.8 Complete the README": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837495045
+      }
+    ],
+    "28. Hand-off note: polish": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837495110
+      }
+    ],
+    "29.1 Write the submission text": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837495156
+      }
+    ],
+    "29.2 Write the demo video plan": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837495214
+      }
+    ],
+    "29.3 Add the submission checklist and finalise links": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837495276
+      }
+    ],
+    "30. Hand-off note: final submission": [
+      {
+        "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794837495325
+      }
+    ],
+    "1. Milestone 0: on-headset feasibility spike": [
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794896095626
+      }
+    ],
+    "3. Step 1 [MVD]: scaffold and passthrough": [
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794899991401
+      }
+    ],
+    "5. Step 2 [MVD]: avatar presence": [
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794901996562
+      }
+    ],
+    "7. Step 3 [MVD]: spatial interaction": [
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794907514490
+      }
+    ],
+    "9. Step 4 [MVD]: device registration": [
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794914598563
+      }
+    ],
+    "11. Step 5 [MVD]: pointing selection": [
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794916291304
+      }
+    ],
+    "13. Step 6 [MVD]: voice command loop": [
+      {
+        "executionId": "b0fe1856-6282-41b1-9073-54155c926cf3",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794929051112
+      }
+    ],
+    "15. Step 7 [MVD]: hacking VFX": [
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794935986250
+      }
+    ],
+    "17. Step 10a [MVD]: Mock Mode (built right after Step 7, per Requirement 7.1)": [
+      {
+        "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794937627250
+      }
+    ]
+  }
+}

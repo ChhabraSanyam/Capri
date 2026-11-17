@@ -1,0 +1,165 @@
+<!--
+  Milestone 0 spike runner panel. Loaded by src/spike/spike-main.ts through PanelUI.
+  Panel, Button, and ButtonLabel come from the bundled Horizon kit. No icons are used.
+  Element ids are addressed by src/spike/spike-panel.ts.
+-->
+<style>
+  .root {
+    flex-direction: column;
+    width: 560px;
+  }
+  .content {
+    flex-direction: column;
+    gap: 8px;
+    padding: 20px;
+  }
+  .eyebrow {
+    color: #6b5a00;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+  }
+  .eyebrow:dark {
+    color: #f5d90a;
+  }
+  .heading {
+    color: #1c1d20;
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .heading:dark {
+    color: #fafaf7;
+  }
+  .session {
+    color: #3a3b40;
+    font-size: 16px;
+  }
+  .session:dark {
+    color: #dddfe3;
+  }
+  .row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 8px;
+    background-color: #00000000;
+  }
+  .row-title {
+    flex-grow: 1;
+    flex-shrink: 1;
+    color: #1c1d20;
+    font-size: 19px;
+  }
+  .row-title:dark {
+    color: #fafaf7;
+  }
+  .chip {
+    width: 120px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    border-radius: 6px;
+    justify-content: center;
+    align-items: center;
+    background-color: #5a5d66;
+  }
+  .chip-text {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .now-box {
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px;
+    border-radius: 8px;
+    border-color: #8a8d96;
+    border-width: 1px;
+  }
+  .now-title {
+    color: #1c1d20;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .now-title:dark {
+    color: #f5d90a;
+  }
+  .instr {
+    color: #3a3b40;
+    font-size: 17px;
+  }
+  .instr:dark {
+    color: #dddfe3;
+  }
+  .live {
+    color: #0b5d1e;
+    font-size: 17px;
+  }
+  .live:dark {
+    color: #7ee08f;
+  }
+  .failure {
+    color: #8a1c1c;
+    font-size: 17px;
+  }
+  .failure:dark {
+    color: #ff8f8f;
+  }
+  .workaround {
+    color: #6b5a00;
+    font-size: 17px;
+  }
+  .workaround:dark {
+    color: #f5d90a;
+  }
+  .button {
+    justify-content: flex-start;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+  }
+</style>
+<Panel class="root">
+  <div class="content">
+    <div class="eyebrow">MILESTONE 0 SPIKE</div>
+    <div class="heading">Capri feasibility checks</div>
+    <div id="session-line" class="session">Press Enter AR on the page first.</div>
+
+    <div id="row-a" class="row">
+      <div id="row-a-title" class="row-title">(a)</div>
+      <div id="row-a-chip" class="chip"><div id="row-a-status" class="chip-text">pending</div></div>
+    </div>
+    <div id="row-b" class="row">
+      <div id="row-b-title" class="row-title">(b)</div>
+      <div id="row-b-chip" class="chip"><div id="row-b-status" class="chip-text">pending</div></div>
+    </div>
+    <div id="row-c" class="row">
+      <div id="row-c-title" class="row-title">(c)</div>
+      <div id="row-c-chip" class="chip"><div id="row-c-status" class="chip-text">pending</div></div>
+    </div>
+    <div id="row-d" class="row">
+      <div id="row-d-title" class="row-title">(d)</div>
+      <div id="row-d-chip" class="chip"><div id="row-d-status" class="chip-text">pending</div></div>
+    </div>
+    <div id="row-e" class="row">
+      <div id="row-e-title" class="row-title">(e)</div>
+      <div id="row-e-chip" class="chip"><div id="row-e-status" class="chip-text">pending</div></div>
+    </div>
+
+    <div class="now-box">
+      <div id="now-title" class="now-title">Now</div>
+      <div id="instr-0" class="instr">-</div>
+      <div id="instr-1" class="instr">-</div>
+      <div id="instr-2" class="instr">-</div>
+      <div id="instr-3" class="instr">-</div>
+      <div id="instr-4" class="instr">-</div>
+      <div id="live" class="live">-</div>
+      <div id="failure" class="failure">-</div>
+      <div id="workaround" class="workaround">-</div>
+    </div>
+  </div>
+  <Button id="next-button" class="button">
+    <ButtonLabel id="next-label">Start</ButtonLabel>
+  </Button>
+</Panel>

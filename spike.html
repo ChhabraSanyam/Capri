@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <link rel="icon" href="data:," />
+    <title>Capri spike</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #101218;
+        color: #e8eaf0;
+        font-family: system-ui, sans-serif;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      #scene-container {
+        position: fixed;
+        inset: 0;
+      }
+      #overlay {
+        position: relative;
+        z-index: 1;
+        max-width: 640px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+      }
+      #overlay > * {
+        pointer-events: auto;
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+      }
+      h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+      p {
+        margin: 0;
+        line-height: 1.4;
+      }
+      button {
+        font: inherit;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: 1px solid #5a5d66;
+        background: #2a2f3d;
+        color: #fff;
+        cursor: pointer;
+        align-self: flex-start;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      #error-line {
+        color: #ff8f8f;
+      }
+      #report-section {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      #report-text {
+        width: 100%;
+        box-sizing: border-box;
+        height: 340px;
+        font-family: ui-monospace, monospace;
+        font-size: 13px;
+        background: #0b0d12;
+        color: #e8eaf0;
+        border: 1px solid #5a5d66;
+        border-radius: 8px;
+        padding: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="scene-container"></div>
+    <main id="overlay">
+      <h1>Capri spike (Milestone 0)</h1>
+      <p id="support-line">Checking AR support...</p>
+      <button id="enter-ar" type="button" disabled>Enter AR</button>
+      <p id="error-line" hidden></p>
+      <section id="report-section" hidden>
+        <h2>Spike report</h2>
+        <p>Copy this text and paste it back to the developer.</p>
+        <textarea id="report-text" readonly spellcheck="false"></textarea>
+        <button id="copy-report" type="button">Copy</button>
+        <p id="copy-status" aria-live="polite"></p>
+      </section>
+      <button id="clear-saved" type="button" hidden>Clear saved results</button>
+    </main>
+    <script type="module" src="/src/spike/spike-main.ts"></script>
+  </body>
+</html>

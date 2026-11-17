@@ -1,0 +1,82 @@
+<!--
+  Device list panel (task 9.7): "Teach me your lights", the floating list of lights, and the
+  "Re-teach lights" action. Loaded through PanelUI by src/ui/panels/device-list.ts.
+  Every button is large (about 5 cm tall at the panel scale) so a fingertip poke or a ray pinch from
+  a distance lands easily. Element ids are addressed by src/ui/panels/device-list.ts. Sizes are
+  UIKit units (cm at scale 1, mm at the 0.1 panel scale). The panel is 480 wide; keep
+  TEACH_FLOW.panelHalfWidthM in src/config/constants.ts in step with it.
+  Plain ASCII text only.
+-->
+<style>
+  .root {
+    flex-direction: column;
+    width: 480px;
+  }
+  .content {
+    flex-direction: column;
+    gap: 8px;
+    padding: 18px;
+  }
+  .heading {
+    color: #1c1d20;
+    font-size: 28px;
+    font-weight: 700;
+  }
+  .heading:dark {
+    color: #fafaf7;
+  }
+  .instruction {
+    color: #3a3b40;
+    font-size: 18px;
+  }
+  .instruction:dark {
+    color: #dddfe3;
+  }
+  .stack {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .row {
+    flex-direction: row;
+    gap: 8px;
+  }
+  .big {
+    flex-grow: 1;
+    flex-basis: 0px;
+    height: 52px;
+  }
+  .label {
+    font-size: 22px;
+    font-weight: 700;
+  }
+</style>
+<Panel class="root">
+  <div class="content">
+    <div id="heading" class="heading">My lights</div>
+    <div id="instruction" class="instruction">Tap Teach me your lights.</div>
+    <div class="stack">
+      <Button id="row-0" class="big"><ButtonLabel id="row-label-0" class="label">-</ButtonLabel></Button>
+      <Button id="row-1" class="big"><ButtonLabel id="row-label-1" class="label">-</ButtonLabel></Button>
+      <Button id="row-2" class="big"><ButtonLabel id="row-label-2" class="label">-</ButtonLabel></Button>
+      <Button id="row-3" class="big"><ButtonLabel id="row-label-3" class="label">-</ButtonLabel></Button>
+      <Button id="row-4" class="big"><ButtonLabel id="row-label-4" class="label">-</ButtonLabel></Button>
+    </div>
+    <div class="row">
+      <Button id="btn-prev" class="big"><ButtonLabel id="btn-prev-label" class="label">Previous</ButtonLabel></Button>
+      <Button id="btn-next" class="big"><ButtonLabel id="btn-next-label" class="label">More</ButtonLabel></Button>
+    </div>
+    <div class="row">
+      <Button id="btn-nearer" class="big"><ButtonLabel id="btn-nearer-label" class="label">Nearer</ButtonLabel></Button>
+      <Button id="btn-farther" class="big"><ButtonLabel id="btn-farther-label" class="label">Farther</ButtonLabel></Button>
+    </div>
+    <div class="row">
+      <Button id="btn-primary" class="big"><ButtonLabel id="btn-primary-label" class="label">Use this spot</ButtonLabel></Button>
+      <Button id="btn-retake" class="big"><ButtonLabel id="btn-retake-label" class="label">Try again</ButtonLabel></Button>
+      <Button id="btn-cancel" class="big"><ButtonLabel id="btn-cancel-label" class="label">Cancel</ButtonLabel></Button>
+    </div>
+    <div class="row">
+      <Button id="btn-teach" class="big"><ButtonLabel id="btn-teach-label" class="label">Teach me your lights</ButtonLabel></Button>
+      <Button id="btn-reteach" class="big"><ButtonLabel id="btn-reteach-label" class="label">Re-teach lights</ButtonLabel></Button>
+    </div>
+  </div>
+</Panel>

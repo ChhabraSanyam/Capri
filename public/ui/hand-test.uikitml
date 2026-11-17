@@ -1,0 +1,54 @@
+<!--
+  Step 1 hand test panel (task 3.5). Loaded through PanelUI by src/ui/hand-test-panel.ts.
+  One button is for poking with a fingertip, one for a ray pinch from a distance, so the headset
+  check records which of the two interactions work by hand (assumption A6).
+  Element ids are addressed by src/ui/hand-test-panel.ts. Sizes are UIKit units (cm at scale 1).
+-->
+<style>
+  .root {
+    flex-direction: column;
+    width: 420px;
+  }
+  .content {
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px;
+  }
+  .heading {
+    color: #1c1d20;
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .heading:dark {
+    color: #fafaf7;
+  }
+  .hint {
+    color: #3a3b40;
+    font-size: 17px;
+  }
+  .hint:dark {
+    color: #dddfe3;
+  }
+  .buttons {
+    flex-direction: row;
+    gap: 12px;
+  }
+  .status {
+    color: #0b5d1e;
+    font-size: 17px;
+  }
+  .status:dark {
+    color: #7ee08f;
+  }
+</style>
+<Panel class="root">
+  <div class="content">
+    <div class="heading">Hand test panel</div>
+    <div class="hint">Touch the left button with a fingertip. Pinch at the right button from a distance.</div>
+    <div class="buttons">
+      <Button id="poke-button"><ButtonLabel id="poke-label">Poke: 0</ButtonLabel></Button>
+      <Button id="pinch-button"><ButtonLabel id="pinch-label">Pinch: 0</ButtonLabel></Button>
+    </div>
+    <div id="status" class="status">Waiting for a tap.</div>
+  </div>
+</Panel>

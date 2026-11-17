@@ -1,0 +1,95 @@
+<!--
+  Status chips (task 17.5, Requirements 23.7, 27.1 to 27.3): Mode, Home Assistant, Hermes, and Voice
+  in a 2 by 2 grid. Display only: no button, so it takes no pinch. Loaded through PanelUI by
+  src/ui/panels/status-chips-panel.ts, which sets each chip's colour, symbol, and label at run time.
+  Element ids addressed there: <id>-chip, <id>-symbol, <id>-title, <id>-label for id in
+  mode, homeAssistant, hermes, voice. Every chip says its state in words and in a symbol, so colour
+  is never the only cue. 480 wide, 150 tall. The panel is drawn at scale 0.125 (1.25 mm a unit) so it
+  reads at 1.2 m. Plain ASCII text only.
+-->
+<style>
+  .root {
+    flex-direction: column;
+    width: 480px;
+    height: 150px;
+    padding: 8px;
+    gap: 8px;
+  }
+  .row {
+    flex-direction: row;
+    gap: 8px;
+  }
+  .chip {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    width: 226px;
+    height: 62px;
+    padding-left: 10px;
+    padding-right: 8px;
+    border-radius: 14px;
+    background-color: #c9ccd3;
+  }
+  .badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+    background-color: #1c1d20;
+    align-items: center;
+    justify-content: center;
+  }
+  .symbol {
+    color: #c9ccd3;
+    font-size: 24px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .texts {
+    flex-direction: column;
+    gap: 1px;
+  }
+  .title {
+    color: #23252b;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .label {
+    color: #1c1d20;
+    font-size: 19px;
+    font-weight: 700;
+  }
+</style>
+<Panel class="root">
+  <div class="row">
+    <div id="mode-chip" class="chip">
+      <div class="badge"><div id="mode-symbol" class="symbol">M</div></div>
+      <div class="texts">
+        <div id="mode-title" class="title">Mode</div>
+        <div id="mode-label" class="label">Mock Mode</div>
+      </div>
+    </div>
+    <div id="voice-chip" class="chip">
+      <div class="badge"><div id="voice-symbol" class="symbol">~</div></div>
+      <div class="texts">
+        <div id="voice-title" class="title">Voice</div>
+        <div id="voice-label" class="label">Voice loading</div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div id="homeAssistant-chip" class="chip">
+      <div class="badge"><div id="homeAssistant-symbol" class="symbol">-</div></div>
+      <div class="texts">
+        <div id="homeAssistant-title" class="title">Home Assistant</div>
+        <div id="homeAssistant-label" class="label">Not configured</div>
+      </div>
+    </div>
+    <div id="hermes-chip" class="chip">
+      <div class="badge"><div id="hermes-symbol" class="symbol">-</div></div>
+      <div class="texts">
+        <div id="hermes-title" class="title">Hermes</div>
+        <div id="hermes-label" class="label">Not configured</div>
+      </div>
+    </div>
+  </div>
+</Panel>

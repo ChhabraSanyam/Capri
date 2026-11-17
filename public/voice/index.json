@@ -1,0 +1,528 @@
+{
+  "version": 1,
+  "voice": "piper:en_US-kristin-medium; mp3 mono 64k",
+  "lines": [
+    {
+      "id": "greeting_01",
+      "category": "greeting",
+      "claims": "neutral",
+      "file": "greeting_01.mp3",
+      "durationMs": 2403,
+      "textHash": "aededb8959b5ac2d",
+      "text": "Hey, it's me. Ready to hack the house?"
+    },
+    {
+      "id": "greeting_02",
+      "category": "greeting",
+      "claims": "neutral",
+      "file": "greeting_02.mp3",
+      "durationMs": 2995,
+      "textHash": "ee1ceb33ee19187c",
+      "text": "Hi! Your friendly neighborhood hacker is online."
+    },
+    {
+      "id": "greeting_03",
+      "category": "greeting",
+      "claims": "neutral",
+      "file": "greeting_03.mp3",
+      "durationMs": 3251,
+      "textHash": "645fbe47ab378c5e",
+      "text": "Oh good, you're here. Let's make some trouble."
+    },
+    {
+      "id": "greeting_04",
+      "category": "greeting",
+      "claims": "neutral",
+      "file": "greeting_04.mp3",
+      "durationMs": 3158,
+      "textHash": "4eebb32bc407a448",
+      "text": "Capri online. What are we poking at today?"
+    },
+    {
+      "id": "greeting_05",
+      "category": "greeting",
+      "claims": "neutral",
+      "file": "greeting_05.mp3",
+      "durationMs": 1544,
+      "textHash": "b9dba57ece285293",
+      "text": "Hey you. Miss me?"
+    },
+    {
+      "id": "greeting_06",
+      "category": "greeting",
+      "claims": "neutral",
+      "file": "greeting_06.mp3",
+      "durationMs": 2995,
+      "textHash": "2932c9244802c142",
+      "text": "Hello, human. I'm feeling mischievous."
+    },
+    {
+      "id": "greeting_07",
+      "category": "greeting",
+      "claims": "neutral",
+      "file": "greeting_07.mp3",
+      "durationMs": 3344,
+      "textHash": "1f84d536e29a36e2",
+      "text": "Hi! I'm all ears, well, mostly attitude."
+    },
+    {
+      "id": "confirm_01",
+      "category": "confirm",
+      "claims": "ack",
+      "file": "confirm_01.mp3",
+      "durationMs": 1556,
+      "textHash": "2570d1aa1359eaef",
+      "text": "On it. Jacking in."
+    },
+    {
+      "id": "confirm_02",
+      "category": "confirm",
+      "claims": "ack",
+      "file": "confirm_02.mp3",
+      "durationMs": 2392,
+      "textHash": "3228db4f95099601",
+      "text": "Hold still. Hacking the lights."
+    },
+    {
+      "id": "confirm_03",
+      "category": "confirm",
+      "claims": "ack",
+      "file": "confirm_03.mp3",
+      "durationMs": 2392,
+      "textHash": "181fcbd261f6b7af",
+      "text": "You got it. Sending the command now."
+    },
+    {
+      "id": "confirm_04",
+      "category": "confirm",
+      "claims": "ack",
+      "file": "confirm_04.mp3",
+      "durationMs": 1997,
+      "textHash": "9c8a4e865e4ca14b",
+      "text": "Easy. Give me a second."
+    },
+    {
+      "id": "confirm_05",
+      "category": "confirm",
+      "claims": "ack",
+      "file": "confirm_05.mp3",
+      "durationMs": 2125,
+      "textHash": "bdf0152ef836a5f3",
+      "text": "Say no more. I'm on it."
+    },
+    {
+      "id": "confirm_06",
+      "category": "confirm",
+      "claims": "ack",
+      "file": "confirm_06.mp3",
+      "durationMs": 2426,
+      "textHash": "51f22c67c45fcc99",
+      "text": "Rerouting the signal. Hang tight."
+    },
+    {
+      "id": "confirm_07",
+      "category": "confirm",
+      "claims": "ack",
+      "file": "confirm_07.mp3",
+      "durationMs": 2589,
+      "textHash": "401ed5b1f111341b",
+      "text": "Okay, okay. Working my magic."
+    },
+    {
+      "id": "quip_01",
+      "category": "quip",
+      "claims": "done",
+      "file": "quip_01.mp3",
+      "durationMs": 1985,
+      "textHash": "deb9562adfeb8048",
+      "text": "Too easy. You're welcome."
+    },
+    {
+      "id": "quip_02",
+      "category": "quip",
+      "claims": "done",
+      "file": "quip_02.mp3",
+      "durationMs": 1463,
+      "textHash": "4a5ba5fed88179be",
+      "text": "Barely broke a sweat."
+    },
+    {
+      "id": "quip_03",
+      "category": "quip",
+      "claims": "done",
+      "file": "quip_03.mp3",
+      "durationMs": 2125,
+      "textHash": "361d6eca8ec2255c",
+      "text": "And that's how it's done. Smooth."
+    },
+    {
+      "id": "quip_04",
+      "category": "quip",
+      "claims": "done",
+      "file": "quip_04.mp3",
+      "durationMs": 2775,
+      "textHash": "3fbcbad4351932d3",
+      "text": "Hacked it. No firewall stood a chance."
+    },
+    {
+      "id": "quip_05",
+      "category": "quip",
+      "claims": "done",
+      "file": "quip_05.mp3",
+      "durationMs": 1382,
+      "textHash": "dd2077c02806b92a",
+      "text": "Look at me, being useful."
+    },
+    {
+      "id": "quip_06",
+      "category": "quip",
+      "claims": "done",
+      "file": "quip_06.mp3",
+      "durationMs": 1614,
+      "textHash": "fab5f7fb25eb0ddf",
+      "text": "Another system bows to me."
+    },
+    {
+      "id": "quip_07",
+      "category": "quip",
+      "claims": "done",
+      "file": "quip_07.mp3",
+      "durationMs": 1556,
+      "textHash": "4aec1367214d3dae",
+      "text": "Flawless, as usual."
+    },
+    {
+      "id": "quip_08",
+      "category": "quip",
+      "claims": "done",
+      "file": "quip_08.mp3",
+      "durationMs": 2032,
+      "textHash": "117efb5249a522e2",
+      "text": "Was that all? I'm just warming up."
+    },
+    {
+      "id": "error_01",
+      "category": "error",
+      "claims": "fail",
+      "file": "error_01.mp3",
+      "durationMs": 1370,
+      "textHash": "591347539f816b42",
+      "text": "Nope, that bounced."
+    },
+    {
+      "id": "error_02",
+      "category": "error",
+      "claims": "fail",
+      "file": "error_02.mp3",
+      "durationMs": 1451,
+      "textHash": "a4d597a21c2d0625",
+      "text": "Ugh, that didn't work."
+    },
+    {
+      "id": "error_03",
+      "category": "error",
+      "claims": "fail",
+      "file": "error_03.mp3",
+      "durationMs": 2496,
+      "textHash": "53e07644d35013f0",
+      "text": "Hit a wall on that one. Annoying."
+    },
+    {
+      "id": "error_04",
+      "category": "error",
+      "claims": "fail",
+      "file": "error_04.mp3",
+      "durationMs": 2670,
+      "textHash": "a3cd32fef62d5ed4",
+      "text": "That didn't go through. Here's what I got."
+    },
+    {
+      "id": "error_05",
+      "category": "error",
+      "claims": "fail",
+      "file": "error_05.mp3",
+      "durationMs": 3239,
+      "textHash": "29c02de5f36b73c8",
+      "text": "Well, that was a flop. Even hackers have bad days."
+    },
+    {
+      "id": "error_06",
+      "category": "error",
+      "claims": "fail",
+      "file": "error_06.mp3",
+      "durationMs": 2450,
+      "textHash": "15e97a63310250a8",
+      "text": "Okay, that one got away from me."
+    },
+    {
+      "id": "error_07",
+      "category": "error",
+      "claims": "fail",
+      "file": "error_07.mp3",
+      "durationMs": 2798,
+      "textHash": "45ab8e813f382245",
+      "text": "Not this time. Something's being stubborn."
+    },
+    {
+      "id": "tease_01",
+      "category": "tease",
+      "claims": "neutral",
+      "file": "tease_01.mp3",
+      "durationMs": 2508,
+      "textHash": "de80e134bfbb104c",
+      "text": "Flipping that again? Make up your mind."
+    },
+    {
+      "id": "tease_02",
+      "category": "tease",
+      "claims": "neutral",
+      "file": "tease_02.mp3",
+      "durationMs": 3019,
+      "textHash": "620de55bc6275c61",
+      "text": "On, off, on, off. Are we throwing a party?"
+    },
+    {
+      "id": "tease_03",
+      "category": "tease",
+      "claims": "neutral",
+      "file": "tease_03.mp3",
+      "durationMs": 1869,
+      "textHash": "0910dcd7ac9ac8b0",
+      "text": "Bored already? I can tell."
+    },
+    {
+      "id": "tease_04",
+      "category": "tease",
+      "claims": "neutral",
+      "file": "tease_04.mp3",
+      "durationMs": 2368,
+      "textHash": "6d31d7803bd5859f",
+      "text": "Ooh, you want my attention? You've got it."
+    },
+    {
+      "id": "tease_05",
+      "category": "tease",
+      "claims": "neutral",
+      "file": "tease_05.mp3",
+      "durationMs": 2496,
+      "textHash": "0a0c274f172316a5",
+      "text": "Staring is free. Talking is better."
+    },
+    {
+      "id": "tease_06",
+      "category": "tease",
+      "claims": "neutral",
+      "file": "tease_06.mp3",
+      "durationMs": 1730,
+      "textHash": "cb4cb463ea877e72",
+      "text": "Careful, I might get used to you."
+    },
+    {
+      "id": "tease_07",
+      "category": "tease",
+      "claims": "neutral",
+      "file": "tease_07.mp3",
+      "durationMs": 2902,
+      "textHash": "87e87195356cea29",
+      "text": "Fine, I'll play along. For now."
+    },
+    {
+      "id": "tease_08",
+      "category": "tease",
+      "claims": "neutral",
+      "file": "tease_08.mp3",
+      "durationMs": 2392,
+      "textHash": "1c0912ec5606a049",
+      "text": "Nice pointing. Very dramatic."
+    },
+    {
+      "id": "celebrate_01",
+      "category": "celebrate",
+      "claims": "done",
+      "file": "celebrate_01.mp3",
+      "durationMs": 1405,
+      "textHash": "dab99f51596b4b13",
+      "text": "Boom! Nailed it."
+    },
+    {
+      "id": "celebrate_02",
+      "category": "celebrate",
+      "claims": "done",
+      "file": "celebrate_02.mp3",
+      "durationMs": 2426,
+      "textHash": "6540cbb2407f44a2",
+      "text": "Yes! Another win for the hacker."
+    },
+    {
+      "id": "celebrate_03",
+      "category": "celebrate",
+      "claims": "done",
+      "file": "celebrate_03.mp3",
+      "durationMs": 1126,
+      "textHash": "93fcf9d5a5b5c634",
+      "text": "Told you I was good."
+    },
+    {
+      "id": "celebrate_04",
+      "category": "celebrate",
+      "claims": "done",
+      "file": "celebrate_04.mp3",
+      "durationMs": 1904,
+      "textHash": "dab4a119e805cce6",
+      "text": "Victory! Cue the confetti."
+    },
+    {
+      "id": "celebrate_05",
+      "category": "celebrate",
+      "claims": "done",
+      "file": "celebrate_05.mp3",
+      "durationMs": 1509,
+      "textHash": "0e8d6900f8d07a66",
+      "text": "That's what I'm talking about."
+    },
+    {
+      "id": "celebrate_06",
+      "category": "celebrate",
+      "claims": "done",
+      "file": "celebrate_06.mp3",
+      "durationMs": 1892,
+      "textHash": "fd532de71fd08950",
+      "text": "We are unstoppable, you and me."
+    },
+    {
+      "id": "celebrate_07",
+      "category": "celebrate",
+      "claims": "done",
+      "file": "celebrate_07.mp3",
+      "durationMs": 2252,
+      "textHash": "0f564ca7ee4accf3",
+      "text": "High five! That one was a beauty."
+    },
+    {
+      "id": "thinking_01",
+      "category": "thinking",
+      "claims": "ack",
+      "file": "thinking_01.mp3",
+      "durationMs": 1428,
+      "textHash": "58fed3e0f63b83de",
+      "text": "Hmm, let me think."
+    },
+    {
+      "id": "thinking_02",
+      "category": "thinking",
+      "claims": "ack",
+      "file": "thinking_02.mp3",
+      "durationMs": 1428,
+      "textHash": "c24b033c7fd7d899",
+      "text": "Crunching the numbers."
+    },
+    {
+      "id": "thinking_03",
+      "category": "thinking",
+      "claims": "ack",
+      "file": "thinking_03.mp3",
+      "durationMs": 1950,
+      "textHash": "8986af1e12428e37",
+      "text": "One sec. Poking around."
+    },
+    {
+      "id": "thinking_04",
+      "category": "thinking",
+      "claims": "ack",
+      "file": "thinking_04.mp3",
+      "durationMs": 3111,
+      "textHash": "317714a88b2a8c73",
+      "text": "Give me a moment. My brain is buffering."
+    },
+    {
+      "id": "thinking_05",
+      "category": "thinking",
+      "claims": "ack",
+      "file": "thinking_05.mp3",
+      "durationMs": 1962,
+      "textHash": "6cfcdb2e07601837",
+      "text": "Scanning. Please hold."
+    },
+    {
+      "id": "thinking_06",
+      "category": "thinking",
+      "claims": "ack",
+      "file": "thinking_06.mp3",
+      "durationMs": 1242,
+      "textHash": "b95520d58c7c5ef8",
+      "text": "Digging through the data."
+    },
+    {
+      "id": "thinking_07",
+      "category": "thinking",
+      "claims": "ack",
+      "file": "thinking_07.mp3",
+      "durationMs": 2519,
+      "textHash": "3e05174ff05545da",
+      "text": "Hold on, running some code in my head."
+    },
+    {
+      "id": "task_complete_01",
+      "category": "task-complete",
+      "claims": "done",
+      "file": "task_complete_01.mp3",
+      "durationMs": 2577,
+      "textHash": "35c15def4863acda",
+      "text": "Your task is finished. Come take a look."
+    },
+    {
+      "id": "task_complete_02",
+      "category": "task-complete",
+      "claims": "done",
+      "file": "task_complete_02.mp3",
+      "durationMs": 2868,
+      "textHash": "148cdc5fcd4e621a",
+      "text": "The long job is back. Nice and tidy."
+    },
+    {
+      "id": "task_complete_03",
+      "category": "task-complete",
+      "claims": "done",
+      "file": "task_complete_03.mp3",
+      "durationMs": 2450,
+      "textHash": "0545576720c02814",
+      "text": "All wrapped up. That one took a while."
+    },
+    {
+      "id": "task_complete_04",
+      "category": "task-complete",
+      "claims": "done",
+      "file": "task_complete_04.mp3",
+      "durationMs": 2310,
+      "textHash": "5039663bfda5a015",
+      "text": "Ding! Your task just came through."
+    },
+    {
+      "id": "task_complete_05",
+      "category": "task-complete",
+      "claims": "done",
+      "file": "task_complete_05.mp3",
+      "durationMs": 2450,
+      "textHash": "dd6387745ad7603b",
+      "text": "Good news. That job just finished."
+    },
+    {
+      "id": "task_complete_06",
+      "category": "task-complete",
+      "claims": "done",
+      "file": "task_complete_06.mp3",
+      "durationMs": 2125,
+      "textHash": "1c88f8807f5cfe38",
+      "text": "It's done. You can stop worrying."
+    },
+    {
+      "id": "task_complete_07",
+      "category": "task-complete",
+      "claims": "done",
+      "file": "task_complete_07.mp3",
+      "durationMs": 2392,
+      "textHash": "e3b6476d8f644d83",
+      "text": "Task complete. I'd say it went well."
+    }
+  ]
+}

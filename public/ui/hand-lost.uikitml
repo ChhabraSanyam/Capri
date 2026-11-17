@@ -1,0 +1,40 @@
+<!--
+  Hand-tracking-lost message (task 3.6, Requirements 9.9 and 9.10). Loaded through PanelUI by
+  src/ui/hand-lost-panel.ts. Display only: no ids are addressed and it takes no input.
+  Sizes are UIKit units (cm at scale 1).
+-->
+<style>
+  .root {
+    flex-direction: column;
+    width: 480px;
+  }
+  .content {
+    flex-direction: column;
+    gap: 8px;
+    padding: 24px;
+    align-items: center;
+  }
+  .heading {
+    color: #1c1d20;
+    font-size: 30px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .heading:dark {
+    color: #fafaf7;
+  }
+  .hint {
+    color: #3a3b40;
+    font-size: 19px;
+    text-align: center;
+  }
+  .hint:dark {
+    color: #dddfe3;
+  }
+</style>
+<Panel class="root">
+  <div class="content">
+    <div class="heading">Bring your hands into view</div>
+    <div class="hint">Capri cannot see your hands. Hold them up in front of the headset.</div>
+  </div>
+</Panel>

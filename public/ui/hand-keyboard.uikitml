@@ -1,0 +1,116 @@
+<!--
+  Hand_Keyboard (task 13.23, Requirement 15.11): a QWERTY key grid opened from the Quick_Actions
+  "Keyboard" button. Loaded through PanelUI by src/ui/hand-keyboard.ts. GENERATED SIZES: every button
+  has an explicit width and height (36 x 40 keys, 4 gap, 12 padding) because a poke or pinch is
+  turned into a key from src/domain/panel-layout.ts, which must agree with this file
+  (tests/unit/panel-layout.test.ts checks it). Plain ASCII text only.
+-->
+<style>
+  .root {
+    flex-direction: column;
+    width: 420px;
+  }
+  .content {
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+  }
+  .typed {
+    width: 396px;
+    height: 44px;
+    padding-left: 10px;
+    padding-right: 10px;
+    justify-content: center;
+    background-color: #101216;
+    border-radius: 8px;
+    color: #fafaf7;
+    font-size: 22px;
+  }
+  .keys {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .krow {
+    flex-direction: row;
+    gap: 4px;
+    justify-content: center;
+    height: 40px;
+  }
+  .w36 {
+    width: 36px;
+    height: 40px;
+  }
+  .w116 {
+    width: 116px;
+    height: 40px;
+  }
+  .w100 {
+    width: 100px;
+    height: 40px;
+  }
+  .w172 {
+    width: 172px;
+    height: 40px;
+  }
+  .klabel {
+    font-size: 18px;
+    font-weight: 700;
+  }
+</style>
+<Panel class="root">
+  <div class="content">
+    <div id="typed" class="typed">_</div>
+    <div class="keys">
+      <div class="krow">
+        <Button id="key-1" class="w36"><ButtonLabel id="key-1-label" class="klabel">1</ButtonLabel></Button>
+        <Button id="key-2" class="w36"><ButtonLabel id="key-2-label" class="klabel">2</ButtonLabel></Button>
+        <Button id="key-3" class="w36"><ButtonLabel id="key-3-label" class="klabel">3</ButtonLabel></Button>
+        <Button id="key-4" class="w36"><ButtonLabel id="key-4-label" class="klabel">4</ButtonLabel></Button>
+        <Button id="key-5" class="w36"><ButtonLabel id="key-5-label" class="klabel">5</ButtonLabel></Button>
+        <Button id="key-6" class="w36"><ButtonLabel id="key-6-label" class="klabel">6</ButtonLabel></Button>
+        <Button id="key-7" class="w36"><ButtonLabel id="key-7-label" class="klabel">7</ButtonLabel></Button>
+        <Button id="key-8" class="w36"><ButtonLabel id="key-8-label" class="klabel">8</ButtonLabel></Button>
+        <Button id="key-9" class="w36"><ButtonLabel id="key-9-label" class="klabel">9</ButtonLabel></Button>
+        <Button id="key-0" class="w36"><ButtonLabel id="key-0-label" class="klabel">0</ButtonLabel></Button>
+      </div>
+      <div class="krow">
+        <Button id="key-q" class="w36"><ButtonLabel id="key-q-label" class="klabel">q</ButtonLabel></Button>
+        <Button id="key-w" class="w36"><ButtonLabel id="key-w-label" class="klabel">w</ButtonLabel></Button>
+        <Button id="key-e" class="w36"><ButtonLabel id="key-e-label" class="klabel">e</ButtonLabel></Button>
+        <Button id="key-r" class="w36"><ButtonLabel id="key-r-label" class="klabel">r</ButtonLabel></Button>
+        <Button id="key-t" class="w36"><ButtonLabel id="key-t-label" class="klabel">t</ButtonLabel></Button>
+        <Button id="key-y" class="w36"><ButtonLabel id="key-y-label" class="klabel">y</ButtonLabel></Button>
+        <Button id="key-u" class="w36"><ButtonLabel id="key-u-label" class="klabel">u</ButtonLabel></Button>
+        <Button id="key-i" class="w36"><ButtonLabel id="key-i-label" class="klabel">i</ButtonLabel></Button>
+        <Button id="key-o" class="w36"><ButtonLabel id="key-o-label" class="klabel">o</ButtonLabel></Button>
+        <Button id="key-p" class="w36"><ButtonLabel id="key-p-label" class="klabel">p</ButtonLabel></Button>
+      </div>
+      <div class="krow">
+        <Button id="key-a" class="w36"><ButtonLabel id="key-a-label" class="klabel">a</ButtonLabel></Button>
+        <Button id="key-s" class="w36"><ButtonLabel id="key-s-label" class="klabel">s</ButtonLabel></Button>
+        <Button id="key-d" class="w36"><ButtonLabel id="key-d-label" class="klabel">d</ButtonLabel></Button>
+        <Button id="key-f" class="w36"><ButtonLabel id="key-f-label" class="klabel">f</ButtonLabel></Button>
+        <Button id="key-g" class="w36"><ButtonLabel id="key-g-label" class="klabel">g</ButtonLabel></Button>
+        <Button id="key-h" class="w36"><ButtonLabel id="key-h-label" class="klabel">h</ButtonLabel></Button>
+        <Button id="key-j" class="w36"><ButtonLabel id="key-j-label" class="klabel">j</ButtonLabel></Button>
+        <Button id="key-k" class="w36"><ButtonLabel id="key-k-label" class="klabel">k</ButtonLabel></Button>
+        <Button id="key-l" class="w36"><ButtonLabel id="key-l-label" class="klabel">l</ButtonLabel></Button>
+      </div>
+      <div class="krow">
+        <Button id="key-z" class="w36"><ButtonLabel id="key-z-label" class="klabel">z</ButtonLabel></Button>
+        <Button id="key-x" class="w36"><ButtonLabel id="key-x-label" class="klabel">x</ButtonLabel></Button>
+        <Button id="key-c" class="w36"><ButtonLabel id="key-c-label" class="klabel">c</ButtonLabel></Button>
+        <Button id="key-v" class="w36"><ButtonLabel id="key-v-label" class="klabel">v</ButtonLabel></Button>
+        <Button id="key-b" class="w36"><ButtonLabel id="key-b-label" class="klabel">b</ButtonLabel></Button>
+        <Button id="key-n" class="w36"><ButtonLabel id="key-n-label" class="klabel">n</ButtonLabel></Button>
+        <Button id="key-m" class="w36"><ButtonLabel id="key-m-label" class="klabel">m</ButtonLabel></Button>
+        <Button id="key-delete" class="w116"><ButtonLabel id="key-delete-label" class="klabel">Delete</ButtonLabel></Button>
+      </div>
+      <div class="krow">
+        <Button id="key-close" class="w100"><ButtonLabel id="key-close-label" class="klabel">Close</ButtonLabel></Button>
+        <Button id="key-space" class="w172"><ButtonLabel id="key-space-label" class="klabel">Space</ButtonLabel></Button>
+        <Button id="key-send" class="w116"><ButtonLabel id="key-send-label" class="klabel">Send</ButtonLabel></Button>
+      </div>
+    </div>
+  </div>
+</Panel>

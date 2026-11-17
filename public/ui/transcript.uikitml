@@ -1,0 +1,53 @@
+<!--
+  Transcript_Panel (task 13.23, Requirements 15.8, 15.9): the live transcript while Push_To_Talk is
+  active, the final transcript after it, and the voice status chip ("Voice loading" and similar).
+  Display only: no button, so it takes no pinch. Loaded through PanelUI by src/ui/panels/transcript.ts.
+  Element ids are addressed there. 340 wide, 150 tall (VOICE_UI.transcript). Plain ASCII text only.
+-->
+<style>
+  .root {
+    flex-direction: column;
+    width: 340px;
+    height: 150px;
+  }
+  .content {
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+  }
+  .chip {
+    color: #1c1d20;
+    background-color: #ffc857;
+    border-radius: 12px;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    font-size: 16px;
+    font-weight: 700;
+    align-self: flex-start;
+  }
+  .heading {
+    color: #55575f;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .heading:dark {
+    color: #9da0aa;
+  }
+  .text {
+    color: #1c1d20;
+    font-size: 28px;
+    font-weight: 700;
+  }
+  .text:dark {
+    color: #fafaf7;
+  }
+</style>
+<Panel class="root">
+  <div class="content">
+    <div id="chip" class="chip">Voice loading</div>
+    <div id="heading" class="heading">Listening</div>
+    <div id="text" class="text">Say a command</div>
+  </div>
+</Panel>

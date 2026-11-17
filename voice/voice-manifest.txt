@@ -1,0 +1,77 @@
+# Voice_Manifest. One section per category, one line per variant: id | claims | text
+# claims: ack (safe while pending), done (only after success), fail, neutral.
+# Keep every line to two short sentences at most. Playful, never mean.
+
+[greeting]
+greeting_01 | neutral | Hey, it's me. Ready to hack the house?
+greeting_02 | neutral | Hi! Your friendly neighborhood hacker is online.
+greeting_03 | neutral | Oh good, you're here. Let's make some trouble.
+greeting_04 | neutral | Capri online. What are we poking at today?
+greeting_05 | neutral | Hey you. Miss me?
+greeting_06 | neutral | Hello, human. I'm feeling mischievous.
+greeting_07 | neutral | Hi! I'm all ears, well, mostly attitude.
+
+[confirm]
+confirm_01 | ack | On it. Jacking in.
+confirm_02 | ack | Hold still. Hacking the lights.
+confirm_03 | ack | You got it. Sending the command now.
+confirm_04 | ack | Easy. Give me a second.
+confirm_05 | ack | Say no more. I'm on it.
+confirm_06 | ack | Rerouting the signal. Hang tight.
+confirm_07 | ack | Okay, okay. Working my magic.
+
+[quip]
+quip_01 | done | Too easy. You're welcome.
+quip_02 | done | Barely broke a sweat.
+quip_03 | done | And that's how it's done. Smooth.
+quip_04 | done | Hacked it. No firewall stood a chance.
+quip_05 | done | Look at me, being useful.
+quip_06 | done | Another system bows to me.
+quip_07 | done | Flawless, as usual.
+quip_08 | done | Was that all? I'm just warming up.
+
+[error]
+error_01 | fail | Nope, that bounced.
+error_02 | fail | Ugh, that didn't work.
+error_03 | fail | Hit a wall on that one. Annoying.
+error_04 | fail | That didn't go through. Here's what I got.
+error_05 | fail | Well, that was a flop. Even hackers have bad days.
+error_06 | fail | Okay, that one got away from me.
+error_07 | fail | Not this time. Something's being stubborn.
+
+[tease]
+tease_01 | neutral | Flipping that again? Make up your mind.
+tease_02 | neutral | On, off, on, off. Are we throwing a party?
+tease_03 | neutral | Bored already? I can tell.
+tease_04 | neutral | Ooh, you want my attention? You've got it.
+tease_05 | neutral | Staring is free. Talking is better.
+tease_06 | neutral | Careful, I might get used to you.
+tease_07 | neutral | Fine, I'll play along. For now.
+tease_08 | neutral | Nice pointing. Very dramatic.
+
+[celebrate]
+celebrate_01 | done | Boom! Nailed it.
+celebrate_02 | done | Yes! Another win for the hacker.
+celebrate_03 | done | Told you I was good.
+celebrate_04 | done | Victory! Cue the confetti.
+celebrate_05 | done | That's what I'm talking about.
+celebrate_06 | done | We are unstoppable, you and me.
+celebrate_07 | done | High five! That one was a beauty.
+
+[thinking]
+thinking_01 | ack | Hmm, let me think.
+thinking_02 | ack | Crunching the numbers.
+thinking_03 | ack | One sec. Poking around.
+thinking_04 | ack | Give me a moment. My brain is buffering.
+thinking_05 | ack | Scanning. Please hold.
+thinking_06 | ack | Digging through the data.
+thinking_07 | ack | Hold on, running some code in my head.
+
+[task-complete]
+task_complete_01 | done | Your task is finished. Come take a look.
+task_complete_02 | done | The long job is back. Nice and tidy.
+task_complete_03 | done | All wrapped up. That one took a while.
+task_complete_04 | done | Ding! Your task just came through.
+task_complete_05 | done | Good news. That job just finished.
+task_complete_06 | done | It's done. You can stop worrying.
+task_complete_07 | done | Task complete. I'd say it went well.

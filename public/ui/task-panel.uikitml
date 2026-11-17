@@ -1,0 +1,106 @@
+<!--
+  Task_Panel (task 19.3, Requirements 19.6, 19.9, 19.10): the floating holographic panel that shows a
+  Hermes task. Title and status, the current step and percent, a progress bar, the result line, and one
+  button (Cancel while the task runs, Dismiss when it ended). Loaded through PanelUI by
+  src/ui/panels/task-panel.ts, which sets the text, the bar width, and the colours at run time.
+  Element ids addressed there: title, status, label, percent, fill, detail, btn-task, btn-task-label.
+  400 wide, 236 tall, 368 wide bar (keep TASK_FLOW.panel in src/config/constants.ts in step). The panel
+  is drawn at scale 0.125 (1.25 mm a unit) so it reads at 1.2 m. Plain ASCII text only.
+-->
+<style>
+  .root {
+    flex-direction: column;
+    width: 400px;
+    height: 236px;
+  }
+  .content {
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+  }
+  .row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 368px;
+  }
+  .title {
+    color: #1c1d20;
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .title:dark {
+    color: #fafaf7;
+  }
+  .status {
+    color: #1c1d20;
+    background-color: #8ab4ff;
+    border-radius: 12px;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .label {
+    color: #3a3b40;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .label:dark {
+    color: #dddfe3;
+  }
+  .percent {
+    color: #3a3b40;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .percent:dark {
+    color: #dddfe3;
+  }
+  .track {
+    width: 368px;
+    height: 18px;
+    border-radius: 9px;
+    background-color: #55575f;
+  }
+  .fill {
+    width: 0px;
+    height: 18px;
+    border-radius: 9px;
+    background-color: #8ab4ff;
+  }
+  .detail {
+    color: #3a3b40;
+    font-size: 18px;
+    height: 44px;
+    width: 368px;
+  }
+  .detail:dark {
+    color: #dddfe3;
+  }
+  .btn {
+    width: 368px;
+    height: 48px;
+  }
+  .btn-label {
+    font-size: 20px;
+    font-weight: 700;
+  }
+</style>
+<Panel class="root">
+  <div class="content">
+    <div class="row">
+      <div id="title" class="title">Task</div>
+      <div id="status" class="status">... Running</div>
+    </div>
+    <div class="row">
+      <div id="label" class="label">Getting started</div>
+      <div id="percent" class="percent">0%</div>
+    </div>
+    <div class="track"><div id="fill" class="fill"></div></div>
+    <div id="detail" class="detail"></div>
+    <Button id="btn-task" class="btn"><ButtonLabel id="btn-task-label" class="btn-label">Cancel</ButtonLabel></Button>
+  </div>
+</Panel>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <link rel="icon" href="data:," />
+    <title>Capri</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #101218;
+        color: #e8eaf0;
+        font-family: system-ui, sans-serif;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      #scene-container {
+        position: fixed;
+        inset: 0;
+      }
+      #entry {
+        position: relative;
+        z-index: 1;
+        max-width: 560px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        pointer-events: none;
+      }
+      #entry > *,
+      #entry section > * {
+        pointer-events: auto;
+      }
+      h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+      p {
+        margin: 0;
+        line-height: 1.4;
+      }
+      section {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      button {
+        font: inherit;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: 1px solid #5a5d66;
+        background: #2a2f3d;
+        color: #fff;
+        cursor: pointer;
+        align-self: flex-start;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      #enter-ar {
+        background: #5b3df5;
+        border-color: #7d65ff;
+      }
+      #error-line {
+        color: #ff8f8f;
+      }
+      #mode-badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 999px;
+        border: 1px solid #7d65ff;
+        background: #2a2350;
+        font-weight: 600;
+      }
+      #mode-badge[data-mode='live'] {
+        border-color: #4ad08a;
+        background: #12372a;
+      }
+      #mic-hint {
+        color: #c9cdd8;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="scene-container"></div>
+    <main id="entry">
+      <h1>Capri</h1>
+      <!-- Shown from the first paint, before any script runs: zero configuration means Mock Mode. -->
+      <section id="mode-banner" aria-label="Mode">
+        <p><span id="mode-badge">Mock Mode</span></p>
+        <p id="mode-detail">
+          Three virtual bulbs appear in your room. Nothing is sent to Home Assistant or any other
+          server. No setup needed.
+        </p>
+      </section>
+      <p id="support-line">Checking AR support...</p>
+      <section id="mic-step" aria-labelledby="mic-heading">
+        <p id="mic-heading"><strong>Optional.</strong> Allow the microphone here, before AR, for voice commands.</p>
+        <button id="mic-enable" type="button">Enable microphone</button>
+        <p id="mic-status" aria-live="polite">Microphone: not requested yet.</p>
+        <p id="mic-hint" hidden></p>
+      </section>
+      <!-- Voice model download progress is mounted here by the Model_Preload (task 13.21). -->
+      <section id="model-preload" aria-live="polite"></section>
+      <section>
+        <p><strong>Start here.</strong> Enter AR works with or without the microphone and the voice model.</p>
+        <button id="enter-ar" type="button" disabled>Enter AR</button>
+        <p id="error-line" role="alert" hidden></p>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,53 @@
+<!--
+  Developer test panel (task 7.10), shown with ?dev=1. Loaded through PanelUI by src/ui/dev-panel.ts.
+  Six buttons run the spatial abilities from the hand: poke with a fingertip or pinch from a distance.
+  Element ids are addressed by src/ui/dev-panel.ts. Sizes are UIKit units (cm at scale 1).
+-->
+<style>
+  .root {
+    flex-direction: column;
+    width: 420px;
+  }
+  .content {
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px;
+  }
+  .heading {
+    color: #1c1d20;
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .heading:dark {
+    color: #fafaf7;
+  }
+  .row {
+    flex-direction: row;
+    gap: 12px;
+  }
+  .status {
+    color: #0b5d1e;
+    font-size: 17px;
+  }
+  .status:dark {
+    color: #7ee08f;
+  }
+</style>
+<Panel class="root">
+  <div class="content">
+    <div class="heading">Capri dev controls</div>
+    <div class="row">
+      <Button id="come_here"><ButtonLabel>Come here</ButtonLabel></Button>
+      <Button id="look_me"><ButtonLabel>Look at me</ButtonLabel></Button>
+    </div>
+    <div class="row">
+      <Button id="sit_table"><ButtonLabel>Sit on table</ButtonLabel></Button>
+      <Button id="perch_table"><ButtonLabel>Perch on table</ButtonLabel></Button>
+    </div>
+    <div class="row">
+      <Button id="point_floor"><ButtonLabel>Point at floor</ButtonLabel></Button>
+      <Button id="go_away"><ButtonLabel>Go away</ButtonLabel></Button>
+    </div>
+    <div id="status" class="status">Waiting for a tap.</div>
+  </div>
+</Panel>
