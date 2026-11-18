@@ -77,4 +77,9 @@ export default defineConfig({
   },
   publicDir: 'public',
   base: '/',
+  // @iwsdk/core reads `import.meta.env?.DEV`, so Vite inlines the whole env object, with every
+  // variable matching this prefix. Vercel adds VITE_VERCEL_* system variables (the production
+  // domain, the git author and commit message), so the default `VITE_` prefix would put those in
+  // dist/. Only the development placeholders from .env.example match this prefix.
+  envPrefix: 'VITE_DEV_',
 });
