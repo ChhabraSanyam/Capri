@@ -38,8 +38,21 @@ describe('vercel.json', () => {
 
   it('builds a static Vite app into dist with npm ci and the build:vercel script', () => {
     expect(config.outputDirectory).toBe('dist');
-    expect(config.installCommand).toBe('npm ci');
     expect(config.buildCommand).toBe('npm run build:vercel');
+  });
+
+  it('installs with npm ci, optionally prefixed only by NAME=value environment assignments', () => {
+    const command = config.installCommand;
+    expect(command.endsWith('npm ci')).toBe(true);
+    const prefix = command.slice(0, -'npm ci'.length);
+    // An empty prefix is plain `npm ci`. Otherwise every space-separated token before `npm ci` must be
+    // an environment-variable assignment (for example ONNXRUNTIME_NODE_INSTALL_CUDA=skip, docs/hosting.md),
+    // so the install step cannot run another command or chain one with && or ;.
+    if (prefix !== '') {
+      expect(prefix.endsWith(' ')).toBe(true);
+      const tokens = prefix.trimEnd().split(' ');
+      for (const token of tokens) expect(token).toMatch(/^[A-Za-z_][A-Za-z0-9_]*=[^\s;&|`$()<>'"\\]*$/u);
+    }
   });
 
   it('build:vercel runs typecheck, tests, the model fetch, the lexicon build, vite build, then the checks, in that order', () => {
