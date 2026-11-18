@@ -11,6 +11,8 @@
  * - `cancel()` stops speech now (barge-in) and hides the bubble.
  * - `amplitude` is the RMS of the playing tier 1 library audio, and 0 at all other times. Feed it to
  *   `MouthDriver` (`avatar/mouth.ts`).
+ * - `pause()` and `resume()` (task 27.2) suspend and resume the playback context, so a line in
+ *   progress stops mid-word and carries on from there.
  *
  * Tiers (`selectTier`): a line with a usable `libraryId` plays from the Voice_Library (tier 1). Other
  * text goes to `speechSynthesis` only when `featureFlags.ttsUsable` is true and the browser has it
@@ -20,10 +22,13 @@
  * any line while the context is not running. Only tier 1 moves the mouth (Requirement 16.13). The
  * speaking gesture plays whenever a line is spoken (Requirement 16.14).
  *
+ * Mix (task 27.3): library lines, chirps, and hack cues each go through their own bus, then one
+ * limiter and the master volume (`mix-bus.ts`, levels in `AUDIO_MIX`).
+ *
  * `update(dt)` runs once per frame. It samples the analyser into a preallocated buffer and counts
  * down the bubble hold, so there are no timers and no per-frame allocation.
  */
-import { HACK_SFX, SPEAKING_GESTURE, SPEECH_OUTPUT } from '../config/constants.js';
+import { HACK_SFX, PAUSE, SPEAKING_GESTURE } from '../config/constants.js';
 import { featureFlags } from '../config/feature-flags.js';
 import type { FeatureFlags } from '../config/feature-flags.js';
 import type { AppEvents, EventBus } from '../app/events.js';
@@ -34,6 +39,8 @@ import { bubbleHoldS, planChirp } from '../domain/speech/chirp-plan.js';
 import { selectTier } from '../domain/speech/tier-select.js';
 import type { SpeechTier } from '../domain/speech/tier-select.js';
 import type { SfxCueId } from '../domain/speech/sfx-plan.js';
+import { createMixBus } from './mix-bus.js';
+import type { MixBus } from './mix-bus.js';
 import { playChirp, SfxSynth } from './sfx-synth.js';
 import type { ChirpHandle } from './sfx-synth.js';
 import { TtsFallback } from './tts-fallback.js';
@@ -111,13 +118,14 @@ export class AudioEngine implements SpeechOutput {
   private readonly flags: Pick<FeatureFlags, 'ttsUsable' | 'ttsVoiceURI'>;
   private readonly createContext: () => AudioContext;
   private ctx: AudioContext | undefined;
-  private master: GainNode | undefined;
+  private mix: MixBus | undefined;
   private sfx: SfxSynth | undefined;
   private presenter: SpeechPresenter | undefined;
   private active: Active | undefined;
   private bubbleShown = false;
   private bubbleRemainingS = 0;
   private level = 0;
+  private pausedNow = false;
 
   constructor(options: AudioEngineOptions) {
     this.rng = options.rng;
@@ -161,12 +169,11 @@ export class AudioEngine implements SpeechOutput {
     try {
       if (this.ctx === undefined) {
         const ctx = this.createContext();
-        const master = ctx.createGain();
-        master.connect(ctx.destination);
-        this.voice.attach(ctx, master);
-        this.sfx = new SfxSynth(ctx, master, this.rng);
+        const mix = createMixBus(ctx, ctx.destination);
+        this.voice.attach(ctx, mix.speech);
+        this.sfx = new SfxSynth(ctx, mix.sfx, this.rng);
         this.ctx = ctx;
-        this.master = master;
+        this.mix = mix;
       }
       const ctx = this.ctx;
       const resumed = ctx.state === 'running' ? Promise.resolve() : ctx.resume();
@@ -184,6 +191,53 @@ export class AudioEngine implements SpeechOutput {
       this.logger?.warn('Web Audio could not start, speech stays text only', error);
       return Promise.resolve(false);
     }
+  }
+
+  /** True between `pause` and `resume`. */
+  get paused(): boolean {
+    return this.pausedNow;
+  }
+
+  /**
+   * Pause (task 27.2): suspend the playback context and pause tier 2. A library line or chirp in
+   * progress stops where it is (the context clock stands still) and carries on at `resume`, and its
+   * bubble hold stands still too because `update` is not called while the app is paused. Cues and new
+   * lines started while paused find the context not running and stay silent. Idempotent.
+   */
+  pause(): void {
+    if (this.pausedNow) return;
+    this.pausedNow = true;
+    if (this.active?.tts === true) this.tts.pause();
+    const ctx = this.ctx;
+    // Also when not running yet: a resume still on its way must not leave it running while paused.
+    if (ctx === undefined || ctx.state === 'closed') return;
+    void ctx.suspend().catch((error: unknown) => this.logger?.warn('the audio context could not suspend', error));
+  }
+
+  /**
+   * Resume after `pause`: run the playback context again. It was unlocked by the Enter AR click
+   * earlier, so no new gesture is needed. Resolves true when the context runs, false (never rejects)
+   * when it does not or after `PAUSE.audioResumeTimeoutMs`; lines then fall back to bubble and chirp.
+   */
+  resume(): Promise<boolean> {
+    if (!this.pausedNow) return Promise.resolve(this.audioRunning);
+    this.pausedNow = false;
+    if (this.active?.tts === true) this.tts.resume();
+    const ctx = this.ctx;
+    if (ctx === undefined || ctx.state === 'closed') return Promise.resolve(false);
+    // Always asked, even when the state still reads `running`: a suspend from `pause` may not have
+    // finished yet, and the context handles the two calls in order.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, PAUSE.audioResumeTimeoutMs);
+    });
+    const resumed = ctx.resume().catch((error: unknown) => {
+      this.logger?.warn('the audio context could not resume after the pause', error);
+    });
+    return Promise.race([resumed, timeout]).then(() => {
+      if (timer !== undefined) clearTimeout(timer);
+      return ctx.state === 'running';
+    });
   }
 
   /** Where the bubble and speaking gesture go. Pass undefined to detach. */
@@ -228,8 +282,9 @@ export class AudioEngine implements SpeechOutput {
   }
 
   /**
-   * Play one hacking VFX cue (task 15.6, Requirement 18.8). Cues are quiet and play at half level
-   * while a line is being spoken, so they sit under speech. They never touch the voice analyser, so
+   * Play one hacking VFX cue (task 15.6, Requirement 18.8). Cues are quiet (`AUDIO_MIX.sfxGain`) and
+   * a cue that starts while a line is being spoken plays at `HACK_SFX.duckWhileSpeakingFactor`, so it
+   * sits under speech. They never touch the voice analyser, so
    * they cannot move the mouth. Does nothing and returns false when the context is not running.
    */
   playSfx(cue: SfxCueId): boolean {
@@ -260,8 +315,8 @@ export class AudioEngine implements SpeechOutput {
     this.sfx = undefined;
     this.voice.dispose();
     const ctx = this.ctx;
-    this.master?.disconnect();
-    this.master = undefined;
+    this.mix?.dispose();
+    this.mix = undefined;
     this.ctx = undefined;
     this.presenter = undefined;
     if (ctx !== undefined && ctx.state !== 'closed') void ctx.close().catch(() => undefined);
@@ -295,12 +350,12 @@ export class AudioEngine implements SpeechOutput {
   private startChirp(active: Active): void {
     active.tier = 'bubble';
     const ctx = this.ctx;
-    const master = this.master;
+    const bus = this.mix?.chirp;
     const plan = planChirp(active.text, this.rng);
     this.bubbleRemainingS = Math.max(this.bubbleRemainingS, bubbleHoldS(active.text, plan.totalS));
-    if (ctx === undefined || master === undefined || ctx.state !== 'running') return;
+    if (ctx === undefined || bus === undefined || ctx.state !== 'running') return;
     active.audioActive = true;
-    active.chirp = playChirp(ctx, master, plan, SPEECH_OUTPUT.sfxGain, () => this.onAudioEnded(active));
+    active.chirp = playChirp(ctx, bus, plan, 1, () => this.onAudioEnded(active));
   }
 
   /** Tier 2. No mouth movement is tied to it (Requirement 16.13). */

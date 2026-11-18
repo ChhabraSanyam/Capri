@@ -16,8 +16,11 @@
     "fetch:vosk": "node tools/fetch-vosk-model.ts",
     "build:lexicon": "node tools/build-lexicon.ts",
     "voice": "esbuild tools/voice-script/generate-voice-library.ts --bundle --platform=node --format=esm --log-level=warning --outfile=.tmp/voice-script/generate.mjs && node .tmp/voice-script/generate.mjs",
+    "audio:report": "esbuild tools/audio-mix/measure-voice.ts tools/audio-mix/render-mix.ts --bundle --platform=node --format=esm --packages=external --log-level=warning --outdir=.tmp/audio-mix/bin --out-extension:.js=.mjs && node .tmp/audio-mix/bin/measure-voice.mjs && node .tmp/audio-mix/bin/render-mix.mjs",
+    "check": "npm run lint && npm run check:smoke",
+    "check:smoke": "esbuild tools/checks/run-checks.ts --bundle --platform=node --format=esm --packages=external --log-level=warning --outfile=.tmp/checks/run-checks.mjs && node .tmp/checks/run-checks.mjs",
     "build": "vite build",
-    "build:vercel": "npm run typecheck && npm test -- --run && npm run fetch:vosk && npm run build:lexicon && vite build",
+    "build:vercel": "npm run typecheck && npm test -- --run && npm run fetch:vosk && npm run build:lexicon && vite build && npm run check",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -36,8 +39,10 @@
     "@iwsdk/vite-plugin-dev": "1.1.0",
     "@meta-quest/metavr": "^1.8.1",
     "@types/three": "^0.185.0",
+    "esbuild": "0.28.2",
     "eslint": "^10.15.0",
     "fast-check": "^4.10.2",
+    "jsdom": "^31.0.1",
     "typescript": "^5.5.0",
     "typescript-eslint": "^8.73.0",
     "vite": "^7.1.4",

@@ -1121,6 +1121,11 @@
         "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794938889746
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794945943115
       }
     ],
     "20. Hand-off note: MVD cut-line reached": [
@@ -1135,6 +1140,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837493361
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794945961559
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794947514704
       }
     ],
     "21.2 Gate H, part 2: ask the user for the Hermes details and WAIT": [
@@ -1142,6 +1157,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837493417
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794947514988
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794950599523
       }
     ],
     "21.3 Gate H, part 3: record the confirmed surface and check browser feasibility": [
@@ -1149,6 +1174,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837493468
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794950599930
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794951204396
       }
     ],
     "21.4 Implement the contract, spatial context, and tier router": [
@@ -1156,6 +1191,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837493514
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794951209590
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794952238033
       }
     ],
     "21.8 Implement the endpoint URL guard": [
@@ -1163,6 +1208,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837493566
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794951210300
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794951526913
       }
     ],
     "21.10 Implement the live Hermes adapter from the confirmed surface only": [
@@ -1170,6 +1225,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837493619
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794952248567
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794953139032
       }
     ],
     "21.12 Wire Tier 2 into the app": [
@@ -1177,6 +1242,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837493669
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794953149425
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794954499191
       }
     ],
     "22. Hand-off note: live Hermes": [
@@ -1191,6 +1266,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837493769
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794954505888
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794955014163
       }
     ],
     "23.3 Add the personality gestures": [
@@ -1198,6 +1283,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837493817
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794954506258
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794955015069
       }
     ],
     "23.4 Wire personality into the app": [
@@ -1205,6 +1300,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837493864
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794955020377
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794956217222
       }
     ],
     "24. Hand-off note: personality": [
@@ -1219,6 +1324,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837493961
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794956222440
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794956667979
       }
     ],
     "25.2 Implement the credential store": [
@@ -1226,6 +1341,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837494024
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794956673682
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794957145581
       }
     ],
     "25.5 Implement the Home Assistant client": [
@@ -1233,6 +1358,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837494067
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794956674533
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794957146386
       }
     ],
     "25.9 Build the full Setup_Page": [
@@ -1240,6 +1375,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837494110
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794957151992
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794958095469
       }
     ],
     "25.10 Wire Live Mode": [
@@ -1247,6 +1392,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837494155
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794958102130
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794973211759
       }
     ],
     "25.12 Write the Live Mode sections of the README": [
@@ -1254,6 +1409,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837494215
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794958102658
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794973213290
       }
     ],
     "26. Hand-off note: Setup and live Home Assistant": [
@@ -1268,6 +1433,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837494332
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794973219224
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794974054344
       }
     ],
     "27.2 Add pause and resume": [
@@ -1275,6 +1450,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837494402
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794974061136
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794975459623
       }
     ],
     "27.3 Tune the audio mix": [
@@ -1282,6 +1467,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837494725
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794975465132
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794976597224
       }
     ],
     "27.4 Add the smoke checks and the check script": [
@@ -1289,6 +1484,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837494778
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794977946132
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794978916952
       }
     ],
     "27.5 Add the smoke checks to the Vercel build": [
@@ -1296,6 +1501,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837494827
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794978923113
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794979244288
       }
     ],
     "27.6 Write the performance note and comfort check": [
@@ -1303,6 +1518,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837494906
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794976606710
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794977940669
       }
     ],
     "27.7 Write the Demo_Path script": [
@@ -1310,6 +1535,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837494980
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794973219932
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794974054696
       }
     ],
     "27.8 Complete the README": [
@@ -1317,6 +1552,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837495045
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794976605938
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794977940470
       }
     ],
     "28. Hand-off note: polish": [
@@ -1331,6 +1576,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837495156
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794978924326
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794979244519
       }
     ],
     "29.2 Write the demo video plan": [
@@ -1338,6 +1593,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837495214
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794978924823
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794979245363
       }
     ],
     "29.3 Add the submission checklist and finalise links": [
@@ -1345,6 +1610,16 @@
         "executionId": "9473dc4e-af42-4aee-8ae0-adb6bd1d9e07",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794837495276
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794979250879
+      },
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794979497230
       }
     ],
     "30. Hand-off note: final submission": [
@@ -1415,6 +1690,48 @@
         "executionId": "525c9d08-37a0-471e-a096-d47534aa714a",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794937627250
+      }
+    ],
+    "19. Step 8a [MVD]: one scripted Hermes task (no live Hermes code)": [
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794945943304
+      }
+    ],
+    "21. Step 8b [POST-MVD]: live Hermes and Tier 2 (Gate H: investigate, then ask)": [
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794954499289
+      }
+    ],
+    "23. Step 9 [POST-MVD]: personality and aliveness": [
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794956217349
+      }
+    ],
+    "25. Step 10b [POST-MVD]: setup page, live Home Assistant, CORS docs": [
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794973213407
+      }
+    ],
+    "27. Step 11 [POST-MVD]: polish and submission readiness": [
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794979244388
+      }
+    ],
+    "29. Submission deliverables [POST-MVD]": [
+      {
+        "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1794979497341
       }
     ]
   }

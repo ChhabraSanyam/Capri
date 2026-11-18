@@ -6,12 +6,14 @@
  * to import from `src/domain/**`.
  *
  * `AgentBackend` (Hermes, task 19.1) sits at the end of the file. It carries no Hermes endpoint,
- * credential, header, path, or field name: those arrive only after Gate H (task 21.2), behind
- * `HermesWire` and `TaskEventSource`.
+ * credential, header, path, or field name: those live only in `backends/hermes/` (task 21.10),
+ * behind `HermesWire` and `TaskEventSource`.
  */
 import type { SupportedActionType } from '../domain/actions/abilities.js';
 import type { Emotion, GestureId } from '../domain/animation-types.js';
+import type { SpatialContext } from '../domain/context/spatial-context.js';
 import type { TaskKind } from '../domain/speech-lang/phrases.js';
+import type { ApprovalDecision } from '../domain/contract/task-model.js';
 
 /** Connection state shown by the Status_Indicator (Requirement 27.3). */
 export type ConnectionState = 'connected' | 'connecting' | 'failed' | 'not_configured';
@@ -116,11 +118,20 @@ export interface ResponseContract {
     target?: string;
     params?: Record<string, unknown>;
   };
+  /**
+   * Set by `validateContract` when the reply carried an action it dropped (an unsupported type or
+   * a malformed action). The speech is kept, and the Persona says the action is not possible.
+   */
+  droppedAction?: ActionRejection;
 }
 
-/** A free-form line for the agent. The Spatial_Context joins this in task 21. */
+/** Why an action from a Tier 2 reply does not run (`validateContract`, `gateAction`). */
+export type ActionRejection = 'unsupported_type' | 'unknown_target' | 'bad_params';
+
+/** A free-form line for the agent, with the Spatial_Context of the moment (Requirement 20.3). */
 export interface AgentChatRequest {
   text: string;
+  context: SpatialContext;
 }
 
 /** A task the user asked for. `kind` comes from the resolver's `task` command (`TASK_PHRASES`). */
@@ -128,6 +139,8 @@ export interface AgentTaskRequest {
   kind: TaskKind;
   /** The normalised phrase the user said, such as `run my evening routine`. */
   text: string;
+  /** The Spatial_Context when the task was asked for. The live adapter sends it with the task. */
+  context?: SpatialContext;
 }
 
 /** Where a task stands. Terminal states (`completed`, `failed`) are final. */
@@ -136,17 +149,36 @@ export type TaskStatus = 'running' | 'completed' | 'failed';
 /**
  * One step in a task's life. `fraction` is 0..1. A stream ends after one `completed` or `failed`
  * event, and a cancelled task ends with `failed`.
+ *
+ * - `progress`: a percentage-style update (the scripted MockAgent).
+ * - `step`: the current step as text, for agents that report steps instead of a percentage (live
+ *   Hermes, task 21.10).
+ * - `approval_requested` / `approval_resolved`: the agent waits for the user to approve or deny one
+ *   operation. Answer through `TaskHandle.respondToApproval` with the same `requestId`.
  */
 export type TaskEvent =
   | { type: 'progress'; fraction?: number; label?: string }
+  | { type: 'step'; text: string }
+  | { type: 'approval_requested'; requestId: string; description: string; choices: readonly ApprovalDecision[] }
+  | { type: 'approval_resolved'; requestId?: string }
   | { type: 'completed'; summary: string }
   | { type: 'failed'; reason: string };
+
+export type { ApprovalDecision };
+
+/** How the agent took an approval answer. `already_resolved`: it was answered or timed out before. */
+export type ApprovalOutcome = 'accepted' | 'already_resolved';
 
 /** A running task. `events` is read once. `cancel()` ends the stream with a `failed` event. */
 export interface TaskHandle {
   id: string;
   events: AsyncIterable<TaskEvent>;
   cancel(): void;
+  /**
+   * Answer a pending approval (live agents only; the scripted MockAgent never asks). The stream
+   * then carries `approval_resolved`, so the Task_Panel can hide its buttons.
+   */
+  respondToApproval?(requestId: string, decision: ApprovalDecision): Promise<Result<ApprovalOutcome>>;
 }
 
 export interface AgentBackend {
@@ -157,20 +189,5 @@ export interface AgentBackend {
   startTask(req: AgentTaskRequest): Promise<Result<TaskHandle>>;
 }
 
-/**
- * Seams for the live adapter (task 21.10). Declared now so the transport choice stays open: SSE,
- * WebSocket, or polling each implement `TaskEventSource`, and `HermesWire` is the only place that
- * will know Hermes field names. No implementation exists before Gate H.
- */
-export interface HermesWire {
-  /** Opaque to everything outside the adapter. Defined at Gate H. */
-  toRequest(req: AgentChatRequest | AgentTaskRequest): unknown;
-  fromResponse(raw: unknown): Result<ResponseContract>;
-  /** Null for a frame that is not a task event (keep-alive, unknown type). */
-  fromTaskEvent(raw: unknown): TaskEvent | null;
-}
-
-export interface TaskEventSource {
-  /** Yields raw frames for `HermesWire.fromTaskEvent`. Auth material is defined at Gate H. */
-  open(url: string, auth: unknown, signal: AbortSignal): AsyncIterable<unknown>;
-}
+// The live adapter's seams (`HermesWire`, `TaskEventSource`) live in `backends/hermes/hermes-adapter.ts`
+// (task 21.10). They are the only place that knows Hermes field names.

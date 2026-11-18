@@ -4,8 +4,10 @@
  *
  * - `loadIndex` reads `index.json` (no AudioContext needed). A missing, malformed, or HTML-fallback
  *   index gives an empty index, so every line falls through to tier 3.
- * - `attach` builds the voice bus: `source -> fade -> voiceBus -> analyser -> destination`. The
- *   analyser sits only on this path, so synthesised chirps never reach the mouth.
+ * - `attach` builds the voice path: `source -> fade -> analyser -> destination` (the speech bus of
+ *   `mix-bus.ts`). The fade node starts at the line's index gain (`gainDb`, task 27.3), which brings
+ *   every line to the same loudness. The analyser sits only on this path, so synthesised chirps never
+ *   reach the mouth, and it sits before the speech bus, so the mouth ignores the mix levels.
  * - `preload` decodes the greeting and confirm lines and pins them. Every other line is decoded on
  *   first use into a 12-buffer LRU. A file that is missing or fails to decode is remembered as
  *   failed, so the caller falls back to tier 3 without retrying every time.
@@ -15,7 +17,7 @@ import { assetUrl } from '../config/asset-url.js';
 import { SPEECH_OUTPUT } from '../config/constants.js';
 import { LruCache } from '../domain/speech/lru-cache.js';
 import { rmsOf } from '../domain/speech/rms.js';
-import { emptyVoiceIndex, parseVoiceIndex } from '../domain/speech/voice-index.js';
+import { dbToGain, emptyVoiceIndex, parseVoiceIndex } from '../domain/speech/voice-index.js';
 import type { VoiceIndex, VoiceIndexEntry } from '../domain/speech/voice-index.js';
 import type { Logger } from '../app/logger.js';
 
@@ -48,7 +50,6 @@ export class VoicePlayer {
   private indexBase = '';
   private indexPromise: Promise<VoiceIndex> | undefined;
   private ctx: BaseAudioContext | undefined;
-  private bus: GainNode | undefined;
   private analyser: AnalyserNode | undefined;
   private current: { stop(): void } | undefined;
 
@@ -79,18 +80,14 @@ export class VoicePlayer {
     return this.indexPromise;
   }
 
-  /** Build the voice bus on `ctx`, ending at `destination`. Call once, after the context exists. */
+  /** Build the voice path on `ctx`, ending at `destination`. Call once, after the context exists. */
   attach(ctx: BaseAudioContext, destination: AudioNode): void {
     if (this.ctx !== undefined) return;
     this.ctx = ctx;
-    const bus = ctx.createGain();
-    bus.gain.value = SPEECH_OUTPUT.voiceGain;
     const analyser = ctx.createAnalyser();
     analyser.fftSize = SPEECH_OUTPUT.analyserFftSize;
     analyser.smoothingTimeConstant = 0;
-    bus.connect(analyser);
     analyser.connect(destination);
-    this.bus = bus;
     this.analyser = analyser;
   }
 
@@ -129,15 +126,17 @@ export class VoicePlayer {
    */
   play(id: string, onEnded: () => void): VoicePlayback | undefined {
     const ctx = this.ctx;
-    const bus = this.bus;
+    const input = this.analyser;
     const buffer = this.peekBuffer(id);
-    if (ctx === undefined || bus === undefined || buffer === undefined) return undefined;
+    if (ctx === undefined || input === undefined || buffer === undefined) return undefined;
     this.stop();
     const source = ctx.createBufferSource();
     const fade = ctx.createGain();
+    const level = dbToGain(this.voiceIndex.byId.get(id)?.gainDb ?? 0);
+    fade.gain.value = level;
     source.buffer = buffer;
     source.connect(fade);
-    fade.connect(bus);
+    fade.connect(input);
     let ended = false;
     const release = (): void => {
       if (ended) return;
@@ -152,7 +151,7 @@ export class VoicePlayer {
       stop: (): void => {
         if (ended) return;
         const now = ctx.currentTime;
-        fade.gain.setValueAtTime(1, now);
+        fade.gain.setValueAtTime(level, now);
         fade.gain.linearRampToValueAtTime(0, now + SPEECH_OUTPUT.stopFadeS);
         source.onended = null;
         try {
@@ -187,9 +186,7 @@ export class VoicePlayer {
 
   dispose(): void {
     this.stop();
-    this.bus?.disconnect();
     this.analyser?.disconnect();
-    this.bus = undefined;
     this.analyser = undefined;
     this.ctx = undefined;
     this.pinned.clear();

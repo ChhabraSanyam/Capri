@@ -9,7 +9,7 @@
  *   from `BackendError.message`, which is already sanitised, and never include a URL or credential.
  */
 import type { Integration } from '../../app/events.js';
-import type { BackendSettingName, ConnectionState, Observable, Result } from '../../backends/types.js';
+import type { BackendErrorKind, BackendSettingName, ConnectionState, Observable, Result } from '../../backends/types.js';
 import type { ModeState } from './mode-resolver.js';
 
 export type IndicatorState = 'ok' | 'pending' | 'error' | 'off';
@@ -66,7 +66,8 @@ export interface EntryModeBanner {
 
 export function describeEntryMode(state: ModeState): EntryModeBanner {
   if (state.mode === 'live') {
-    return { title: 'Live Mode', detail: 'Capri is connected to your own Home Assistant.' };
+    // Saved settings, not a proven connection: "Test connections" reports whether it answers.
+    return { title: 'Live Mode', detail: 'Capri is set up to use your own Home Assistant. Test connections checks that it answers.' };
   }
   const base =
     'Three virtual bulbs appear in your room. Nothing is sent to Home Assistant or any other server. No setup needed.';
@@ -90,6 +91,8 @@ export interface ConnectionTestEntry {
   line: string;
   /** Present on failure when the error names a setting. */
   setting?: BackendSettingName;
+  /** Present on failure when the backend returned an error (not when it threw). */
+  kind?: BackendErrorKind;
 }
 
 export type ConnectionTestReport = ConnectionTestEntry[];
@@ -126,6 +129,7 @@ export async function runConnectionTests(
           label,
           ok: false,
           line: `${label}: ${result.error.message}`,
+          kind: result.error.kind,
         };
         if (result.error.setting !== undefined) entry.setting = result.error.setting;
         return entry;

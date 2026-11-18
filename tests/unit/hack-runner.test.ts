@@ -217,12 +217,13 @@ describe('Persona.say without gestures', () => {
     delivered.length = 0;
     persona.say({ kind: 'call', state: 'success', subject }, { gestures: false });
     expect(delivered.length).toBeGreaterThan(0);
-    expect(delivered.every((l) => l.gesture === undefined)).toBe(true);
+    // `none`: the speech output starts no gesture, so the sequence's celebrate is not cut short.
+    expect(delivered.every((l) => l.gesture === 'none')).toBe(true);
     expect(delivered.some((l) => l.emotion === 'happy')).toBe(true);
 
     delivered.length = 0;
     persona.say({ kind: 'call', state: 'failure', subject, error: 'Nope.' }, { gestures: false });
     expect(delivered.some((l) => l.claims === 'fail' && l.text.includes('Nope.'))).toBe(true);
-    expect(delivered.every((l) => l.gesture === undefined)).toBe(true);
+    expect(delivered.every((l) => l.gesture === 'none')).toBe(true);
   });
 });

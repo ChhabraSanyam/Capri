@@ -20,7 +20,8 @@ import { FrameStats, formatFrameStats } from '../domain/frame-stats.js';
 
 const CANVAS_WIDTH_PX = 512;
 const CANVAS_HEIGHT_PX = 128;
-const FONT = 'bold 34px monospace';
+// 30 px so the longest line ("worst 131.9 ms / budget 13.9") fits the 512 px canvas (34 px clipped it).
+const FONT = 'bold 30px monospace';
 const OK_COLOR = '#7dffb0';
 const OVER_BUDGET_COLOR = '#ff8a7d';
 

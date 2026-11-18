@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createSeededRng } from '../../src/app/rng.js';
 import { SfxSynth } from '../../src/audio/sfx-synth.js';
-import { HACK_SFX } from '../../src/config/constants.js';
+import { AUDIO_MIX, HACK_SFX } from '../../src/config/constants.js';
 import { cuesForPhase, cuesForResult, playPhaseSfx, playResultSfx } from '../../src/domain/actions/hack-sfx.js';
 import type { HackSfxPhase, SfxPort } from '../../src/domain/actions/hack-sfx.js';
 import { SFX_CUE_IDS, SFX_PLANS } from '../../src/domain/speech/sfx-plan.js';
@@ -83,7 +83,8 @@ describe('hack sound cue plans', () => {
         expect(layer.toHz).toBeGreaterThan(0);
       }
     }
-    expect(HACK_SFX.gain).toBeLessThan(0.3);
+    expect(AUDIO_MIX.sfxGain).toBeGreaterThan(0);
+    expect(AUDIO_MIX.sfxGain).toBeLessThanOrEqual(1);
   });
 });
 
@@ -109,13 +110,19 @@ describe('hack sequence cue mapping', () => {
 });
 
 describe('SfxSynth', () => {
-  it('builds one source per layer and scales the bus to the quiet master gain', () => {
+  it('builds one source per layer at the requested cue level (the SFX bus sets the mix level)', () => {
     const { ctx, synth } = makeSynth();
     for (const id of SFX_CUE_IDS) expect(synth.play(id)).toBeDefined();
     const layers = SFX_CUE_IDS.reduce((n, id) => n + SFX_PLANS[id].layers.length, 0);
     expect(ctx.sources).toHaveLength(layers);
-    expect(ctx.buses[0]?.gain.value).toBeCloseTo(HACK_SFX.gain, 6);
+    expect(ctx.buses[0]?.gain.value).toBe(1);
     expect(ctx.noiseBuffers).toBe(1);
+  });
+
+  it('plays a ducked cue at the ducking factor', () => {
+    const { ctx, synth } = makeSynth();
+    synth.play('pulse', HACK_SFX.duckWhileSpeakingFactor);
+    expect(ctx.buses[0]?.gain.value).toBe(HACK_SFX.duckWhileSpeakingFactor);
   });
 
   it('frees the bus after every layer ended', () => {

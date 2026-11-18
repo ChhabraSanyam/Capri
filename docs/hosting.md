@@ -12,9 +12,10 @@ npm test -- --run
 npm run fetch:vosk      # downloads the 41 MB Vosk model into the git-ignored public/vosk/
 npm run build:lexicon   # builds public/vosk/lexicon.txt from that model
 vite build              # copies public/ into dist/
+npm run check           # eslint on src/domain, then the 22 smoke checks in tools/checks/ (reads src/, dist/, and the repo docs)
 ```
 
-Any failing step fails the build, and Vercel keeps serving the previous production deployment. Task 27.5 adds `npm run check` after `vite build`.
+The steps are chained with `&&`, so any failing step (including one failing smoke check) fails the build, and Vercel keeps serving the previous production deployment. `npm run check` runs last because its `dist/` checks need the fresh build. It prints one PASS or FAIL line per check in the build log.
 
 Build requirements:
 
@@ -22,6 +23,8 @@ Build requirements:
 - **`unzip` and `tar` on the build machine.** `fetch:vosk` and `build:lexicon` call them. Both are present on macOS. Their presence on the Vercel build image was not checked, so the first deploy (19.6) is the check.
 - **The build downloads from `alphacephei.com`.** If that host is down, the build fails and the previous deployment stays live.
 - **The voice library is committed.** `public/voice/` (the mp3 files and `index.json`) is in git and is never generated at build time. Only `public/vosk/` is generated.
+- **The smoke checks need only Node and `npm ci`.** `check:smoke` bundles `tools/checks/run-checks.ts` with `esbuild` (a direct dev dependency, pinned to the version vite uses, with its Linux binary in `package-lock.json`) into the git-ignored `.tmp/checks/`, then runs it with `node`. It reads files only: no network, no shell tools, no environment variables. Vercel installs dev dependencies with `npm ci` unless `NODE_ENV=production` is set for the install, so do not set that variable in the project settings.
+- **The smoke checks read committed files.** Vercel builds from the git checkout, so the files the Repository checks read must be committed: `README.md` and every file it links to, `docs/THIRD_PARTY.md`, `.env.example`, `voice/voice-manifest.txt`, `public/voice/`, and the VRM file. A file that exists only locally passes `npm run build:vercel` on this machine and fails on Vercel. The `.env` check finds no `.env` files on Vercel and passes, because Vercel project variables are not written to `.env` files.
 
 ## What ships in `dist/`
 
@@ -84,10 +87,10 @@ Served locally with the `vercel.json` rewrites and headers applied, in headless 
 - Not covered locally: Quest Browser itself, microphone capture into a Vosk recognizer, and the Hacking VFX. Task 19.6 repeats the CSP check on the deployed site.
 
 ## Hosted origin
-The hosted origin is `https://capri.sanyamchhabra.in` (no trailing slash, no path). Use this exact string in the README CORS snippets (tasks 25.12 and 27.8) and the submission files. It is deliberately not in `src/` or `vercel.json`. The Home Assistant `cors_allowed_origins` and the Hermes `API_SERVER_CORS_ORIGINS` entries must both list this origin.
+The hosted origin is `https://capri.sanyamchhabra.in` (no trailing slash, no path). Use this exact string in the README CORS snippets (tasks 25.12 and 27.8) and the submission files. It is deliberately not in `src/` or `vercel.json`. The Home Assistant `cors_allowed_origins` and the Hermes `API_SERVER_CORS_ORIGINS` entries must both list this origin. The user-facing steps (HTTPS options, CORS for both backends, the `/config/www` same-origin option, and troubleshooting) are in the README section "Live Mode". The `/config/www` option does not get the headers described above, because Vercel does not serve it.
 
 ## Deploying to Vercel (task 19.6)
-Status when this section was written: the repo is a git repository on branch `main` with **no commits and no remote**, the Vercel CLI is **not installed**, and `capri.sanyamchhabra.in` has no DNS record yet. The domain's nameservers are Cloudflare's (`max.ns.cloudflare.com`, `lilith.ns.cloudflare.com`). `npm run build:vercel` passes locally (typecheck, tests, Vosk fetch, lexicon, `vite build`).
+Status when this section was written: the repo is a git repository on branch `main` with **no commits and no remote**, the Vercel CLI is **not installed**, and `capri.sanyamchhabra.in` has no DNS record yet. The domain's nameservers are Cloudflare's (`max.ns.cloudflare.com`, `lilith.ns.cloudflare.com`). `npm run build:vercel` passes locally (typecheck, tests, Vosk fetch, lexicon, `vite build`, and `npm run check` with 22 of 22 smoke checks passing, task 27.5).
 
 ### 1. Pick one deploy route
 **A. Git integration (recommended: every push to `main` redeploys production).**
@@ -126,6 +129,7 @@ Project Settings, General, Node.js Version: **22.x**, then Save. The build runs 
 ### 4. What to expect from the first build
 - The Vosk fetch runs `unzip` and `tar` on Vercel's build image. If the build log shows `unzip: command not found` or similar from `npm run fetch:vosk`, report it. The cheapest fixes are, in order: (1) change `tools/fetch-vosk-model.ts` to use a Node-only extractor, (2) commit the extracted model (41 MB, so it needs Git LFS or a release asset).
 - If `alphacephei.com` is unreachable, the build fails and the previous deployment stays live.
+- If the log ends with `N of 22 checks passed.`, a smoke check failed. The `FAIL` line above it names the check and lists each problem. Fix it, or commit the missing file, and push again. Run `npm run check` locally after `npm run build` to reproduce.
 - The first deployed page gets the CSP check in "Post-deploy smoke check" below. Relax only the directive that blocks something, and record why in this file.
 
 ### 5. Post-deploy smoke check

@@ -219,7 +219,7 @@ All shapes in this section are **[source]**. The user ran no runs call.
 
 - Body: `{object: "hermes.run", run_id, status, created_at, updated_at, session_id, model, last_event, ...}`. Terminal records add `completed`, `partial`, `interrupted`, and either `output`, `usage`, `runtime` (completed) or `error` (failed). While waiting, `approval` holds the pending `approval.request` event.
 - `status` values: `queued`, `running`, `waiting_for_approval`, `stopping`, `completed`, `failed`, `cancelled`, `interrupted`. Terminal set: `completed`, `failed`, `cancelled`, `interrupted` ([canary `api_server_run_idempotency.py` L19](https://github.com/NousResearch/hermes-agent/blob/666f313d1d3abd8077291ba464cf0a10f1a6157f/gateway/platforms/api_server_run_idempotency.py#L19)).
-- Capri may call this once to settle a task whose event stream dropped before a terminal event. It is not a polling loop.
+- Capri uses this as a fallback only (decision for task 21.10): when a dropped event stream cannot be reopened with `?last_seq=` after a bounded number of retries, Capri polls this record at `TIER2.pollIntervalMs`, at most `TIER2.pollMaxAttempts` times, until it reaches a terminal status.
 
 **Event stream: `GET /v1/runs/{run_id}/events`** ([L1064 to L1153](https://github.com/NousResearch/hermes-agent/blob/666f313d1d3abd8077291ba464cf0a10f1a6157f/gateway/platforms/api_server_runs.py#L1064-L1153))
 
@@ -253,7 +253,7 @@ Unknown `event` names are ignored. Terminal events are exactly `run.completed`, 
 - Timeout: an unanswered approval is denied after `approvals.timeout`, default 300 s ([`tools/approval_context.py` L240 to L250](https://github.com/NousResearch/hermes-agent/blob/666f313d1d3abd8077291ba464cf0a10f1a6157f/tools/approval_context.py#L240-L250)). "Silence is not consent."
 - **Unconfirmed:** whether the user's approval policy actually raises approval requests for API runs, or denies them outright (section 7, `unattended_mode`). The buttons only appear if an `approval.request` event arrives.
 
-`POST /v1/runs/{run_id}/stop` and `/steer` exist but Capri has no UI for them, so 21.10 does not implement them.
+`POST /v1/runs/{run_id}/stop` (advertised as `run_stop`, section C) is used for the Task_Panel's Cancel button (decision for task 21.10). Capri treats any 2xx as success and does not read the body, whose shape is not recorded here. `/steer` is not used.
 
 ### F. CORS (preflight results)
 

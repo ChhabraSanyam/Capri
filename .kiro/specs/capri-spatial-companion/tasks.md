@@ -585,7 +585,7 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
   - Run `npm run typecheck` and `npm test -- --run`, fix any failures, then continue to the next task without waiting for a reply
   - _Requirements: 7.6, 7.12_
 
-- [ ] 19. Step 8a [MVD]: one scripted Hermes task (no live Hermes code)
+- [x] 19. Step 8a [MVD]: one scripted Hermes task (no live Hermes code)
   - [x] 19.1 Add the agent interface and the scripted mock task
     - Extend `src/backends/types.ts` with `AgentBackend`, `TaskHandle`, `TaskEvent`, `AgentTaskRequest`
     - Create `src/backends/mock/mock-agent.ts`: scripted "evening routine" task with progress events at fixed offsets (0%, 25%, 60%, 100%) that completes and reports. Add no Hermes endpoint, header, field name, or example call
@@ -614,7 +614,7 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
     - Run `npm run build:vercel` and `vite preview` locally to confirm the build works from the root
     - _Requirements: 30.1, 30.2, 30.3, 30.4, 30.8, 30.9, 30.11, 30.12, 30.13, 30.15_
 
-  - [-] 19.6 Deploy to Vercel and attach the custom subdomain
+  - [x] 19.6 Deploy to Vercel and attach the custom subdomain
     - Ask the user for their custom subdomain (one question, for example `capri.<their-domain>`). Never hard-code it in source. It appears only in the README CORS snippets and the submission files
     - Deploy through the Vercel Git integration (the user imports the repository in Vercel, and pushes to the default branch build production) or the Vercel CLI (`vercel login`, `vercel link`, `vercel --prod`), whichever the user prefers. If the subdomain has not arrived yet, deploy to the project's default `*.vercel.app` URL and continue with the next task
     - Ask the user to add the subdomain in the Vercel project (Settings, Domains), add the `CNAME` record that Vercel displays at their DNS provider, and verify the domain in Vercel until it shows as verified (assumption A20). Vercel then issues HTTPS automatically
@@ -630,23 +630,23 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
   - Run `npm run typecheck` and `npm test -- --run`, fix any failures, then continue to the next task without waiting for a reply
   - _Requirements: 7.4, 7.6, 7.12_
 
-- [ ] 21. Step 8b [POST-MVD]: live Hermes and Tier 2 (Gate H: investigate, then ask)
-  - [ ] 21.1 Gate H, part 1: investigate the real Hermes integration surface
+- [x] 21. Step 8b [POST-MVD]: live Hermes and Tier 2 (Gate H: investigate, then ask)
+  - [x] 21.1 Gate H, part 1: investigate the real Hermes integration surface
     - Research the real Hermes agent: endpoint shape, authentication, request and response format, streaming behaviour (SSE, WebSocket, or polling), and CORS support. Use web search and the user's repository or docs where available
     - Write findings to a draft `docs/hermes-integration.md`, marking every unknown as unknown. Write no `Hermes_Client` code
     - _Requirements: 19.1_
 
-  - [ ] 21.2 Gate H, part 2: ask the user for the Hermes details and WAIT
+  - [x] 21.2 Gate H, part 2: ask the user for the Hermes details and WAIT
     - Ask one item at a time: the Hermes endpoint, then the authentication method, then one working example call. Wait for each answer
     - Do not invent any endpoint, credential, header, or example call. If the user cannot supply them, keep the scripted task for the demo, report that live Hermes is cut, and stop this task group
     - _Requirements: 19.2, 19.3, 29.10_
 
-  - [ ] 21.3 Gate H, part 3: record the confirmed surface and check browser feasibility
+  - [x] 21.3 Gate H, part 3: record the confirmed surface and check browser feasibility
     - Update `docs/hermes-integration.md` with the confirmed endpoint shape, auth, request and response format, transport, and CORS findings
     - If the surface cannot be called from a browser because of CORS or authentication, report the constraint to the user and add no backend or bridge server
     - _Requirements: 19.4, 19.7, 19.12, 30.1_
 
-  - [ ] 21.4 Implement the contract, spatial context, and tier router
+  - [x] 21.4 Implement the contract, spatial context, and tier router
     - Create `src/domain/contract/response-contract.ts` (`validateContract` total and never throwing, unknown emotion to `neutral`, unknown animation to `none`, `gateAction`), `src/domain/context/spatial-context.ts` (`buildSpatialContext` with exactly five keys, 1 cm rounding, caps of 16 devices and 12 surfaces, 4 KB bound), and `tier-router.ts` (Tier 2 only when connected, fallback with a Hermes-unavailable line on every failure)
     - Add a canned `chat` reply to `MockAgent`
     - _Requirements: 17.3, 17.11, 20.1, 20.2, 20.3, 20.4, 20.5, 20.6, 20.7, 20.8, 20.9_
@@ -663,7 +663,7 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
     - **Property 42: Tier routing and fallback**
     - **Validates: Requirements 17.11, 20.1, 20.8, 20.9**
 
-  - [ ] 21.8 Implement the endpoint URL guard
+  - [x] 21.8 Implement the endpoint URL guard
     - Create `src/domain/settings/url-guard.ts` accepting only `https://` or `wss://` URLs for Home Assistant and Hermes, refusing with an error that names the setting and never includes the value
     - _Requirements: 19.11, 25.9, 26.1, 26.7_
 
@@ -671,7 +671,7 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
     - **Property 34: Endpoint URL guard**
     - **Validates: Requirements 19.11, 25.9, 26.1**
 
-  - [ ] 21.10 Implement the live Hermes adapter from the confirmed surface only
+  - [x] 21.10 Implement the live Hermes adapter from the confirmed surface only
     - Create `src/backends/hermes/hermes-adapter.ts` (`HermesWire`, `TaskEventSource`), `live-hermes-adapter.ts`, and the single transport confirmed in 21.3 (`SseSource` using `fetch` streaming if headers are needed, `WebSocketSource`, or `PollingSource`)
     - Implement only fields recorded in `docs/hermes-integration.md`. Enforce the URL guard and sanitise errors. Add fake transports for tests
     - _Requirements: 19.7, 19.11, 20.2, 24.6, 29.7_
@@ -680,7 +680,7 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
     - **Property 43: Task model monotonicity and transport conformance**
     - **Validates: Requirements 19.6, 19.7**
 
-  - [ ] 21.12 Wire Tier 2 into the app
+  - [x] 21.12 Wire Tier 2 into the app
     - Route Hand_Keyboard free-form text that parses to `unknown` through `TierRouter` when Hermes is connected, send `buildSpatialContext` with each request, play the returned emotion and animation and present the speech text as a Speech_Bubble plus chirp (tier 3, because `speechSynthesis` is missing on Quest Browser and `ttsUsable` is false, with no synthetic mouth flap), and gate actions through `gateAction`
     - Swap `MockAgent` for `LiveHermesAdapter` when `resolveMode` yields `agent: 'live'`
     - _Requirements: 16.10, 16.13, 19.5, 19.6, 19.9, 19.10, 20.1, 20.3, 20.5, 20.6, 20.7, 20.8, 20.9_
@@ -692,8 +692,8 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
   - Run `npm run typecheck` and `npm test -- --run`, fix any failures, then continue to the next task without waiting for a reply
   - _Requirements: 7.6, 7.12_
 
-- [ ] 23. Step 9 [POST-MVD]: personality and aliveness
-  - [ ] 23.1 Implement the idle scheduler
+- [x] 23. Step 9 [POST-MVD]: personality and aliveness
+  - [x] 23.1 Implement the idle scheduler
     - Create pure `src/domain/idle-scheduler.ts` choosing idle behaviours (stretch, fidget, glance at a Surface or marker) with random gaps in [8 s, 18 s], reset by any command, and an ignored-reaction plus tease after 60 s without input, limited to playful gestures while a Hermes task runs
     - _Requirements: 19.8, 21.1, 21.2, 21.3_
 
@@ -701,11 +701,11 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
     - **Property 7: Idle cadence and ignored reaction**
     - **Validates: Requirements 21.2, 21.3**
 
-  - [ ] 23.3 Add the personality gestures
+  - [x] 23.3 Add the personality gestures
     - Add `gestures/stretch.ts`, `glance.ts`, `ignored.ts`, and `tease.ts`, and extend `fidget.ts`
     - _Requirements: 21.1, 21.3, 21.4_
 
-  - [ ] 23.4 Wire personality into the app
+  - [x] 23.4 Wire personality into the app
     - Run the idle scheduler in `app.tick`, glance at real Surfaces and markers, deliver the ignored tease, apply the repeated-toggle tease through `ActionMemory`, play celebrate with a `celebrate` line on success and shrug on failure
     - Add any missing tease, ignored, and celebrate lines to `voice/voice-manifest.txt` and regenerate the Voice_Library
     - _Requirements: 17.10, 21.1, 21.2, 21.3, 21.4, 21.5, 21.6, 21.7_
@@ -717,13 +717,13 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
   - Run `npm run typecheck` and `npm test -- --run`, fix any failures, then continue to the next task without waiting for a reply
   - _Requirements: 7.6, 7.12_
 
-- [ ] 25. Step 10b [POST-MVD]: setup page, live Home Assistant, CORS docs
-  - [ ] 25.1 Implement secret redaction and credential types
+- [x] 25. Step 10b [POST-MVD]: setup page, live Home Assistant, CORS docs
+  - [x] 25.1 Implement secret redaction and credential types
     - Create `src/domain/settings/redact.ts` (`SecretRegistry`, `redact(text)` replacing registered secrets of length 4 or more with `[redacted]`) and `credentials.ts` (types, trimming, line-break stripping)
     - Make `app/logger.ts` the only logging path and pass every error-to-UI path through `redact`
     - _Requirements: 24.10, 29.7_
 
-  - [ ] 25.2 Implement the credential store
+  - [x] 25.2 Implement the credential store
     - Create `src/persistence/credential-store.ts` (`capri.v1.credentials` in `localStorage`, or `sessionStorage` when "Remember" is off) with `forget()` removing every key and triggering mode re-resolution to Mock
     - _Requirements: 24.5, 24.8, 24.9_
 
@@ -735,7 +735,7 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
     - **Property 38: Mode resolution and credentials**
     - **Validates: Requirements 23.1, 24.5, 24.9, 27.4**
 
-  - [ ] 25.5 Implement the Home Assistant client
+  - [x] 25.5 Implement the Home Assistant client
     - Create `src/backends/ha/ha-requests.ts` (pure: `light.` prefix only, `GET /api/states` filtered to `light.`, `POST /api/services/light/turn_on` and `turn_off`, `brightness_pct` clamped 0 to 100, `rgb_color` clamped 0 to 255, bearer header), `ha-errors.ts` (401 `auth`, 404 `not_found`, 5xx `server`, `TypeError` `network_or_cors`, errors built only from enums and fixed text), and `ha-client.ts` (URL guard, 10 s `AbortController` timeout, confirm via `GET /api/states/<id>` when the target is absent from the response, `unsupported_color` from `supported_color_modes`)
     - Add no hard-coded URL, token, or entity ID
     - _Requirements: 25.1, 25.2, 25.3, 25.4, 25.5, 25.6, 25.7, 25.8, 25.9, 25.10, 25.11, 26.6_
@@ -752,13 +752,13 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
     - Run one suite against `MockHome` and `HaClient` (mocked `fetch`), and against `MockAgent` and `LiveHermesAdapter` (fake transports)
     - _Requirements: 23.8_
 
-  - [ ] 25.9 Build the full Setup_Page
+  - [x] 25.9 Build the full Setup_Page
     - Update `index.html` and `src/ui/setup-page/`: Home Assistant URL, masked long-lived token, Hermes URL, masked Hermes key, Live mode switch, Remember switch, paste support, Quest on-screen keyboard compatibility, Enter AR, Test connections, Forget credentials, the Mic_Setup_Step from task 3.3 ("Enable microphone", granted, denied, or not requested shown on the page, releasing the stream at once), and the Model_Preload progress indicator from task 13.21 (load and cache the Vosk model before Enter AR)
     - Keep Enter AR enabled without the microphone or the model, and show a hint when the microphone is not granted (Quick_Actions and Hand_Keyboard are the fallback). Never prompt for the microphone inside AR
     - Show errors that name the setting and never print its value
     - _Requirements: 15.15, 15.16, 15.19, 15.20, 24.1, 24.2, 24.3, 24.4, 24.8, 24.11, 24.14, 26.7, 27.4, 27.6_
 
-  - [ ] 25.10 Wire Live Mode
+  - [x] 25.10 Wire Live Mode
     - Resolve the mode from stored credentials, construct `HaClient` for `home: 'live'`, feed `connection:changed` to the chips, build the teach list from live `listLights()`, run connection tests, and deliver in-character failure lines with the CORS troubleshooting hint
     - Confirm credentials go only to their own configured origin
     - _Requirements: 24.6, 24.7, 25.1, 25.8, 26.6, 27.1, 27.2, 27.4, 27.5, 27.6_
@@ -767,7 +767,7 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
     - **Property 37: Network egress rules**
     - **Validates: Requirements 17.1, 23.6, 24.6, 24.7**
 
-  - [ ] 25.12 Write the Live Mode sections of the README
+  - [x] 25.12 Write the Live Mode sections of the README
     - Create `README.md` with: a plain statement that credentials are stored only on the device, sent only to the endpoints the user configured, and never logged; Home Assistant HTTPS via Nabu Casa, Tailscale HTTPS, and a reverse proxy; the Home Assistant CORS setup with both the UI path (HTTP server, "CORS allowed origins", Home Assistant 2026.8 and later) and the exact `http:` `cors_allowed_origins` YAML snippet for older versions, each using the custom subdomain origin (`https://<custom-subdomain>`) and never another host; the Hermes CORS configuration taken from `docs/hermes-integration.md` (or a clear note that live Hermes was not confirmed); the option of serving the built app from Home Assistant's `/config/www` directory (served at `/local/`) for same-origin use; a one-line note that the dedicated custom subdomain keeps `localStorage` isolated to this app (leaving Remember off is still an option); and how to configure Live Mode
     - _Requirements: 24.13, 26.2, 26.3, 26.4, 26.5, 30.13, 31.8_
 
@@ -778,36 +778,36 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
   - Run `npm run typecheck` and `npm test -- --run`, fix any failures, then continue to the next task without waiting for a reply
   - _Requirements: 7.6, 7.12_
 
-- [ ] 27. Step 11 [POST-MVD]: polish and submission readiness
-  - [ ] 27.1 Add the loading screen
+- [x] 27. Step 11 [POST-MVD]: polish and submission readiness
+  - [x] 27.1 Add the loading screen
     - Create `src/ui/loading.ts` in-scene panel shown while the VRM, voice index, and Vosk model load, with a failure message if loading fails
     - _Requirements: 28.1_
 
-  - [ ] 27.2 Add pause and resume
+  - [x] 27.2 Add pause and resume
     - Create `src/ui/pause.ts`: pause freezes the animator clock, stops the mic, and suspends audio contexts. Resume restores them and announces expired timers. React to session `visibilitychange`
     - _Requirements: 28.2_
 
-  - [ ] 27.3 Tune the audio mix
+  - [x] 27.3 Tune the audio mix
     - Add per-bus gain constants for speech, SFX, and chirp in `config/constants.ts`, route each through its own `GainNode`, and keep the defaults unless the user comments on the balance in a hand-off reply
     - _Requirements: 28.4_
 
-  - [ ] 27.4 Add the smoke checks and the check script
+  - [x] 27.4 Add the smoke checks and the check script
     - Create `tools/checks/*` and `npm run check`: no `three` or DOM import in `domain/`, no `EffectComposer`, material allow-list, no `http://` in `dist`, no hard-coded Home Assistant or Hermes host, no `.env` value in `dist`, a single `.vrm` path in `config/`, valid voice manifest, README required sections present, `.env.example` present, third-party file fields present, `tools/` absent from the bundle, and no controller-only input code
     - _Requirements: 8.2, 8.3, 10.5, 16.7, 18.10, 19.3, 24.12, 30.8_
 
-  - [ ] 27.5 Add the smoke checks to the Vercel build
+  - [x] 27.5 Add the smoke checks to the Vercel build
     - Extend the `build:vercel` script in `package.json` (created in task 19.5) so `npm run check` runs after `vite build`, and re-check that `vercel.json` still points at `dist`. A failing check fails the Vercel build, so the previous production deployment stays live
     - _Requirements: 30.3, 30.4, 30.9_
 
-  - [ ] 27.6 Write the performance note and comfort check
+  - [x] 27.6 Write the performance note and comfort check
     - Create `docs/performance-note.md` with the frame-time values shown by the `?perf=1` overlay (idle, during VFX, over a 10-minute session) and any levers applied, and `docs/comfort-check.md` covering Avatar distance range, panel placement, and seated reach. Also measure the frame time once with `featureFlags.depthOcclusion` on, and leave the flag on only if the Frame_Budget holds. If a value is needed that the developer cannot see, ask the user once for the overlay reading (a performance measurement required by Requirement 29.5, not a time log)
     - _Requirements: 28.3, 29.3, 29.5_
 
-  - [ ] 27.7 Write the Demo_Path script
+  - [x] 27.7 Write the Demo_Path script
     - Create `docs/demo-path.md`: a 2-minute sequence showing passthrough presence, pointing, a voice command, the Hacking_VFX, a quip, and one Hermes task, with the exact words to say and hand actions
     - _Requirements: 8.6, 28.5, 28.6, 28.8_
 
-  - [ ] 27.8 Complete the README
+  - [x] 27.8 Complete the README
     - Add to `README.md`: running Mock Mode from the hosted custom-subdomain link with no setup, deploying with the Vercel Git integration or CLI and attaching the custom subdomain with the `CNAME` record Vercel displays, loading the dev server in Quest Browser over the local network and through `adb reverse`, Cloudflare Tunnel or ngrok as a last resort only, the Demo_Path summary, and a third-party assets list with licenses including the placeholder VRM
     - _Requirements: 10.6, 28.8, 30.3, 30.5, 30.6, 30.7, 31.7, 31.9_
 
@@ -823,16 +823,16 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
   - Run `npm run typecheck` and `npm test -- --run`, fix any failures, then continue to the next task without waiting for a reply
   - _Requirements: 7.6, 7.12_
 
-- [ ] 29. Submission deliverables [POST-MVD]
-  - [ ] 29.1 Write the submission text
+- [x] 29. Submission deliverables [POST-MVD]
+  - [x] 29.1 Write the submission text
     - Create `docs/submission-text.md` stating Track Productivity, Division New Experience, and the target of the "Best Agentic Interaction" special award, describing the Avatar, her spatial awareness, and her Persona as the product with Home Assistant and Hermes as plug-in backends
     - _Requirements: 31.3, 31.5, 31.6_
 
-  - [ ] 29.2 Write the demo video plan
+  - [x] 29.2 Write the demo video plan
     - Create `docs/demo-video-plan.md`: a shot list for a video shorter than 3 minutes showing Mock Mode from the hosted link, hands-only interaction, the signature moment (point, "turn that off", hacking effect, quip), and one Hermes task, ordered so the final video stays under 3 minutes, with a recording method for Quest
     - _Requirements: 31.2, 31.4_
 
-  - [ ] 29.3 Add the submission checklist and finalise links
+  - [x] 29.3 Add the submission checklist and finalise links
     - Create `docs/submission-checklist.md` listing the hosted playable link, the demo video, the submission text, the README and `vercel.json`, the Demo_Path, and the deadline (Nov 18, 2026, 12:00pm PST), with a placeholder the user fills with the hosted URL
     - Add the hosted link to `README.md` and `docs/submission-text.md` once the user supplies it
     - _Requirements: 28.7, 28.8, 31.1, 31.10_

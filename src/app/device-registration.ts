@@ -53,7 +53,10 @@ export interface DeviceRegistrationDeps {
   readonly world: World;
   readonly events: EventBus<AppEvents>;
   readonly logger: Logger;
-  /** The light backend (`MockHome` for now). Only `listLights` is used here. */
+  /**
+   * The light backend: the session's `HomeSwitch`, so the teach list comes from the mock home in
+   * Mock Mode and from Home Assistant's `listLights()` in Live Mode. Only `listLights` is used here.
+   */
   readonly backend: Pick<SmartHomeBackend, 'listLights'>;
   /** Anchor or localStorage store, from `createDeviceStore`. */
   readonly store: DeviceStore;
@@ -93,6 +96,7 @@ export class DeviceRegistration {
   /** True while the registry is changed by a load or a restore, which must not be saved again. */
   private quiet = false;
   private wasInSession = false;
+  private reloadGeneration = 0;
   private disposed = false;
 
   constructor(private readonly deps: DeviceRegistrationDeps) {
@@ -252,6 +256,26 @@ export class DeviceRegistration {
     this.markers = [];
     this.targets = [];
     this.markerById.clear();
+  }
+
+  /**
+   * Replace the registry with the stored devices of the current home, without saving (task 25.10).
+   * Called after a mode switch, outside a session: the store is home-scoped, so the other home's
+   * lights (and the mock bulbs, which are never stored) leave the room. An empty list clears it.
+   * A later call wins over an earlier one that is still reading.
+   */
+  async reloadStored(): Promise<void> {
+    this.reloadGeneration += 1;
+    const mine = this.reloadGeneration;
+    this.flow.cancel();
+    try {
+      const records = await this.deps.store.load();
+      if (this.disposed || mine !== this.reloadGeneration) return;
+      this.applyQuietly(records);
+      this.deps.logger.info(`registry: ${records.length} stored ${records.length === 1 ? 'device' : 'devices'} for this mode`);
+    } catch (cause) {
+      this.deps.logger.warn('registry: could not read the stored devices', cause);
+    }
   }
 
   // ---- Persistence ---------------------------------------------------------------------------

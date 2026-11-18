@@ -47,17 +47,19 @@ export type AvatarLoadResult =
 
 export interface AvatarLoaderDeps {
   /** Fetch and parse the file. Defaults to a GLTFLoader with `VRMLoaderPlugin`. Tests inject this. */
-  readonly loadGltf?: (url: string) => Promise<GLTF>;
+  readonly loadGltf?: (url: string, onProgress?: (event: ProgressEvent) => void) => Promise<GLTF>;
+  /** Download progress of the file (task 27.1). `totalBytes` is undefined when the server sent no length. */
+  readonly onProgress?: (loadedBytes: number, totalBytes: number | undefined) => void;
   /** Millisecond clock. Defaults to `performance.now`. */
   readonly now?: () => number;
   /** Defaults to `AVATAR_TARGET_HEIGHT_M`. */
   readonly targetHeightM?: number;
 }
 
-function loadGltfWithVrm(url: string): Promise<GLTF> {
+function loadGltfWithVrm(url: string, onProgress?: (event: ProgressEvent) => void): Promise<GLTF> {
   const loader = new GLTFLoader();
   loader.register((parser) => new VRMLoaderPlugin(parser));
-  return loader.loadAsync(url);
+  return loader.loadAsync(url, onProgress);
 }
 
 /** True when `userData.vrm` holds a VRM instance (what `VRMLoaderPlugin` stores). */
@@ -108,7 +110,13 @@ export async function loadAvatar(url: string = AVATAR_VRM_URL, deps: AvatarLoade
 
   let gltf: GLTF;
   try {
-    gltf = await loadGltf(url);
+    const report = deps.onProgress;
+    gltf = await loadGltf(
+      url,
+      report === undefined
+        ? undefined
+        : (event) => report(event.loaded, event.lengthComputable && event.total > 0 ? event.total : undefined),
+    );
   } catch (cause) {
     return { ok: false, error: makeAvatarLoadError(classifyLoadFailure(cause), url, cause) };
   }

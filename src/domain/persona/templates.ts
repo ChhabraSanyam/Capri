@@ -73,6 +73,7 @@ export type BanterKind =
   | 'ask_repeat'
   | 'pending_light'
   | 'pending_task'
+  | 'approval_requested'
   | 'success_light'
   | 'success_task'
   | 'failure'
@@ -279,6 +280,17 @@ export const BANTER_CONTEXTS: Readonly<Record<BanterKind, BanterContext>> = {
     templates: make('pending_task', 'ack', ['Working on it.', 'On it. Give me a moment.', 'Hold on, digging in.']),
     gesture: 'none',
     emotion: 'neutral',
+  },
+  // A running Hermes task asks the user to approve one operation (task 21.12). Capri only asks: the
+  // answer is the user's, so these lines never say anything was allowed or done.
+  approval_requested: {
+    templates: make('approval_requested', 'neutral', [
+      'Hermes wants your OK on something. Check the panel.',
+      'Quick question from Hermes. Approve or deny it on the panel.',
+      'Hermes is asking permission. Your call, on the panel.',
+    ]),
+    gesture: 'none',
+    emotion: 'surprised',
   },
   // Lead lines of a result. The dynamic status line that follows carries the facts, so these have
   // no fallback templates: without library lines only the status line is shown.

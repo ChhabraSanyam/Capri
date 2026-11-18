@@ -496,11 +496,43 @@ export const SPEECH_OUTPUT = {
   lruCapacity: 12,
   preloadCategories: ['greeting', 'confirm'],
   analyserFftSize: 512,
-  voiceGain: 1,
-  sfxGain: 0.3,
   stopFadeS: 0.015,
   bubble: { minHoldS: 1.6, maxHoldS: 8, tailS: 0.6, readBaseS: 0.9, readPerCharS: 0.045 },
   chirp: { minNotes: 2, maxNotes: 7, noteS: 0.055, gapS: 0.03, minHz: 520, maxHz: 1040, questionLift: 1.25 },
+} as const;
+
+/**
+ * Audio mix (task 27.3, Requirement 28.4). Every sound goes through one of three bus `GainNode`s,
+ * then a gentle limiter, then the master volume:
+ *
+ *   library line -> line gain (index `gainDb`) -> analyser -> speech bus -+
+ *   chirp notes  ----------------------------------------> chirp bus  ---+-> limiter -> master -> out
+ *   hack cues    -> cue level (1, or ducked while speaking) -> sfx bus  -+
+ *
+ * The analyser sits before the speech bus, so the mouth does not follow the speech or master level.
+ * Levels are linear gains. They were set by rendering the real graph offline in Chromium and
+ * metering it with EBU R128 (`npm run audio:report`, see `tools/audio-mix/`). Voice lines are
+ * normalised to -16 LUFS by their index gain. Measured at the output with these values:
+ * - voice: about -17.4 LUFS integrated, momentary maximum about -14.4 LUFS, true peak -0.6 dBTP or lower;
+ * - chirp: about 8 LU under the voice (it replaces speech, so it never overlaps a line);
+ * - hack cues at full level: 9 (pulse) to 14 (flick) LU under the voice, glitch 24 LU under (it
+ *   plays on top of the zap); ducked while she speaks, 6 LU lower again;
+ * - six cues at once on the peakiest line: -0.9 dBTP, so nothing clips.
+ *
+ * - `masterVolume`: the single overall volume knob, applied after the limiter. Keep it at 1 or below.
+ * - `speechGain`, `chirpGain`, `sfxGain`: bus levels. The SFX bus is higher than the chirp bus because
+ *   the cue plans themselves are much quieter than a chirp note.
+ * - `limiter`: a `DynamicsCompressorNode` that catches peaks (cues over a line, or a Piper mp3 that
+ *   overshoots 0 dBFS). Speech alone stays mostly under the threshold: the limiter changes a line's
+ *   loudness by at most 0.6 LU beyond the compressor's built-in makeup gain (about +1 dB at this
+ *   threshold, included in the numbers above).
+ */
+export const AUDIO_MIX = {
+  masterVolume: 0.9,
+  speechGain: 0.9,
+  chirpGain: 0.3,
+  sfxGain: 0.55,
+  limiter: { thresholdDb: -2, kneeDb: 1, ratio: 20, attackS: 0.003, releaseS: 0.15 },
 } as const;
 
 /** The gesture the Avatar plays while a Speech_Bubble is shown and the utterance names none (Requirement 16.14). */
@@ -653,7 +685,10 @@ export const VFX_RENDER = {
   spark: { sizeM: 0.02, minLifeS: 0.3, maxLifeS: 0.55, gatherPerS: 70, streamPerS: 150, spreadM: 0.03 },
   glyph: { minSizeM: 0.025, maxSizeM: 0.05, lifeS: 0.65, perS: 30, driftMps: 0.06, spinRadPerS: 3 },
   line: { lengthM: 0.07, lifeS: 0.3, perS: 90, jitterM: 0.018, offProbability: 0.25 },
-  beam: { segments: 24, halfWidthM: 0.011, wobbleM: 0.012, wobbleCycles: 5, trail: 0.6, glitchHz: 15, glitchM: 0.02 },
+  // glitchM was 0.02 until task 27.6: a full jump close to the eyes could flicker an area near the
+  // WCAG 2.3.1 general flash limit (25% of a 10 degree field). 0.01 keeps the 15 Hz look with margin.
+  // See docs/comfort-check.md, "Flashing and flicker".
+  beam: { segments: 24, halfWidthM: 0.011, wobbleM: 0.012, wobbleCycles: 5, trail: 0.6, glitchHz: 15, glitchM: 0.01 },
   pulse: { startRadiusM: 0.04, endRadiusM: 0.24, burstSparks: 22 },
   hold: { intensity: 0.22, sparksPerS: 14 },
   endBurstSparks: 10,
@@ -667,14 +702,13 @@ export const VFX_COLORS = {
   magenta: 0xff2bd6,
 } as const;
 /**
- * Hacking VFX sound cues (task 15.6, Requirement 18.8). The cues are subtle on purpose.
- * - `gain`: master level of one cue before ducking. Well under the chirp (`SPEECH_OUTPUT.sfxGain`).
- * - `duckWhileSpeakingFactor`: multiplies `gain` while a line is being spoken, so cues sit under speech.
+ * Hacking VFX sound cues (task 15.6, Requirement 18.8). The cues are subtle on purpose. Their bus
+ * level is `AUDIO_MIX.sfxGain`.
+ * - `duckWhileSpeakingFactor`: level of a cue that starts while a line is being spoken, so cues sit under speech.
  * - `maxConcurrent`: cues playing at once. A cue past this limit is dropped, never queued.
  * - `noiseS`: length of the shared white-noise buffer that the whoosh and glitch cues loop through.
  */
 export const HACK_SFX = {
-  gain: 0.12,
   duckWhileSpeakingFactor: 0.5,
   maxConcurrent: 6,
   noiseS: 1,
@@ -749,17 +783,157 @@ export const MOCK_BULB_LAYOUT = {
 /**
  * The Hermes task flow and the Task_Panel (task 19.3, Requirements 19.6, 19.8). Seconds unless noted.
  *
- * - `fidgetFirstGapS`, `fidgetGapMinS`, `fidgetGapMaxS`: while a task runs she plays the playful `fidget`
- *   idle after this long, then again after a random gap in the range. The scripted task lasts about
- *   10 s, so the gaps are short enough to show at least two.
+ * - The playful idles while a task runs come from the idle scheduler (`IDLE_SCHEDULE`, task 23.4).
  * - `panelHoldS`: a finished task stays on the panel this long, then the panel closes by itself.
  * - `panel`: the UIKit size of `public/ui/task-panel.uikitml` (keep in step with it) and the scale it is
  *   drawn at, so it reads at 1.2 m. `trackWidthUnits` is the full width of the progress bar.
  */
 export const TASK_FLOW = {
-  fidgetFirstGapS: 2,
-  fidgetGapMinS: 3,
-  fidgetGapMaxS: 5,
   panelHoldS: 10,
-  panel: { widthUnits: 400, heightUnits: 236, trackWidthUnits: 368, scale: 0.125 },
+  /** Seconds Capri looks at the Task_Panel when an approval is requested, before looking back. */
+  approvalGlanceS: 2.5,
+  /** Approval descriptions are cut to this many characters on the panel (two lines). */
+  approvalTextMaxChars: 84,
+  /**
+   * Panel geometry in UIKit units, kept in step with `public/ui/task-panel.uikitml`. The button row
+   * sits at the bottom (`paddingUnits` from the edge). With an approval pending it holds Approve,
+   * Deny, and Cancel; otherwise the one Cancel or Dismiss button fills it.
+   */
+  panel: {
+    widthUnits: 400,
+    heightUnits: 236,
+    trackWidthUnits: 368,
+    scale: 0.125,
+    paddingUnits: 16,
+    gapUnits: 8,
+    buttonHeightUnits: 48,
+    approveWidthUnits: 120,
+    denyWidthUnits: 120,
+    mainNarrowWidthUnits: 112,
+  },
+} as const;
+
+/**
+ * Spatial_Context sent with every Tier 2 request (task 21.4, Requirements 17.3, 20.3, 20.4).
+ * - `maxDevices`, `maxSurfaces`: list caps, most relevant first.
+ * - `maxBytes`: the UTF-8 size of the serialised context never exceeds this. Lowest-priority
+ *   entries are dropped until it fits.
+ * - `gazeMarkerDeg`: a device marker within this angle of the head ray is the gaze target.
+ * - `maxIdChars`: an entry whose id is longer is left out (it could not be referenced reliably).
+ * - `maxNameChars`: device names are cut to this length.
+ * - `coordLimitM`: coordinates are clamped to +/- this many metres, so a number stays short.
+ */
+export const SPATIAL_CONTEXT = {
+  maxDevices: 16,
+  maxSurfaces: 12,
+  maxBytes: 4096,
+  gazeMarkerDeg: 8,
+  maxIdChars: 64,
+  maxNameChars: 40,
+  coordLimitM: 1000,
+} as const;
+
+/**
+ * Tier 2 replies and routing (task 21.4, Requirements 20.1, 20.2, 20.5 to 20.9).
+ * - `chatTimeoutMs`: a chat call that takes longer falls back to Tier 1. Hermes adds a large system
+ *   prompt of its own, so replies take several seconds (docs/hermes-integration.md, section D).
+ * - `thinkingEmotion`: the face Capri wears while a chat reply is on its way (task 21.12). There is
+ *   no `thinking` emotion, and `relaxed` (eyes softened) reads as mulling it over.
+ * - `maxSpeechChars`: Tier 2 speech is cut to this many characters after the two-sentence limit.
+ * - `maxUserTextChars`: typed text sent to the agent is cut to this length.
+ * - `maxReplyScanChars`: only this much of a reply is scanned for the JSON object.
+ * - `maxTargetChars`, `maxParamKeys`, `maxParamStringChars`: bounds on a reply's action fields.
+ *
+ * Live Hermes adapter (task 21.10, docs/hermes-integration.md sections D and E):
+ * - `requestTimeoutMs`: every short call (start a run, run status, approval, stop, health,
+ *   capabilities). Chat uses `chatTimeoutMs`.
+ * - `streamConnectTimeoutMs`: time to the event stream's response head.
+ * - `streamIdleTimeoutMs`: a stream with no bytes for this long counts as dropped. Hermes sends a
+ *   `: keepalive` comment after 10 s of silence, so this allows three missed keepalives.
+ * - `streamResumeMaxAttempts`, `streamResumeBaseDelayMs`, `streamResumeMaxDelayMs`: reopening a
+ *   dropped stream with `?last_seq=`, with the delay doubling per attempt up to the cap. A frame
+ *   received resets the count.
+ * - `pollIntervalMs`, `pollMaxAttempts`: when the stream cannot be reopened, `GET /v1/runs/{id}`
+ *   every interval, at most this many times (10 min, past Hermes' 300 s approval timeout).
+ * - `maxResponseChars`: a larger HTTP body is refused unread. Chat bodies carry a long reasoning
+ *   field Capri drops, so this is generous.
+ * - `maxSseLineChars`: one event-stream line longer than this ends the stream as invalid.
+ */
+export const TIER2 = {
+  chatTimeoutMs: 30_000,
+  thinkingEmotion: 'relaxed',
+  maxSpeechChars: 240,
+  maxUserTextChars: 500,
+  maxReplyScanChars: 32_768,
+  maxTargetChars: 64,
+  maxParamKeys: 8,
+  maxParamStringChars: 64,
+  requestTimeoutMs: 10_000,
+  streamConnectTimeoutMs: 15_000,
+  streamIdleTimeoutMs: 35_000,
+  streamResumeMaxAttempts: 5,
+  streamResumeBaseDelayMs: 1_000,
+  streamResumeMaxDelayMs: 15_000,
+  pollIntervalMs: 5_000,
+  pollMaxAttempts: 120,
+  maxResponseChars: 4_194_304,
+  maxSseLineChars: 1_048_576,
+} as const;
+/**
+ * Idle scheduler (task 23.1, Requirements 19.8, 21.1 to 21.3). Seconds.
+ *
+ * - `gapMinS`, `gapMaxS`: while she is free, the next idle behaviour starts after a gap drawn
+ *   uniformly from this range. The upper bound stays below the 20 s limit of Requirement 21.2.
+ * - `ignoredAfterS`: with no user input for this long she plays `ignored` with a tease line, once
+ *   per silence (Requirement 21.3).
+ */
+export const IDLE_SCHEDULE = {
+  gapMinS: 8,
+  gapMaxS: 18,
+  ignoredAfterS: 60,
+} as const;
+
+/**
+ * Glance gesture look (task 23.3, Requirement 21.1). `play('glance', { target })` turns her head and
+ * eyes to the target for the length of the glance. Without a target she looks off to one side,
+ * alternating sides each time:
+ * - `sideYawRad`: how far to the side, in the torso frame (the look layer clamps it to ±70°).
+ * - `pitchRad`: up (positive) or down (negative) from level, a little down toward the room.
+ * - `distanceM`: how far ahead of the head the look point is placed, in metres.
+ */
+export const GLANCE_LOOK = {
+  sideYawRad: 0.75,
+  pitchRad: -0.15,
+  distanceM: 1.5,
+} as const;
+/**
+ * Home Assistant client (task 25.5, Requirement 25.11).
+ * - `requestTimeoutMs`: a public call (`testConnection`, `listLights`, `applyCommand`) that has not
+ *   finished this long after it started is reported as `timeout`. One deadline covers every HTTP
+ *   request the call makes, so a call never outlasts `HACK_SEQUENCE.callTimeoutS`.
+ * - `lightRefreshIntervalS` (task 25.10): in Live Mode, while the session is visible, the light list
+ *   is read again this often, so marker tints and the Spatial_Context follow lights switched outside
+ *   Capri. One `GET /api/states` every 20 s is light on Home Assistant and on the frame budget.
+ */
+export const HOME_ASSISTANT = {
+  requestTimeoutMs: 10_000,
+  lightRefreshIntervalS: 20,
+} as const;
+
+/**
+ * Pause and resume (task 27.2, Requirement 28.2). The experience pauses while the XR session is
+ * blurred or hidden (the Meta system menu, a permission prompt, the headset taken off) and, outside
+ * a session, while the page is hidden.
+ * - `resumeMaxDtS`: the first frame after a resume counts at most this long, so a hidden session that
+ *   delivered no frames does not hand every dt-driven system one huge step.
+ * - `handGuardMaxS`: after a resume a hand that is still pinching (the pinch that closed the system
+ *   menu) reads as untracked until it opens, so it starts no push-to-talk and confirms nothing. The
+ *   guard ends after this long even if the fingers stay closed.
+ * - `audioResumeTimeoutMs`: longest wait for the playback context to run again before the held lines
+ *   are released anyway (they then fall back to bubble and chirp).
+ */
+export const PAUSE = {
+  resumeMaxDtS: 0.1,
+  handGuardMaxS: 2,
+  audioResumeTimeoutMs: 1500,
 } as const;

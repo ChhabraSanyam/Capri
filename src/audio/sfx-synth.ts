@@ -1,12 +1,13 @@
 /**
  * Synthesised sound effects (task 13.20, Requirements 16.10, 16.13). Today that is the tier 3
  * bubble chirp: a few short triangle-wave notes planned by `planChirp`. The notes go to the
- * destination you pass (the engine's master bus), never through the voice analyser, so a chirp
- * cannot move the mouth.
+ * destination you pass (the engine's chirp bus, task 27.3), never through the voice analyser, so a
+ * chirp cannot move the mouth.
  *
  * Task 15.6 adds the hacking-sequence cues (Requirement 18.8): `SfxSynth.play` builds the oscillator
  * and noise layers of a `SfxPlan` (flick whoosh, glitch, beam zap, pulse ping, success, fail). There
- * are no sound files. Cues are quiet and go to the master bus, not the voice analyser.
+ * are no sound files. Cues go to the engine's SFX bus, whose level (`AUDIO_MIX.sfxGain`) keeps them
+ * quiet, never through the voice analyser.
  */
 import type { Rng } from '../app/rng.js';
 import { HACK_SFX } from '../config/constants.js';
@@ -120,10 +121,13 @@ export class SfxSynth {
     return this.active.size;
   }
 
-  /** Start `cue` at `gain` (1 is the plan's own level, scaled by `HACK_SFX.gain`). Returns undefined when dropped. */
+  /**
+   * Start `cue` at `gain` relative to the destination bus (1 is the plan's own level, the bus sets the
+   * mix level). Returns undefined when dropped.
+   */
   play(cue: SfxCueId, gain = 1): SfxHandle | undefined {
     if (this.active.size >= HACK_SFX.maxConcurrent) return undefined;
-    const level = HACK_SFX.gain * (Number.isFinite(gain) && gain > 0 ? gain : 0);
+    const level = Number.isFinite(gain) && gain > 0 ? gain : 0;
     if (level <= 0) return undefined;
     const ctx = this.ctx;
     const plan = SFX_PLANS[cue];

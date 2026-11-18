@@ -80,6 +80,7 @@ export class VoiceUi {
   private readonly logger: Logger;
   private readonly dominant: Handedness;
   private handlers: VoiceUiHandlers;
+  private readonly pressListeners: (() => void)[] = [];
   private readonly pressPanels: readonly PressPanel[];
   private readonly headPose = { position: { x: 0, y: 0, z: 0 }, forward: { x: 0, y: 0, z: -1 } };
   private speechState: SpeechRecognizerState = 'loading';
@@ -151,6 +152,18 @@ export class VoiceUi {
   /** Replace the handlers (the voice loop sets them). Fields left out keep no handler. */
   setHandlers(handlers: VoiceUiHandlers): void {
     this.handlers = { ...handlers };
+  }
+
+  /**
+   * Listen to every accepted press (the mic orb, a Quick_Actions button, a keyboard key), whatever it
+   * does. The personality wiring counts them as user input. Returns the unsubscribe function.
+   */
+  onPress(listener: () => void): () => void {
+    this.pressListeners.push(listener);
+    return () => {
+      const i = this.pressListeners.indexOf(listener);
+      if (i >= 0) this.pressListeners.splice(i, 1);
+    };
   }
 
   /** Called by the system when any panel document has loaded. Binds only the voice panels' own. */
@@ -243,6 +256,7 @@ export class VoiceUi {
   /** Press the mic orb as a poke would. */
   pressMicOrb(): void {
     if (!this.debouncer.accept('mic-orb', this.nowS)) return;
+    this.notifyPress();
     this.logger.info('voice ui: mic orb pressed');
     this.handlers.onMicOrb?.();
   }
@@ -294,6 +308,7 @@ export class VoiceUi {
 
   dispose(): void {
     for (const cleanup of this.cleanups.splice(0)) cleanup();
+    this.pressListeners.length = 0;
     this.micOrb.dispose();
     this.transcript.dispose();
     this.quickActions.dispose();
@@ -354,6 +369,16 @@ export class VoiceUi {
     this.keyboard.setShown(this.keyboardOpen);
   }
 
+  private notifyPress(): void {
+    for (let i = this.pressListeners.length - 1; i >= 0; i -= 1) {
+      try {
+        this.pressListeners[i]?.();
+      } catch (error) {
+        this.logger.warn('voice ui: a press listener threw', error);
+      }
+    }
+  }
+
   /** A UIKit `click`. Dropped while an own-path press is still being held or just released. */
   private onClick(panelId: string, cellId: string): void {
     if (this.ownPressLive) return;
@@ -362,6 +387,7 @@ export class VoiceUi {
 
   private onCell(panelId: string, cellId: string): void {
     if (!this.debouncer.accept(`${panelId}:${cellId}`, this.nowS)) return;
+    this.notifyPress();
     if (panelId === PANEL_KB) {
       this.onKey(cellId);
       return;

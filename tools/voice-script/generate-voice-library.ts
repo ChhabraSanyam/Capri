@@ -5,7 +5,13 @@
  * see docs/voice-engine.md), encodes mono MP3 at about 64 kbps with `ffmpeg`, and writes
  *
  *   public/voice/<id>.mp3
- *   public/voice/index.json   { version, voice, lines: [{ id, category, claims, file, durationMs, textHash, text }] }
+ *   public/voice/index.json   { version, voice, lines: [{ id, category, claims, file, durationMs,
+ *                               loudnessLufs, truePeakDb, gainDb, textHash, text }] }
+ *
+ * Loudness (task 27.3): every new mp3 is measured with ffmpeg's EBU R128 meter, and `gainDb` is the
+ * playback gain that brings the line to -16 LUFS (`loudness.ts`). The app applies the gain, so the mp3
+ * is never re-encoded. A kept line from an older index is measured once. After that the stored
+ * measurement is reused and only `gainDb` is derived again, so a target change needs no new audio.
  *
  * It is idempotent: a line is skipped when its text hash, the voice, and its mp3 file are unchanged.
  * Mp3 files of lines that left the manifest are removed. The index has no timestamps, so a run that
@@ -35,12 +41,15 @@ import { join } from 'node:path';
 import { allVoiceLines, parseVoiceManifest, validateClaims, validateManifest } from '../../src/domain/speech/voice-manifest.ts';
 import { createPiperEngine } from './engines/piper.ts';
 import type { VoiceEngine } from './engines/types.ts';
+import { measureLoudness } from './measure.ts';
 import {
   indexLine,
+  needsLoudness,
   parseIndex,
   planLines,
   refreshKept,
   serializeIndex,
+  withLoudness,
   type ManifestEntry,
   type VoiceIndex,
   type VoiceIndexLine,
@@ -110,11 +119,10 @@ export async function generate(engine: VoiceEngine, force: boolean): Promise<voi
   const voice = `${engine.name}; mp3 mono ${BITRATE}`;
   const plans = planLines(entries, readPreviousIndex(), voice, (file) => existsSync(join(OUT_DIR, file)), force);
   const todo = plans.filter((p) => p.keep === undefined);
+  const unmeasured = plans.filter((p) => p.keep !== undefined && needsLoudness(p.keep)).length;
 
-  if (todo.length > 0) {
-    engine.check();
-    checkFfmpeg();
-  }
+  if (todo.length > 0) engine.check();
+  if (todo.length > 0 || unmeasured > 0) checkFfmpeg();
 
   const work = mkdtempSync(join(tmpdir(), 'capri-voice-'));
   const lines: VoiceIndexLine[] = [];
@@ -122,15 +130,23 @@ export async function generate(engine: VoiceEngine, force: boolean): Promise<voi
   try {
     for (const plan of plans) {
       if (plan.keep !== undefined) {
-        lines.push(refreshKept(plan.keep, plan.entry));
+        const kept = refreshKept(plan.keep, plan.entry);
+        // An index from before task 27.3 has no loudness: measure the existing mp3 once. Otherwise
+        // the stored measurement is reused and only the gain is derived again from the target.
+        const loudness =
+          kept.loudnessLufs === undefined || kept.truePeakDb === undefined
+            ? measureLoudness(join(OUT_DIR, kept.file))
+            : { integratedLufs: kept.loudnessLufs, truePeakDb: kept.truePeakDb };
+        lines.push(withLoudness(kept, loudness));
         continue;
       }
       done += 1;
       process.stdout.write(`[${done}/${todo.length}] ${plan.entry.id}: ${plan.entry.text}\n`);
       const wav = await engine.synthesize(plan.entry.text, plan.entry.id);
       const encoded = encodeMp3(wav, work, plan.entry.id);
-      renameOrCopy(encoded.path, join(OUT_DIR, `${plan.entry.id}.mp3`));
-      lines.push(indexLine(plan.entry, plan.textHash, encoded.durationMs));
+      const target = join(OUT_DIR, `${plan.entry.id}.mp3`);
+      renameOrCopy(encoded.path, target);
+      lines.push(indexLine(plan.entry, plan.textHash, encoded.durationMs, measureLoudness(target)));
     }
   } finally {
     rmSync(work, { recursive: true, force: true });

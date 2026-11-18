@@ -38,24 +38,56 @@
  * real result. Runs queue in order and the controller is the acting body. The runner updates in the
  * `orchestrator` stage after the controller. The markers are tinted from the backend's light states.
  *
- * Hermes task flow (task 19.3). In Mock Mode `selectAgentBackend` gives the scripted agent, and a `TaskFlow`
- * (acknowledge, Task_Panel, playful idles, notify and the real outcome) is handed to the voice loop. With no
- * agent the voice loop keeps the "Hermes is unavailable" line. The flow updates in the `orchestrator` stage
- * and the panel in the `vfxUi` stage. The panel is a pinch-aim rectangle.
+ * Hermes task flow and Tier 2 (tasks 19.3, 21.12). An `AgentSlot` holds the mode's agent (`connectAgent`:
+ * the scripted agent in Mock Mode, the live Hermes adapter for `agent: 'live'`, none for `absent`) and feeds
+ * the Hermes chip. A `TierRouter` on the slot is handed to the voice loop, with a `TaskFlow` (acknowledge,
+ * Task_Panel, approvals, playful idles, notify and the real outcome). Without a connected agent the voice
+ * loop keeps the "Hermes is unavailable" line. The flow updates in the `orchestrator` stage, the panel's
+ * own hand press path in the `pointing` stage and its drawing in the `vfxUi` stage. The panel is a
+ * pinch-aim rectangle.
+ *
+ * Personality (task 23.4). `PersonalityWiring` runs the idle scheduler in the `idle` stage, after
+ * presence: stretches, fidgets and glances at real Surfaces and markers while she is free, and the
+ * ignored reaction (the Persona's `idle_ignored` line) after 60 s with no input. Pinches, pointing,
+ * commands, voice panel presses, teach flow steps, the Task_Panel and the dev panel count as input.
  *
  * Pointing (task 11.7). `PointingWiring` extends the `pointing` handler: it runs after the
  * registration, selects the marker the dominant index finger points at, confirms it on a dominant
  * pinch, highlights the marker, turns the Avatar's gaze to it, and emits `pointed:changed` and
  * `selected:changed`. Marker highlight is driven by those changes and the marker pulse already runs in
  * `registration.updateUi`, so the `vfxUi` handler needs no extra call.
+ *
+ * Loading screen (task 27.1). The presence reports the VRM load to `world.globals.loading` (the status
+ * board from `main.ts`). `LoadingPanel` (`ui/loading.ts`) is updated in the `vfxUi` stage, after the
+ * `idle` stage has had its chance to spawn her: it is up in the session until Capri has appeared, and
+ * it shows her failure line when the VRM fails (the presence's own failure bubble is off).
+ *
+ * Pause and resume (task 27.2). `PauseController` (`ui/pause.ts`) follows the session's
+ * `visibilitychange` (and the page's outside a session). While paused the app runs no stages, the
+ * voice loop has released the microphone, the speech queue and the task flow hold their lines, and the
+ * playback context is suspended. On resume the idle schedule shifts by the paused time, a
+ * `ResumeHandGuard` in the `readFrame` stage holds back a hand that is still pinching, and the held
+ * lines play once the context runs. Published as `world.globals.pause`.
  */
-import { PanelDocument, PanelUI, Quaternion, Vector3, XRMesh, XRPlane, createSystem } from '@iwsdk/core';
+import {
+  PanelDocument,
+  PanelUI,
+  Quaternion,
+  Vector3,
+  VisibilityState,
+  XRMesh,
+  XRPlane,
+  createSystem,
+} from '@iwsdk/core';
 import { createLogger } from './logger.js';
 import { DeviceRegistration } from './device-registration.js';
 import { PointingWiring } from './pointing-wiring.js';
 import { createLazyLexicon } from './lexicon-loader.js';
 import { VoiceLoop } from './voice-loop.js';
 import { TaskFlow } from './task-flow.js';
+import { PersonalityWiring } from './personality.js';
+import type { GestureId } from '../domain/animation-types.js';
+import type { IdleDecision } from '../domain/idle-scheduler.js';
 import type { CapriApp } from './app.js';
 import { AbilityDispatcher, describeDispatch } from '../avatar/ability-dispatcher.js';
 import { AvatarController } from '../avatar/avatar-controller.js';
@@ -67,10 +99,15 @@ import { SttEngine } from '../audio/stt-engine.js';
 import { voiceModel } from '../audio/voice-model.js';
 import { createSpeechPresenter } from '../ui/speech-presenter.js';
 import { AvatarPresence } from '../avatar/avatar-presence.js';
-import { observeLightStates, selectAgentBackend } from '../backends/select-backend.js';
-import type { SmartHomeBackend } from '../backends/types.js';
+import { AgentSlot } from '../backends/agent-slot.js';
+import { observeLightStates } from '../backends/select-backend.js';
+import type { AgentBackend } from '../backends/types.js';
+import { TierRouter } from '../domain/contract/tier-router.js';
+import { connectAgent, storedHermesCredentials } from './agent-wiring.js';
 import type { ModeState } from '../domain/settings/mode-resolver.js';
 import { wireModeAndConnections } from './mode-wiring.js';
+import { LiveHomeMonitor } from './live-home-monitor.js';
+import type { SessionMode } from './session-mode.js';
 import { AVATAR_PRESENCE } from '../config/constants.js';
 import { featureFlags, resolvePointPoseGate } from '../config/feature-flags.js';
 import { DEV_ACTION_LABELS } from '../domain/actions/dev-actions.js';
@@ -83,7 +120,7 @@ import { manifestFromVoiceIndex } from '../domain/speech/voice-index.js';
 import { isPerfOverlayRequested } from '../domain/frame-stats.js';
 import { HandLostMonitor } from '../domain/hand-lost.js';
 import { createDeviceStore } from '../persistence/anchor-store.js';
-import { LocalStorageDeviceStore } from '../persistence/device-store.js';
+import { HomeScopedDeviceStore, LocalStorageDeviceStore } from '../persistence/device-store.js';
 import { LocalStoragePlaceStore, openPlaceBook } from '../persistence/places-store.js';
 import { PerfOverlay } from '../ui/perf-overlay.js';
 import { HandLostPanel } from '../ui/hand-lost-panel.js';
@@ -103,6 +140,10 @@ import { createXrHandSource, type HandSource } from '../xr/hands.js';
 import { createWebXrAnchorPort } from '../xr/anchors.js';
 import { VfxDevHandle } from './vfx-dev.js';
 import { SurfaceStore } from '../xr/scene-surfaces.js';
+import { LoadingStatus } from './loading-status.js';
+import { LoadingPanel } from '../ui/loading.js';
+import { PauseController, attachPauseSources } from '../ui/pause.js';
+import { ResumeHandGuard } from './resume-hand-guard.js';
 
 /** Where the plain persona's bubble goes before the Avatar or the head has a position. */
 const ORIGIN: Vec3 = { x: 0, y: 0, z: 0 };
@@ -178,10 +219,13 @@ export class CapriSystem extends createSystem({
     // Reused every frame: the head's world pose goes into `frame.head`.
     const headPosition = new Vector3();
     const headRotation = new Quaternion();
+    // After a resume (task 27.2) a hand still closed from the system menu reads as untracked until it opens.
+    const handGuard = new ResumeHandGuard();
     // The skeleton is drawn in the same stage so it never shows a frame-old pose.
     this.cleanupFuncs.push(
       app.setStage('readFrame', (frame) => {
         hands.read(frame);
+        handGuard.apply(frame);
         skeleton.sync(frame);
         player.head.getWorldPosition(headPosition);
         player.head.getWorldQuaternion(headRotation);
@@ -195,6 +239,10 @@ export class CapriSystem extends createSystem({
     // Spatial abilities (tasks 7.8, 7.10). The controller needs the presence's animator and head, and
     // the presence needs the controller as its body, so the presence is reached through a holder.
     const presenceRef: { current: AvatarPresence | undefined } = { current: undefined };
+    // Personality (task 23.4): built after the voice loop. Panels created earlier report user input
+    // through this holder, which restarts the idle schedule and the 60 s silence.
+    const personalityRef: { current: PersonalityWiring | undefined } = { current: undefined };
+    const noteUserInput = (): void => personalityRef.current?.noteInput();
     // Speech output (task 13.20) and the Persona (task 13.25). Every Persona line goes through the
     // speech queue, which plays them one after another through the audio engine. The Voice_Library
     // index gives the Persona its tier 1 lines once it has loaded. Without it, lines are bubble and chirp.
@@ -234,7 +282,11 @@ export class CapriSystem extends createSystem({
       if (world.globals.abilities === abilities) delete world.globals.abilities;
     });
 
-    // Avatar presence (task 5.11). It loads the VRM now and spawns her when the session starts.
+    // Loading screen (task 27.1): `main.ts` publishes the status board (the 2D page reads it too).
+    const loading = (world.globals.loading as LoadingStatus | undefined) ?? new LoadingStatus();
+    // Avatar presence (task 5.11). It loads the VRM now and spawns her when the session starts. Its
+    // download progress, ready, and failure go to the loading status. The in-scene loading panel
+    // shows the failure, so presence does not open its own failure bubble.
     const presence = new AvatarPresence({
       world,
       rng: app.rng,
@@ -242,6 +294,8 @@ export class CapriSystem extends createSystem({
       depthOcclusion: featureFlags.depthOcclusion,
       getFloorY: () => floor.floorY,
       body: controller,
+      loadObserver: loading,
+      failureBubble: false,
     });
     presenceRef.current = presence;
     this.cleanupFuncs.push(() => {
@@ -249,21 +303,27 @@ export class CapriSystem extends createSystem({
       presence.dispose();
     });
     // Device registration (task 9.8): registry, persistence, markers, teach flow, panel, and the orb.
+    // The session mode comes from `main.ts` (tasks 17.6, 25.10): resolved from the credential store,
+    // Mock Mode by default. `backend` is its stable `HomeSwitch` (the mock home or the Home Assistant
+    // client behind it), so everything below uses only the `SmartHomeBackend` interface and keeps
+    // working when the mode changes on the 2D page.
+    const sessionMode = this.globals.sessionMode as SessionMode | undefined;
+    if (sessionMode === undefined) {
+      throw new Error('CapriSystem needs world.globals.sessionMode. main.ts must set it first.');
+    }
+    const backend = sessionMode.home;
+    let modeState: ModeState = sessionMode.mode.value.state;
     // The store is read now, on the 2D page before AR. Anchors are restored once the session starts.
+    // It is scoped to the current home: Live Mode shows only taught `light.*` entities, Mock Mode only
+    // its own lights, and each keeps the other's records.
     const store = createDeviceStore({
       flags: featureFlags,
       anchors: createWebXrAnchorPort({
         getSession: () => world.xrSession ?? undefined,
         getReferenceSpace: () => world.xrReferenceSpace ?? null,
       }),
+      getHome: () => backend.kind,
     });
-    // The mode and the smart-home backend come from `main.ts` (task 17.6), which resolved the mode
-    // with no credentials. Everything below uses only the `SmartHomeBackend` interface.
-    const modeState = this.globals.mode as ModeState | undefined;
-    const backend = this.globals.home as SmartHomeBackend | undefined;
-    if (modeState === undefined || backend === undefined) {
-      throw new Error('CapriSystem needs world.globals.mode and world.globals.home. main.ts must set them first.');
-    }
     const lexicon = createLazyLexicon(createLogger('lexicon'));
     const registration = new DeviceRegistration({
       world,
@@ -271,14 +331,16 @@ export class CapriSystem extends createSystem({
       logger: createLogger('devices'),
       backend,
       store,
-      handleSource: new LocalStorageDeviceStore(),
+      handleSource: new HomeScopedDeviceStore(new LocalStorageDeviceStore(), () => backend.kind),
       lexicon,
       getSurfaces: () => surfaceStore.surfaces,
       getAvatarPosition: () => (presence.isSpawned ? presence.position : undefined),
       dominant: hands.dominantHand,
     });
     this.cleanupFuncs.push(() => registration.dispose());
-    // Marker tint (task 13.25): each marker shows its light's state, so on and off are visible.
+    // Marker tint (task 13.25): each marker shows its light's state, so on and off are visible. The
+    // switch's light states are the mock home's in Mock Mode and, in Live Mode, only what Home
+    // Assistant reported (command replies and light list reads, task 25.10). Never optimistic.
     const lightStates = observeLightStates(backend);
     if (lightStates !== undefined) {
       registration.applyLightStates(lightStates.value);
@@ -286,27 +348,37 @@ export class CapriSystem extends createSystem({
     }
     // Mock Mode bulbs (task 17.4): three virtual bulbs placed head-relative at session start and
     // registered as devices, so pointing, voice, and the hack sequence work with no teaching step.
-    // Their look follows the backend state only. Updated in the `vfxUi` stage below.
-    const mockBulbs =
-      backend.kind === 'mock' && lightStates !== undefined
-        ? new MockBulbs({
-            world,
-            states: lightStates,
-            registerDevices: (devices) => registration.registerWithoutSaving(devices),
-            getFloorY: () => floor.floorY,
-            logger: createLogger('mock-bulbs'),
-          })
-        : undefined;
-    if (mockBulbs !== undefined) {
-      this.cleanupFuncs.push(() => mockBulbs.dispose());
-      if (import.meta.env.DEV) {
-        const dev = window as unknown as { __capriMockBulbs?: unknown };
-        dev.__capriMockBulbs = mockBulbs;
-        this.cleanupFuncs.push(() => {
-          delete dev.__capriMockBulbs;
-        });
+    // Their look follows the backend state only. Updated in the `vfxUi` stage below. Live Mode has
+    // none: the user teaches real lights from Home Assistant's list (task 25.10).
+    const mockBulbsRef: { current: MockBulbs | undefined } = { current: undefined };
+    const devBulbs = window as unknown as { __capriMockBulbs?: unknown };
+    const syncMockBulbs = (): void => {
+      const wanted = backend.kind === 'mock' && lightStates !== undefined;
+      const current = mockBulbsRef.current;
+      if (wanted === (current !== undefined)) return;
+      if (current !== undefined) {
+        mockBulbsRef.current = undefined;
+        current.dispose();
+        if (import.meta.env.DEV) delete devBulbs.__capriMockBulbs;
+        return;
       }
-    }
+      if (lightStates === undefined) return;
+      const bulbs = new MockBulbs({
+        world,
+        states: lightStates,
+        registerDevices: (devices) => registration.registerWithoutSaving(devices),
+        getFloorY: () => floor.floorY,
+        logger: createLogger('mock-bulbs'),
+      });
+      mockBulbsRef.current = bulbs;
+      if (import.meta.env.DEV) devBulbs.__capriMockBulbs = bulbs;
+    };
+    syncMockBulbs();
+    this.cleanupFuncs.push(() => {
+      mockBulbsRef.current?.dispose();
+      mockBulbsRef.current = undefined;
+      if (import.meta.env.DEV) delete devBulbs.__capriMockBulbs;
+    });
     // Voice UI panels (task 13.23): mic orb, transcript, Quick_Actions, and the Hand_Keyboard, placed
     // once in the seated zones. Published as `world.globals.voiceUi`. The voice loop (task 13.25) sets
     // the handlers and feeds it the transcript. Until then a press only logs. The panels are added to
@@ -335,6 +407,8 @@ export class CapriSystem extends createSystem({
     // whether the teach flow was idle at the start of the frame, so a pinch that drives the flow
     // (or finishes it) never also confirms a device. A pinch aimed at a panel or the orb is a button
     // press and is ignored too.
+    // The Task_Panel is built with the task flow below. The `pointing` stage reaches it through this holder.
+    const taskPanelRef: { current: TaskPanel | undefined } = { current: undefined };
     const pointing = new PointingWiring({
       events: app.events,
       hands,
@@ -354,6 +428,7 @@ export class CapriSystem extends createSystem({
         const teachIdle = registration.isTeachIdle;
         registration.updatePointing(frame);
         voiceUi.updatePointing(frame);
+        taskPanelRef.current?.updatePointing(frame);
         pointing.update(frame, teachIdle);
       }),
     );
@@ -420,39 +495,72 @@ export class CapriSystem extends createSystem({
       onError: (error, phase) => createLogger('hack').warn(`hack sequence ${phase} port failed: ${String(error)}`),
     });
     this.cleanupFuncs.push(() => hackRunner.dispose());
-    // Hermes task flow (task 19.3). The agent is the scripted mock in Mock Mode and absent otherwise
-    // (never substituted), so without one the voice loop keeps the "Hermes is unavailable" line. The
-    // Task_Panel is display-only plus a Cancel/Dismiss button and is a pinch-aim rectangle.
-    const agent = selectAgentBackend(modeState);
+    // Agent and Tier 2 (tasks 19.3, 21.12, 25.10). The `AgentSlot` holds the mode's agent: the scripted
+    // mock in Mock Mode, the live Hermes adapter for `agent: 'live'` (the stored URL and key, with a
+    // `fetch` pinned to the Hermes origin), or none for `agent: 'absent'` (never substituted).
+    // `connectAgent` tests the connection once, and again after every mode change; the tier router
+    // sends chat and tasks only while it is `connected`, and otherwise the voice loop says the "Hermes
+    // is unavailable" line. The Task_Panel (progress or steps, Approve and Deny, Cancel/Dismiss) is a
+    // pinch-aim rectangle.
+    const agentSlot = new AgentSlot();
+    this.cleanupFuncs.push(() => agentSlot.dispose());
+    const agentLogger = createLogger('agent');
+    const connectModeAgent = (mode: ModeState): void => {
+      void connectAgent(mode, agentSlot, {
+        credentials: storedHermesCredentials(sessionMode.store),
+        logger: agentLogger,
+        ...(sessionMode.pageFetch === undefined ? {} : { fetch: sessionMode.pageFetch }),
+      });
+    };
+    connectModeAgent(modeState);
+    const router = new TierRouter({ agent: agentSlot });
     const taskModel = new TaskPanelModel();
-    let taskFlow: TaskFlow | undefined;
-    let taskPanel: TaskPanel | undefined;
-    if (agent !== undefined) {
-      taskFlow = new TaskFlow({
-        agent,
-        persona,
-        getAnimator: () => presenceRef.current?.proceduralAnimator,
-        panel: taskModel,
-        rng: app.rng,
-        logger: createLogger('task'),
-      });
-      const flow = taskFlow;
-      const panel = new TaskPanel(world, taskModel, () => flow.pressButton(), hands.dominantHand);
-      taskPanel = panel;
+    const taskFlow = new TaskFlow({
+      agent: agentSlot,
+      look: (target) => {
+        const panelNow = taskPanelRef.current;
+        if (target === 'user' || panelNow === undefined || !panelNow.shown) {
+          controller.lookAt('user');
+          return;
+        }
+        const c = panelNow.frame.center;
+        controller.lookAt({ x: c.x, y: c.y, z: c.z });
+      },
+      persona,
+      getAnimator: () => presenceRef.current?.proceduralAnimator,
+      panel: taskModel,
+      logger: createLogger('task'),
+    });
+    const taskPanel = new TaskPanel(
+      world,
+      taskModel,
+      {
+        main: () => {
+          noteUserInput();
+          taskFlow.pressButton();
+        },
+        approval: (decision) => {
+          noteUserInput();
+          void taskFlow.respondToApproval(decision);
+        },
+      },
+      hands.dominantHand,
+    );
+    taskPanelRef.current = taskPanel;
+    this.cleanupFuncs.push(() => {
+      taskPanelRef.current = undefined;
+      taskFlow.dispose();
+      taskPanel.dispose();
+    });
+    this.cleanupFuncs.push(registration.addUiRect(() => taskPanel.getRect()));
+    this.cleanupFuncs.push(this.queries.panels.subscribe('qualify', (entity) => taskPanel.attach(entity)));
+    for (const entity of this.queries.panels.entities) taskPanel.attach(entity);
+    if (import.meta.env.DEV) {
+      const dev = window as unknown as { __capriTasks?: unknown };
+      dev.__capriTasks = { flow: taskFlow, panel: taskPanel, model: taskModel, agent: agentSlot };
       this.cleanupFuncs.push(() => {
-        flow.dispose();
-        panel.dispose();
+        delete dev.__capriTasks;
       });
-      this.cleanupFuncs.push(registration.addUiRect(() => panel.getRect()));
-      this.cleanupFuncs.push(this.queries.panels.subscribe('qualify', (entity) => panel.attach(entity)));
-      for (const entity of this.queries.panels.entities) panel.attach(entity);
-      if (import.meta.env.DEV) {
-        const dev = window as unknown as { __capriTasks?: unknown };
-        dev.__capriTasks = { flow, panel, model: taskModel, agent };
-        this.cleanupFuncs.push(() => {
-          delete dev.__capriTasks;
-        });
-      }
     }
     const voiceLoop = new VoiceLoop({
       events: app.events,
@@ -478,7 +586,10 @@ export class CapriSystem extends createSystem({
       canTalk: () => registration.isTeachIdle,
       getDominant: () => hands.dominantHand,
       getLexicon: () => (lexicon.generated ? lexicon : undefined),
-      ...(taskFlow === undefined ? {} : { tasks: taskFlow }),
+      tasks: taskFlow,
+      router,
+      getLightState: (entityId) => lightStates?.value.find((state) => state.entityId === entityId),
+      getAvatarState: () => (presence.isSpawned ? { position: presence.position, mode: controller.mode } : undefined),
     });
     this.cleanupFuncs.push(() => {
       voiceLoop.dispose();
@@ -486,18 +597,45 @@ export class CapriSystem extends createSystem({
       placeStore.detach();
     });
     this.cleanupFuncs.push(app.setStage('voice', (frame) => voiceLoop.update(frame)));
+    // Live Mode (task 25.10): the Home Assistant connection test at session start (an in-character line
+    // when it fails, the session stays live) and the low-frequency light list refresh while visible.
+    const liveMonitor = new LiveHomeMonitor({
+      home: backend,
+      isVisible: () => world.visibilityState.peek() === VisibilityState.Visible,
+      canSpeak: () => presence.isSpawned,
+      onTestFailed: (error) => {
+        persona.say({ kind: 'integration_failed', integration: 'homeAssistant', error: error.message });
+      },
+      logger: createLogger('home'),
+    });
     // The controller runs first so presence reads this frame's pose, then the timers are checked.
     this.cleanupFuncs.push(
       app.setStage('orchestrator', (frame) => {
         controller.update(frame.dt);
         hackRunner.update(frame.dt);
         voiceLoop.updateOrchestrator();
-        taskFlow?.update(frame.dt, frame.time);
+        taskFlow.update(frame.dt, frame.time);
+        liveMonitor.update(frame);
       }),
     );
     if (import.meta.env.DEV) {
       const dev = window as unknown as { __capriVoice?: unknown };
-      dev.__capriVoice = { loop: voiceLoop, stt, backend, persona, speechQueue, spoken, timers, places: placeStore.book, hackRunner };
+      // `setAgent` swaps the agent behind the slot (dev only): an emulator check injects a fake
+      // `AgentBackend` to drive the live paths without a real Hermes server.
+      dev.__capriVoice = {
+        loop: voiceLoop,
+        stt,
+        backend,
+        persona,
+        speechQueue,
+        spoken,
+        timers,
+        places: placeStore.book,
+        hackRunner,
+        router,
+        agentSlot,
+        setAgent: (next: AgentBackend | undefined) => agentSlot.set(next),
+      };
       this.cleanupFuncs.push(() => {
         delete dev.__capriVoice;
       });
@@ -515,7 +653,139 @@ export class CapriSystem extends createSystem({
       });
     }
 
-    this.cleanupFuncs.push(app.setStage('idle', (frame) => presence.updateIdle(frame)));
+    // Personality (task 23.4): the idle scheduler runs right after presence has placed her, in the
+    // `idle` stage. Input from the panels, the teach flow and the dev panel restarts it.
+    // Dev only: the decisions the scheduler took, newest last (capped), for emulator checks.
+    const personalityLog: (IdleDecision & { atMs: number })[] = [];
+    const personality = new PersonalityWiring({
+      clock: app.clock,
+      rng: app.rng,
+      logger: createLogger('idle'),
+      events: app.events,
+      persona,
+      getAnimator: () => presenceRef.current?.proceduralAnimator,
+      isPresent: () => presence.isSpawned,
+      getMode: () => controller.mode,
+      isSpeaking: () =>
+        speechQueue.current !== undefined ||
+        speechQueue.pending > 0 ||
+        (speech?.speaking ?? false) ||
+        voiceLoop.listening,
+      isHackActive: () => hackRunner.busy,
+      isTaskRunning: () => taskFlow.busy,
+      getSurfaces: () => surfaceStore.surfaces,
+      getMarkers: () => registration.registry.all(),
+      ...(import.meta.env.DEV
+        ? {
+            onDecision: (decision: Readonly<IdleDecision>, atMs: number) => {
+              personalityLog.push({ ...decision, atMs });
+              if (personalityLog.length > 100) personalityLog.shift();
+            },
+          }
+        : {}),
+    });
+    personalityRef.current = personality;
+    this.cleanupFuncs.push(voiceUi.onPress(noteUserInput));
+    this.cleanupFuncs.push(registration.flow.subscribe(noteUserInput));
+    this.cleanupFuncs.push(() => {
+      personalityRef.current = undefined;
+      personality.dispose();
+    });
+    this.cleanupFuncs.push(
+      app.setStage('idle', (frame) => {
+        presence.updateIdle(frame);
+        personality.update(frame);
+      }),
+    );
+    if (import.meta.env.DEV) {
+      // Dev only (a build-time constant, so the production bundle drops it): play any gesture as an
+      // idle behaviour (a glance can take a target, else the first Surface or marker), force the
+      // ignored reaction, and read the schedule.
+      const dev = window as unknown as { __capriPersonality?: unknown };
+      dev.__capriPersonality = {
+        wiring: personality,
+        log: personalityLog,
+        play: (gesture: GestureId, target?: Vec3) => {
+          const glanceAt =
+            target ??
+            (gesture === 'glance'
+              ? (surfaceStore.surfaces.find((s) => s.label !== 'floor' && s.label !== 'ceiling')?.center ??
+                registration.registry.all()[0]?.position)
+              : undefined);
+          return personality.playIdle(gesture, glanceAt);
+        },
+        forceIgnored: () => personality.reactIgnored(),
+        noteInput: () => personality.noteInput(),
+        state: () => ({
+          now: app.clock.now(),
+          nextBehaviourAtMs: personality.scheduler.nextBehaviourAtMs,
+          lastInputAtMs: personality.scheduler.lastInputAtMs,
+          ignoredReacted: personality.scheduler.ignoredReacted,
+          activeGesture: presenceRef.current?.proceduralAnimator?.activeGesture ?? 'none',
+          mode: controller.mode,
+        }),
+      };
+      this.cleanupFuncs.push(() => {
+        delete dev.__capriPersonality;
+      });
+    }
+    // Pause and resume (task 27.2): the session's `visibilitychange` (Meta menu, permission prompt,
+    // headset off) and, outside a session, the page's. Published as `world.globals.pause`.
+    const pause = new PauseController({
+      clock: app.clock,
+      events: app.events,
+      logger: createLogger('pause'),
+      targets: {
+        app,
+        audio: speech,
+        speech: speechQueue,
+        mic: capture,
+        voice: voiceLoop,
+        tasks: taskFlow,
+        personality,
+        home: liveMonitor,
+        hands: handGuard,
+      },
+    });
+    this.cleanupFuncs.push(attachPauseSources(pause, world, typeof document === 'undefined' ? undefined : document));
+    world.globals.pause = pause;
+    this.cleanupFuncs.push(() => {
+      pause.dispose();
+      app.setPaused(false);
+      if (world.globals.pause === pause) delete world.globals.pause;
+    });
+    if (import.meta.env.DEV) {
+      // Dev only: pause by hand, or feed a session visibility as if the session had sent it. The
+      // emulator's own `IWER_DEVICE.updateVisibilityState(...)` goes through the real event path.
+      const dev = window as unknown as { __capriPause?: unknown };
+      dev.__capriPause = {
+        controller: pause,
+        pause: () => pause.setManual(true),
+        resume: () => pause.setManual(false),
+        simulate: (visibility: 'visible' | 'visible-blurred' | 'hidden') => pause.setSessionVisibility(visibility),
+        state: () => ({
+          paused: pause.paused,
+          reason: pause.reason ?? null,
+          inputs: pause.inputs,
+          lastPausedMs: pause.lastPausedMs,
+          appPaused: app.paused,
+          audioPaused: speech?.paused ?? null,
+          audioRunning: speech?.audioRunning ?? null,
+          speechHeld: speechQueue.held,
+          speechPending: speechQueue.pending,
+          voicePaused: voiceLoop.isPaused,
+          listening: voiceLoop.listening,
+          sttListening: stt.isListening,
+          micCapturing: capture.isCapturing,
+          tasksPaused: taskFlow.isPaused,
+          handGuard: handGuard.active,
+          timersPending: timers.pending().length,
+        }),
+      };
+      this.cleanupFuncs.push(() => {
+        delete dev.__capriPause;
+      });
+    }
     // Speech output (task 13.20). `main.ts` publishes the engine. Its bubble and speaking gesture go to
     // the Avatar, and the mouth follows tier 1 library audio only. The engine samples the analyser
     // first so the mouth sees this frame's amplitude.
@@ -580,12 +850,39 @@ export class CapriSystem extends createSystem({
     // ui stage so they see this frame's hand state from the readFrame stage.
     const monitor = new HandLostMonitor();
     const handLostPanel = new HandLostPanel(world);
+    // Loading panel (task 27.1): in the session until Capri has appeared, or with her failure line.
+    const loadingPanel = new LoadingPanel(world, {
+      status: loading,
+      voiceModel,
+      isAvatarSpawned: () => presence.isSpawned,
+    });
+    this.cleanupFuncs.push(() => loadingPanel.dispose());
+    if (import.meta.env.DEV) {
+      const dev = window as unknown as { __capriLoading?: unknown };
+      dev.__capriLoading = { status: loading, panel: loadingPanel };
+      this.cleanupFuncs.push(() => {
+        delete dev.__capriLoading;
+      });
+    }
     // Status chips (task 17.5): Mode, Home Assistant, Hermes, Voice. Published as
     // `world.globals.statusChips` so the mode wiring (task 17.6) can call `setMode`. Display only.
     const statusChips = new StatusChips(app.events, { world, dominant: hands.dominantHand });
     world.globals.statusChips = statusChips;
     // Mode chip and the Home Assistant and Hermes chips (task 17.6): current states now, changes later.
-    this.cleanupFuncs.push(wireModeAndConnections(app.events, statusChips, modeState, backend, agent));
+    let stopChips = wireModeAndConnections(app.events, statusChips, modeState, backend, agentSlot);
+    this.cleanupFuncs.push(() => stopChips());
+    // A mode change on the 2D page (task 25.10, never during a session): the mode chip, the mock bulbs
+    // (Mock Mode only), the home's stored lights, and the agent all follow it.
+    this.cleanupFuncs.push(
+      sessionMode.mode.subscribe((applied) => {
+        modeState = applied.state;
+        stopChips();
+        stopChips = wireModeAndConnections(app.events, statusChips, modeState, backend, agentSlot);
+        syncMockBulbs();
+        void registration.reloadStored();
+        connectModeAgent(modeState);
+      }),
+    );
     this.cleanupFuncs.push(() => handLostPanel.dispose());
     this.cleanupFuncs.push(() => {
       if (world.globals.statusChips === statusChips) delete world.globals.statusChips;
@@ -610,6 +907,7 @@ export class CapriSystem extends createSystem({
         }
         statusChips.setVoice(voiceUi.status);
         statusChips.update(frame);
+        loadingPanel.update(frame);
         // The animator stage has run, so the fingertip is this frame's. The dev sequence goes first so
         // its stages reach the VFX before the VFX draws.
         vfx.bindAnimator(presenceRef.current?.proceduralAnimator);
@@ -617,10 +915,10 @@ export class CapriSystem extends createSystem({
         // The viewer is the camera. Its world position follows the headset in a session.
         world.camera.getWorldPosition(vfxViewer);
         vfx.update(frame.dt, vfxViewer.x, vfxViewer.y, vfxViewer.z, frame.time);
-        mockBulbs?.update(frame);
+        mockBulbsRef.current?.update(frame);
         registration.updateUi(frame);
         voiceUi.updateUi(frame);
-        taskPanel?.update(frame);
+        taskPanel.update(frame);
         for (let i = 0; i < bubbles.length; i += 1) {
           bubbles[i]!.update(frame.dt, frame.head.position[0]!, frame.head.position[2]!);
         }
@@ -637,9 +935,10 @@ export class CapriSystem extends createSystem({
     // Developer controls for the spatial abilities (task 7.10): dev builds, or `?dev=1` in any build.
     if (shouldShowDevPanel(window.location.search)) {
       const devLogger = createLogger('dev-panel');
-      const devPanel = new DevPanel(world, devLogger, (id) =>
-        describeDispatch(DEV_ACTION_LABELS[id], abilities.runDevAction(id)),
-      );
+      const devPanel = new DevPanel(world, devLogger, (id) => {
+        noteUserInput();
+        return describeDispatch(DEV_ACTION_LABELS[id], abilities.runDevAction(id));
+      });
       this.cleanupFuncs.push(() => devPanel.dispose());
       this.cleanupFuncs.push(registration.addUiRect(() => devPanel.getRect()));
       if (import.meta.env.DEV) {

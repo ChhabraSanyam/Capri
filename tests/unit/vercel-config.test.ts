@@ -42,14 +42,34 @@ describe('vercel.json', () => {
     expect(config.buildCommand).toBe('npm run build:vercel');
   });
 
-  it('build:vercel runs typecheck, tests, the model fetch, the lexicon build, then vite build, in that order', () => {
+  it('build:vercel runs typecheck, tests, the model fetch, the lexicon build, vite build, then the checks, in that order', () => {
     const script = (pkg.scripts as Record<string, string>)['build:vercel'] ?? '';
-    const steps = ['npm run typecheck', 'npm test', 'npm run fetch:vosk', 'npm run build:lexicon', 'vite build'];
+    const steps = [
+      'npm run typecheck',
+      'npm test',
+      'npm run fetch:vosk',
+      'npm run build:lexicon',
+      'vite build',
+      'npm run check',
+    ];
     const positions = steps.map((s) => script.indexOf(s));
     expect(positions.every((p) => p >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+    // The smoke checks read dist/, so they must be the last step, and every step is chained with &&
+    // so a failing check fails the deployment (Requirements 30.4, 30.9).
+    expect(script.endsWith('npm run check')).toBe(true);
+    expect(script.split(' && ')).toHaveLength(steps.length);
     expect(script).not.toContain(';');
     expect(script).not.toContain('||');
+  });
+
+  it('npm run check runs lint and the smoke checks, and esbuild is a direct dev dependency', () => {
+    const scripts = pkg.scripts as Record<string, string>;
+    expect(scripts.check).toBe('npm run lint && npm run check:smoke');
+    expect(scripts['check:smoke']).toMatch(/^esbuild tools\/checks\/run-checks\.ts .* && node /u);
+    // check:smoke calls the esbuild binary, so `npm ci` on Vercel must install it directly, not only
+    // as a transitive dependency of vite.
+    expect((pkg.devDependencies as Record<string, string>).esbuild).toBeDefined();
   });
 
   it('allows https: and wss: connections but not http: or ws:', () => {

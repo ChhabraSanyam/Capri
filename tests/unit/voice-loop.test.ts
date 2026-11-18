@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import manifestText from '../../voice/voice-manifest.txt?raw';
+import { CapriApp } from '../../src/app/app.js';
 import { createEventBus } from '../../src/app/events.js';
 import { createManualClock } from '../../src/app/clock.js';
 import { createFrameContext, type FrameContext } from '../../src/app/frame-context.js';
@@ -430,5 +431,51 @@ describe('TalkGesture', () => {
     rig.run(10, 'point-pinch', false);
     rig.run(10, 'point', false);
     expect(rig.edges).toEqual([]);
+  });
+});
+
+describe('VoiceLoop pause and resume (task 27.2)', () => {
+  it('drops a push-to-talk in progress without acting on it, and starts none while paused', async () => {
+    const rig = loopRig();
+    rig.ui.handlers?.onMicOrb?.();
+    expect(rig.counts().starts).toBe(1);
+    rig.loop.pause();
+    expect(rig.loop.isPaused).toBe(true);
+    expect(rig.loop.listening).toBe(false);
+    expect(rig.ui.listening).toEqual([true, false]);
+    expect(rig.counts().stops).toBe(1);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    // The words heard before the menu opened are not a command.
+    expect(rig.loop.lastProcessed).toBeUndefined();
+    expect(rig.said).toEqual([]);
+
+    rig.ui.handlers?.onMicOrb?.();
+    expect(rig.counts().starts).toBe(1);
+
+    rig.loop.resume();
+    rig.ui.handlers?.onMicOrb?.();
+    expect(rig.counts().starts).toBe(2);
+  });
+
+  it('keeps a timer counting while paused and announces it on the first stage after the resume', async () => {
+    const rig = loopRig();
+    const app = new CapriApp({ logger: createLogger('test'), clock: rig.clock, isInSession: () => true });
+    app.setStage('orchestrator', () => rig.loop.updateOrchestrator());
+    await rig.loop.submitText('set a timer for two minutes', 'keyboard');
+    expect(rig.timers.pending()).toHaveLength(1);
+    const before = rig.said.length;
+
+    app.setPaused(true);
+    rig.loop.pause();
+    rig.clock.advance(150_000);
+    app.tick(1 / 72, 90);
+    expect(rig.said.length).toBe(before);
+    expect(rig.timers.pending()).toHaveLength(1);
+
+    app.setPaused(false);
+    rig.loop.resume();
+    app.tick(1 / 72, 90.01);
+    expect(rig.timers.pending()).toHaveLength(0);
+    expect(rig.said.length).toBeGreaterThan(before);
   });
 });

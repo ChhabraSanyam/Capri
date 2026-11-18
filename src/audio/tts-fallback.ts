@@ -51,4 +51,16 @@ export class TtsFallback {
     if (!this.available) return;
     this.host.speechSynthesis?.cancel();
   }
+
+  /** Pause the line being spoken (task 27.2). Does nothing when tier 2 is unavailable. */
+  pause(): void {
+    if (!this.available) return;
+    this.host.speechSynthesis?.pause();
+  }
+
+  /** Carry on with a paused line. */
+  resume(): void {
+    if (!this.available) return;
+    this.host.speechSynthesis?.resume();
+  }
 }

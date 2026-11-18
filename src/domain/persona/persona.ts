@@ -18,7 +18,7 @@ import type { Rng } from '../../app/rng.js';
 import type { DeviceCommand } from '../../backends/types.js';
 import { BANTER, SPEECH_COMMANDS } from '../../config/constants.js';
 import type { PersonaPort, PersonaSituation } from '../actions/persona-port.js';
-import type { GestureId } from '../animation-types.js';
+import type { Emotion, GestureId } from '../animation-types.js';
 import type { ResolvedAction, UnsupportedReason } from '../speech-lang/resolver.js';
 import type { TaskKind } from '../speech-lang/phrases.js';
 import type { VoiceClaims, VoiceManifest } from '../speech/voice-manifest.js';
@@ -56,8 +56,14 @@ export type ActionSubject =
  *   (task 13.25). They say what was set up and never that a call finished.
  * - `unsupported`: the request is outside what Capri can do (Requirement 22.10).
  * - `hermes_unavailable`: Tier 2 failed and Tier 1 handles the request.
+ * - `approval_requested`: a running Hermes task waits for the user's Approve or Deny. Capri asks;
+ *   she never says it was allowed.
  * - `call`: the progress of a device call or Hermes task (`state`), with the sanitised backend
  *   message in `error` for `failure`.
+ * - `integration_failed`: an integration could not be used (the Live Mode connection test at session
+ *   start, task 25.10). The same `fail` lines as a failed call: an in-character lead line, then the
+ *   backend's sanitised message, which for a network or CORS failure carries the CORS hint
+ *   (Requirements 26.6, 27.5).
  *
  * A toggle tease is not requested here: report actions with `Persona.noteAction`.
  */
@@ -73,6 +79,13 @@ export type PersonaRequest =
   | { readonly kind: 'place_failed' }
   | { readonly kind: 'unsupported'; readonly reason: UnsupportedReason; readonly text?: string }
   | { readonly kind: 'hermes_unavailable' }
+  | { readonly kind: 'approval_requested' }
+  | {
+      readonly kind: 'integration_failed';
+      readonly integration: 'homeAssistant' | 'hermes';
+      /** The `BackendError.message`, already sanitised by the backend. */
+      readonly error?: string;
+    }
   | {
       readonly kind: 'call';
       readonly state: CallState;
@@ -166,9 +179,9 @@ export class Persona implements PersonaPort {
 
   /**
    * The lines for a request, also handed to `deliver`. With `gestures: false` the delivered lines
-   * carry no gesture, for a caller that plays the matching gesture itself (the hack sequence plays
-   * `celebrate` and `shrug`, so the speech presenter must not play them a second time). The
-   * emotion stays.
+   * carry `gesture: 'none'`, for a caller that plays the matching gesture itself (the hack sequence
+   * plays `celebrate` and `shrug`, so the speech presenter must neither play them a second time nor
+   * cut them short with the speaking gesture). The emotion stays.
    */
   say(
     request: PersonaRequest,
@@ -182,6 +195,27 @@ export class Persona implements PersonaPort {
     if (closing !== undefined && lines.length > 1) {
       lines = lines.map((line, i) => (i === lines.length - 1 ? { ...line, gesture: closing } : line));
     }
+    this.hand(lines);
+    return lines;
+  }
+
+  /**
+   * Pass on dynamic text from Tier 2 (a validated Hermes reply, task 21.12). It is not in the
+   * Voice_Library, so it plays as a Speech_Bubble plus chirp on Quest Browser (tier 3). The line
+   * claims nothing (`neutral`): the tier router has already replaced speech that claims a finished
+   * action. Text is cut to two sentences; empty text says nothing. Delivered like `say`.
+   */
+  relay(
+    text: string,
+    options: { readonly emotion?: Emotion; readonly gesture?: GestureId } = {},
+  ): readonly Utterance[] {
+    const line: Utterance = {
+      text: typeof text === 'string' ? text : '',
+      claims: 'neutral',
+      ...(options.gesture === undefined || options.gesture === 'none' ? {} : { gesture: options.gesture }),
+      ...(options.emotion === undefined ? {} : { emotion: options.emotion }),
+    };
+    const lines = this.finish('idle', [line]);
     this.hand(lines);
     return lines;
   }
@@ -209,6 +243,8 @@ export class Persona implements PersonaPort {
     switch (request.kind) {
       case 'call':
         return this.call(request.state, request.subject, request.error);
+      case 'integration_failed':
+        return this.failure(request.error);
       case 'greeting':
         return this.neutral('greeting');
       case 'idle_ignored':
@@ -219,6 +255,8 @@ export class Persona implements PersonaPort {
         return this.neutral('ask_repeat');
       case 'hermes_unavailable':
         return this.neutral('hermes_unavailable');
+      case 'approval_requested':
+        return this.neutral('approval_requested');
       case 'timer_set':
         return this.neutral('timer_set', { minutes: formatMinutes(request.minutes) });
       case 'place_remembered':
@@ -283,16 +321,20 @@ export class Persona implements PersonaPort {
         }
         return this.finish(state, lines);
       }
-      case 'failure': {
-        const lead = this.banter.line('failure', {}, allow);
-        const message: Utterance = {
-          text: failureText(error),
-          claims: 'fail',
-          ...(lead === undefined ? { gesture: 'shrug' as const, emotion: 'sad' as const } : {}),
-        };
-        return this.finish(state, lead === undefined ? [message] : [lead, message]);
-      }
+      case 'failure':
+        return this.failure(error);
     }
+  }
+
+  /** An in-character lead line (when the library has one), then the backend's own message. */
+  private failure(error: string | undefined): readonly Utterance[] {
+    const lead = this.banter.line('failure', {}, (claims) => claimAllowed('failure', claims));
+    const message: Utterance = {
+      text: failureText(error),
+      claims: 'fail',
+      ...(lead === undefined ? { gesture: 'shrug' as const, emotion: 'sad' as const } : {}),
+    };
+    return this.finish('failure', lead === undefined ? [message] : [lead, message]);
   }
 
   /** Last line of defence: drop lines whose claim does not fit the state, and make sure `ack` is not completion. */
@@ -318,10 +360,12 @@ export class Persona implements PersonaPort {
   }
 }
 
+/**
+ * The line with `gesture: 'none'`: the speech output then starts no gesture of its own, not even the
+ * default speaking gesture, so the gesture the caller played (celebrate, shrug, notify) runs to its end.
+ */
 function withoutGesture(line: Utterance): Utterance {
-  if (line.gesture === undefined) return line;
-  const { gesture: _gesture, ...rest } = line;
-  return rest;
+  return line.gesture === 'none' ? line : { ...line, gesture: 'none' };
 }
 
 /** The status line context and slots that say what was done, once a call succeeded. */

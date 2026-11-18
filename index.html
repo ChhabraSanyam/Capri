@@ -88,6 +88,123 @@
         color: #c9cdd8;
         font-size: 14px;
       }
+      #connect-home {
+        border: 1px solid #3a3e4a;
+        border-radius: 10px;
+        padding: 10px 14px;
+        background: #161a24;
+      }
+      #connect-home summary {
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 18px;
+        padding: 8px 0;
+        min-height: 32px;
+      }
+      #connect-form {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding-top: 8px;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .field label {
+        font-weight: 600;
+      }
+      .field input {
+        font: inherit;
+        font-size: 18px;
+        min-height: 48px;
+        box-sizing: border-box;
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #5a5d66;
+        background: #0c0e14;
+        color: #fff;
+      }
+      .field input[aria-invalid='true'] {
+        border-color: #ff8f8f;
+      }
+      .secret-row {
+        display: flex;
+        gap: 8px;
+      }
+      .secret-row input {
+        flex: 1;
+        min-width: 0;
+      }
+      .secret-row button {
+        min-width: 72px;
+        align-self: stretch;
+      }
+      .help {
+        color: #c9cdd8;
+        font-size: 14px;
+      }
+      .field-error {
+        color: #ff8f8f;
+        font-size: 15px;
+      }
+      .switch {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+        cursor: pointer;
+      }
+      .switch input {
+        width: 26px;
+        height: 26px;
+        margin: 0;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      #connect-results {
+        margin: 0;
+        padding-left: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      #connect-results li[data-result='ok'] {
+        color: #7fe0a8;
+      }
+      #connect-results li[data-result='failed'] {
+        color: #ffb3b3;
+      }
+      #capri-load {
+        border: 1px solid #3a3e4a;
+        border-radius: 10px;
+        padding: 10px 14px;
+        background: #161a24;
+      }
+      #capri-load[data-state='failed'] {
+        border-color: #ff8f8f;
+      }
+      #capri-load ul {
+        margin: 0;
+        padding-left: 20px;
+        font-size: 15px;
+        color: #c9cdd8;
+      }
+      #capri-load li[data-state='done'] {
+        color: #7fe0a8;
+      }
+      #capri-load li[data-state='failed'] {
+        color: #ffb3b3;
+      }
+      #connect-forget {
+        border-color: #ff8f8f;
+        background: #3a1c1f;
+      }
     </style>
   </head>
   <body>
@@ -101,6 +218,12 @@
           Three virtual bulbs appear in your room. Nothing is sent to Home Assistant or any other
           server. No setup needed.
         </p>
+      </section>
+      <!-- Loading screen (task 27.1). This text shows from the first paint, while the app itself is
+           still downloading. The loading view replaces it with the avatar and voice line progress. -->
+      <section id="capri-load" aria-live="polite">
+        <p><strong>Capri is jacking in...</strong></p>
+        <p>Loading the app. This takes a moment the first time.</p>
       </section>
       <p id="support-line">Checking AR support...</p>
       <section id="mic-step" aria-labelledby="mic-heading">
@@ -116,6 +239,64 @@
         <button id="enter-ar" type="button" disabled>Enter AR</button>
         <p id="error-line" role="alert" hidden></p>
       </section>
+      <!-- Optional Live Mode settings (task 25.9). Closed by default: Mock Mode needs none of this. -->
+      <details id="connect-home">
+        <summary>Connect your own home (optional)</summary>
+        <form id="connect-form" novalidate autocomplete="off" aria-describedby="connect-privacy">
+          <p id="connect-privacy">
+            These settings are stored only on this device and are sent only to the addresses you
+            enter here. Capri never logs them.
+          </p>
+          <p id="connect-missing" aria-live="polite" hidden></p>
+          <div class="field">
+            <label for="ha-url">Home Assistant URL</label>
+            <input id="ha-url" name="ha_url" type="text" inputmode="url" placeholder="https://your-home.example"
+              autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"
+              aria-describedby="ha-url-help ha-url-error" />
+            <p id="ha-url-help" class="help">Starts with https://. Plain http does not work from this page.</p>
+            <p id="ha-url-error" class="field-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="ha-token">Home Assistant long-lived token</label>
+            <div class="secret-row">
+              <input id="ha-token" name="ha_token" type="password" autocomplete="off" autocapitalize="none"
+                autocorrect="off" spellcheck="false" aria-describedby="ha-token-help ha-token-error" />
+              <button id="ha-token-show" type="button" aria-controls="ha-token" aria-pressed="false"
+                aria-label="Show Home Assistant token">Show</button>
+            </div>
+            <p id="ha-token-help" class="help">Create one in Home Assistant under your profile, Security, Long-lived access tokens. Paste it here.</p>
+            <p id="ha-token-error" class="field-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="hermes-url">Hermes URL</label>
+            <input id="hermes-url" name="hermes_url" type="text" inputmode="url" placeholder="https://your-hermes.example"
+              autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"
+              aria-describedby="hermes-url-help hermes-url-error" />
+            <p id="hermes-url-help" class="help">Optional. Starts with https://.</p>
+            <p id="hermes-url-error" class="field-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="hermes-key">Hermes key</label>
+            <div class="secret-row">
+              <input id="hermes-key" name="hermes_key" type="password" autocomplete="off" autocapitalize="none"
+                autocorrect="off" spellcheck="false" aria-describedby="hermes-key-error" />
+              <button id="hermes-key-show" type="button" aria-controls="hermes-key" aria-pressed="false"
+                aria-label="Show Hermes key">Show</button>
+            </div>
+            <p id="hermes-key-error" class="field-error" hidden></p>
+          </div>
+          <label class="switch"><input id="live-mode" type="checkbox" role="switch" /> Live Mode (use my Home Assistant instead of the virtual bulbs)</label>
+          <label class="switch"><input id="remember" type="checkbox" role="switch" checked /> Remember on this device</label>
+          <p class="help">With Remember off, the settings are kept only until you close this tab.</p>
+          <div class="actions">
+            <button id="connect-save" type="submit">Save</button>
+            <button id="connect-test" type="button">Test connections</button>
+          </div>
+          <p id="connect-status" role="status" aria-live="polite" hidden></p>
+          <ul id="connect-results" aria-label="Connection test results"></ul>
+          <button id="connect-forget" type="button">Forget credentials</button>
+        </form>
+      </details>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

@@ -12,7 +12,7 @@ import { createFrameContext, type FrameContext } from './frame-context.js';
 import { createLogger, type Logger } from './logger.js';
 import { createSeededRng, type Rng } from './rng.js';
 import { StageGuard } from './safe-run.js';
-import { DEFAULT_RNG_SEED } from '../config/constants.js';
+import { DEFAULT_RNG_SEED, PAUSE } from '../config/constants.js';
 
 /** The fixed tick order from the design (Frame loop and IWSDK integration). */
 export const STAGE_ORDER = [
@@ -35,6 +35,9 @@ export const STAGE_ORDER = [
 ] as const;
 
 export type StageName = (typeof STAGE_ORDER)[number];
+
+/** Stages that keep running while paused (task 27.2): only the dev frame-time overlay. */
+const RUNS_WHILE_PAUSED: readonly boolean[] = STAGE_ORDER.map((name) => name === 'perf');
 export type StageHandler = (frame: FrameContext) => void;
 
 export interface CapriAppDeps {
@@ -56,6 +59,9 @@ export class CapriApp {
   private readonly isInSession: () => boolean;
   private readonly handlers: (StageHandler | undefined)[] = STAGE_ORDER.map(() => undefined);
   private readonly guards: StageGuard[];
+  private pausedNow = false;
+  /** The next frame is the first after a resume. */
+  private clampNextDt = false;
 
   constructor(deps: CapriAppDeps = {}) {
     this.clock = deps.clock ?? systemClock;
@@ -80,13 +86,37 @@ export class CapriApp {
     return this.guards[STAGE_ORDER.indexOf(name)]?.disabled ?? false;
   }
 
+  /** True while the experience is paused (`ui/pause.ts`). */
+  get paused(): boolean {
+    return this.pausedNow;
+  }
+
+  /**
+   * Pause or resume the frame stages (task 27.2). While paused only the `perf` stage runs, so the
+   * animator clock, the idle stage, the orchestrator (hack runner, timers, task panel, Home Assistant
+   * refresh), the VFX and every dt countdown stand still. The first frame after a resume is clamped
+   * to `PAUSE.resumeMaxDtS`.
+   */
+  setPaused(paused: boolean): void {
+    if (paused === this.pausedNow) return;
+    this.pausedNow = paused;
+    if (!paused) this.clampNextDt = true;
+  }
+
   /** Run every stage once, in `STAGE_ORDER`. Called once per frame by `CapriSystem`. */
   tick(dt: number, time: number): void {
     const frame = this.frame;
-    frame.dt = dt;
+    const paused = this.pausedNow;
+    let stepS = dt;
+    if (!paused && this.clampNextDt) {
+      this.clampNextDt = false;
+      stepS = Math.min(dt, PAUSE.resumeMaxDtS);
+    }
+    frame.dt = stepS;
     frame.time = time;
     frame.inSession = this.isInSession();
     for (let i = 0; i < STAGE_ORDER.length; i += 1) {
+      if (paused && !RUNS_WHILE_PAUSED[i]) continue;
       const handler = this.handlers[i];
       if (handler === undefined) continue;
       this.guards[i]?.run(handler, frame);

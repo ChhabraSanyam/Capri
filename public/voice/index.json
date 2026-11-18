@@ -8,6 +8,9 @@
       "claims": "neutral",
       "file": "greeting_01.mp3",
       "durationMs": 2403,
+      "loudnessLufs": -15.9,
+      "truePeakDb": -0.2,
+      "gainDb": -0.1,
       "textHash": "aededb8959b5ac2d",
       "text": "Hey, it's me. Ready to hack the house?"
     },
@@ -17,6 +20,9 @@
       "claims": "neutral",
       "file": "greeting_02.mp3",
       "durationMs": 2995,
+      "loudnessLufs": -15.1,
+      "truePeakDb": -0.4,
+      "gainDb": -0.9,
       "textHash": "ee1ceb33ee19187c",
       "text": "Hi! Your friendly neighborhood hacker is online."
     },
@@ -26,6 +32,9 @@
       "claims": "neutral",
       "file": "greeting_03.mp3",
       "durationMs": 3251,
+      "loudnessLufs": -15.1,
+      "truePeakDb": -0.3,
+      "gainDb": -0.9,
       "textHash": "645fbe47ab378c5e",
       "text": "Oh good, you're here. Let's make some trouble."
     },
@@ -35,6 +44,9 @@
       "claims": "neutral",
       "file": "greeting_04.mp3",
       "durationMs": 3158,
+      "loudnessLufs": -16.4,
+      "truePeakDb": -0.4,
+      "gainDb": 0.4,
       "textHash": "4eebb32bc407a448",
       "text": "Capri online. What are we poking at today?"
     },
@@ -44,6 +56,9 @@
       "claims": "neutral",
       "file": "greeting_05.mp3",
       "durationMs": 1544,
+      "loudnessLufs": -15.1,
+      "truePeakDb": -0.3,
+      "gainDb": -0.9,
       "textHash": "b9dba57ece285293",
       "text": "Hey you. Miss me?"
     },
@@ -53,6 +68,9 @@
       "claims": "neutral",
       "file": "greeting_06.mp3",
       "durationMs": 2995,
+      "loudnessLufs": -16.1,
+      "truePeakDb": 0.3,
+      "gainDb": 0.1,
       "textHash": "2932c9244802c142",
       "text": "Hello, human. I'm feeling mischievous."
     },
@@ -62,6 +80,9 @@
       "claims": "neutral",
       "file": "greeting_07.mp3",
       "durationMs": 3344,
+      "loudnessLufs": -17.3,
+      "truePeakDb": 1.5,
+      "gainDb": 1.3,
       "textHash": "1f84d536e29a36e2",
       "text": "Hi! I'm all ears, well, mostly attitude."
     },
@@ -71,6 +92,9 @@
       "claims": "ack",
       "file": "confirm_01.mp3",
       "durationMs": 1556,
+      "loudnessLufs": -17.2,
+      "truePeakDb": -0.4,
+      "gainDb": 1.2,
       "textHash": "2570d1aa1359eaef",
       "text": "On it. Jacking in."
     },
@@ -80,6 +104,9 @@
       "claims": "ack",
       "file": "confirm_02.mp3",
       "durationMs": 2392,
+      "loudnessLufs": -15,
+      "truePeakDb": -0.2,
+      "gainDb": -1,
       "textHash": "3228db4f95099601",
       "text": "Hold still. Hacking the lights."
     },
@@ -89,6 +116,9 @@
       "claims": "ack",
       "file": "confirm_03.mp3",
       "durationMs": 2392,
+      "loudnessLufs": -17,
+      "truePeakDb": -0.5,
+      "gainDb": 1,
       "textHash": "181fcbd261f6b7af",
       "text": "You got it. Sending the command now."
     },
@@ -98,6 +128,9 @@
       "claims": "ack",
       "file": "confirm_04.mp3",
       "durationMs": 1997,
+      "loudnessLufs": -14.8,
+      "truePeakDb": -0.4,
+      "gainDb": -1.2,
       "textHash": "9c8a4e865e4ca14b",
       "text": "Easy. Give me a second."
     },
@@ -107,6 +140,9 @@
       "claims": "ack",
       "file": "confirm_05.mp3",
       "durationMs": 2125,
+      "loudnessLufs": -14.8,
+      "truePeakDb": -0.1,
+      "gainDb": -1.2,
       "textHash": "bdf0152ef836a5f3",
       "text": "Say no more. I'm on it."
     },
@@ -116,6 +152,9 @@
       "claims": "ack",
       "file": "confirm_06.mp3",
       "durationMs": 2426,
+      "loudnessLufs": -15.2,
+      "truePeakDb": 0.2,
+      "gainDb": -0.8,
       "textHash": "51f22c67c45fcc99",
       "text": "Rerouting the signal. Hang tight."
     },
@@ -125,6 +164,9 @@
       "claims": "ack",
       "file": "confirm_07.mp3",
       "durationMs": 2589,
+      "loudnessLufs": -15.3,
+      "truePeakDb": -0.3,
+      "gainDb": -0.7,
       "textHash": "401ed5b1f111341b",
       "text": "Okay, okay. Working my magic."
     },
@@ -134,6 +176,9 @@
       "claims": "done",
       "file": "quip_01.mp3",
       "durationMs": 1985,
+      "loudnessLufs": -15,
+      "truePeakDb": -0.4,
+      "gainDb": -1,
       "textHash": "deb9562adfeb8048",
       "text": "Too easy. You're welcome."
     },
@@ -143,6 +188,9 @@
       "claims": "done",
       "file": "quip_02.mp3",
       "durationMs": 1463,
+      "loudnessLufs": -15.1,
+      "truePeakDb": 0.9,
+      "gainDb": -0.9,
       "textHash": "4a5ba5fed88179be",
       "text": "Barely broke a sweat."
     },
@@ -152,6 +200,9 @@
       "claims": "done",
       "file": "quip_03.mp3",
       "durationMs": 2125,
+      "loudnessLufs": -15.1,
+      "truePeakDb": -0.3,
+      "gainDb": -0.9,
       "textHash": "361d6eca8ec2255c",
       "text": "And that's how it's done. Smooth."
     },
@@ -161,6 +212,9 @@
       "claims": "done",
       "file": "quip_04.mp3",
       "durationMs": 2775,
+      "loudnessLufs": -17.4,
+      "truePeakDb": -0.4,
+      "gainDb": 1.4,
       "textHash": "3fbcbad4351932d3",
       "text": "Hacked it. No firewall stood a chance."
     },
@@ -170,6 +224,9 @@
       "claims": "done",
       "file": "quip_05.mp3",
       "durationMs": 1382,
+      "loudnessLufs": -17.3,
+      "truePeakDb": -0.4,
+      "gainDb": 1.3,
       "textHash": "dd2077c02806b92a",
       "text": "Look at me, being useful."
     },
@@ -179,6 +236,9 @@
       "claims": "done",
       "file": "quip_06.mp3",
       "durationMs": 1614,
+      "loudnessLufs": -16,
+      "truePeakDb": -0.4,
+      "gainDb": 0,
       "textHash": "fab5f7fb25eb0ddf",
       "text": "Another system bows to me."
     },
@@ -188,6 +248,9 @@
       "claims": "done",
       "file": "quip_07.mp3",
       "durationMs": 1556,
+      "loudnessLufs": -15.8,
+      "truePeakDb": -0.2,
+      "gainDb": -0.2,
       "textHash": "4aec1367214d3dae",
       "text": "Flawless, as usual."
     },
@@ -197,6 +260,9 @@
       "claims": "done",
       "file": "quip_08.mp3",
       "durationMs": 2032,
+      "loudnessLufs": -15.1,
+      "truePeakDb": -0.4,
+      "gainDb": -0.9,
       "textHash": "117efb5249a522e2",
       "text": "Was that all? I'm just warming up."
     },
@@ -206,6 +272,9 @@
       "claims": "fail",
       "file": "error_01.mp3",
       "durationMs": 1370,
+      "loudnessLufs": -17.9,
+      "truePeakDb": -0.3,
+      "gainDb": 1.9,
       "textHash": "591347539f816b42",
       "text": "Nope, that bounced."
     },
@@ -215,6 +284,9 @@
       "claims": "fail",
       "file": "error_02.mp3",
       "durationMs": 1451,
+      "loudnessLufs": -16.7,
+      "truePeakDb": -0.5,
+      "gainDb": 0.7,
       "textHash": "a4d597a21c2d0625",
       "text": "Ugh, that didn't work."
     },
@@ -224,6 +296,9 @@
       "claims": "fail",
       "file": "error_03.mp3",
       "durationMs": 2496,
+      "loudnessLufs": -15,
+      "truePeakDb": -0.3,
+      "gainDb": -1,
       "textHash": "53e07644d35013f0",
       "text": "Hit a wall on that one. Annoying."
     },
@@ -233,6 +308,9 @@
       "claims": "fail",
       "file": "error_04.mp3",
       "durationMs": 2670,
+      "loudnessLufs": -15.9,
+      "truePeakDb": 3,
+      "gainDb": -0.1,
       "textHash": "a3cd32fef62d5ed4",
       "text": "That didn't go through. Here's what I got."
     },
@@ -242,6 +320,9 @@
       "claims": "fail",
       "file": "error_05.mp3",
       "durationMs": 3239,
+      "loudnessLufs": -15.4,
+      "truePeakDb": 0.5,
+      "gainDb": -0.6,
       "textHash": "29c02de5f36b73c8",
       "text": "Well, that was a flop. Even hackers have bad days."
     },
@@ -251,6 +332,9 @@
       "claims": "fail",
       "file": "error_06.mp3",
       "durationMs": 2450,
+      "loudnessLufs": -17.1,
+      "truePeakDb": -0.4,
+      "gainDb": 1.1,
       "textHash": "15e97a63310250a8",
       "text": "Okay, that one got away from me."
     },
@@ -260,6 +344,9 @@
       "claims": "fail",
       "file": "error_07.mp3",
       "durationMs": 2798,
+      "loudnessLufs": -16.8,
+      "truePeakDb": -0.4,
+      "gainDb": 0.8,
       "textHash": "45ab8e813f382245",
       "text": "Not this time. Something's being stubborn."
     },
@@ -269,6 +356,9 @@
       "claims": "neutral",
       "file": "tease_01.mp3",
       "durationMs": 2508,
+      "loudnessLufs": -16.4,
+      "truePeakDb": -0.4,
+      "gainDb": 0.4,
       "textHash": "de80e134bfbb104c",
       "text": "Flipping that again? Make up your mind."
     },
@@ -278,6 +368,9 @@
       "claims": "neutral",
       "file": "tease_02.mp3",
       "durationMs": 3019,
+      "loudnessLufs": -16.6,
+      "truePeakDb": -0.4,
+      "gainDb": 0.6,
       "textHash": "620de55bc6275c61",
       "text": "On, off, on, off. Are we throwing a party?"
     },
@@ -287,6 +380,9 @@
       "claims": "neutral",
       "file": "tease_03.mp3",
       "durationMs": 1869,
+      "loudnessLufs": -15.3,
+      "truePeakDb": -0.4,
+      "gainDb": -0.7,
       "textHash": "0910dcd7ac9ac8b0",
       "text": "Bored already? I can tell."
     },
@@ -296,6 +392,9 @@
       "claims": "neutral",
       "file": "tease_04.mp3",
       "durationMs": 2368,
+      "loudnessLufs": -15.1,
+      "truePeakDb": 0.7,
+      "gainDb": -0.9,
       "textHash": "6d31d7803bd5859f",
       "text": "Ooh, you want my attention? You've got it."
     },
@@ -305,6 +404,9 @@
       "claims": "neutral",
       "file": "tease_05.mp3",
       "durationMs": 2496,
+      "loudnessLufs": -16.2,
+      "truePeakDb": 0.1,
+      "gainDb": 0.2,
       "textHash": "0a0c274f172316a5",
       "text": "Staring is free. Talking is better."
     },
@@ -314,6 +416,9 @@
       "claims": "neutral",
       "file": "tease_06.mp3",
       "durationMs": 1730,
+      "loudnessLufs": -16,
+      "truePeakDb": -0.4,
+      "gainDb": 0,
       "textHash": "cb4cb463ea877e72",
       "text": "Careful, I might get used to you."
     },
@@ -323,6 +428,9 @@
       "claims": "neutral",
       "file": "tease_07.mp3",
       "durationMs": 2902,
+      "loudnessLufs": -17.3,
+      "truePeakDb": -0.3,
+      "gainDb": 1.3,
       "textHash": "87e87195356cea29",
       "text": "Fine, I'll play along. For now."
     },
@@ -332,6 +440,9 @@
       "claims": "neutral",
       "file": "tease_08.mp3",
       "durationMs": 2392,
+      "loudnessLufs": -16.1,
+      "truePeakDb": -0.4,
+      "gainDb": 0.1,
       "textHash": "1c0912ec5606a049",
       "text": "Nice pointing. Very dramatic."
     },
@@ -341,6 +452,9 @@
       "claims": "done",
       "file": "celebrate_01.mp3",
       "durationMs": 1405,
+      "loudnessLufs": -15.5,
+      "truePeakDb": -0.4,
+      "gainDb": -0.5,
       "textHash": "dab99f51596b4b13",
       "text": "Boom! Nailed it."
     },
@@ -350,6 +464,9 @@
       "claims": "done",
       "file": "celebrate_02.mp3",
       "durationMs": 2426,
+      "loudnessLufs": -15.3,
+      "truePeakDb": -0.4,
+      "gainDb": -0.7,
       "textHash": "6540cbb2407f44a2",
       "text": "Yes! Another win for the hacker."
     },
@@ -359,6 +476,9 @@
       "claims": "done",
       "file": "celebrate_03.mp3",
       "durationMs": 1126,
+      "loudnessLufs": -13.7,
+      "truePeakDb": -0.5,
+      "gainDb": -2.3,
       "textHash": "93fcf9d5a5b5c634",
       "text": "Told you I was good."
     },
@@ -368,6 +488,9 @@
       "claims": "done",
       "file": "celebrate_04.mp3",
       "durationMs": 1904,
+      "loudnessLufs": -17.9,
+      "truePeakDb": -0.4,
+      "gainDb": 1.9,
       "textHash": "dab4a119e805cce6",
       "text": "Victory! Cue the confetti."
     },
@@ -377,6 +500,9 @@
       "claims": "done",
       "file": "celebrate_05.mp3",
       "durationMs": 1509,
+      "loudnessLufs": -17.7,
+      "truePeakDb": -0.4,
+      "gainDb": 1.7,
       "textHash": "0e8d6900f8d07a66",
       "text": "That's what I'm talking about."
     },
@@ -386,6 +512,9 @@
       "claims": "done",
       "file": "celebrate_06.mp3",
       "durationMs": 1892,
+      "loudnessLufs": -15.1,
+      "truePeakDb": 0.8,
+      "gainDb": -0.9,
       "textHash": "fd532de71fd08950",
       "text": "We are unstoppable, you and me."
     },
@@ -395,6 +524,9 @@
       "claims": "done",
       "file": "celebrate_07.mp3",
       "durationMs": 2252,
+      "loudnessLufs": -16.9,
+      "truePeakDb": -0.4,
+      "gainDb": 0.9,
       "textHash": "0f564ca7ee4accf3",
       "text": "High five! That one was a beauty."
     },
@@ -404,6 +536,9 @@
       "claims": "ack",
       "file": "thinking_01.mp3",
       "durationMs": 1428,
+      "loudnessLufs": -16.8,
+      "truePeakDb": -0.4,
+      "gainDb": 0.8,
       "textHash": "58fed3e0f63b83de",
       "text": "Hmm, let me think."
     },
@@ -413,6 +548,9 @@
       "claims": "ack",
       "file": "thinking_02.mp3",
       "durationMs": 1428,
+      "loudnessLufs": -16.3,
+      "truePeakDb": -0.4,
+      "gainDb": 0.3,
       "textHash": "c24b033c7fd7d899",
       "text": "Crunching the numbers."
     },
@@ -422,6 +560,9 @@
       "claims": "ack",
       "file": "thinking_03.mp3",
       "durationMs": 1950,
+      "loudnessLufs": -16.5,
+      "truePeakDb": -0.3,
+      "gainDb": 0.5,
       "textHash": "8986af1e12428e37",
       "text": "One sec. Poking around."
     },
@@ -431,6 +572,9 @@
       "claims": "ack",
       "file": "thinking_04.mp3",
       "durationMs": 3111,
+      "loudnessLufs": -15.3,
+      "truePeakDb": -0.5,
+      "gainDb": -0.7,
       "textHash": "317714a88b2a8c73",
       "text": "Give me a moment. My brain is buffering."
     },
@@ -440,6 +584,9 @@
       "claims": "ack",
       "file": "thinking_05.mp3",
       "durationMs": 1962,
+      "loudnessLufs": -14.1,
+      "truePeakDb": 0,
+      "gainDb": -1.9,
       "textHash": "6cfcdb2e07601837",
       "text": "Scanning. Please hold."
     },
@@ -449,6 +596,9 @@
       "claims": "ack",
       "file": "thinking_06.mp3",
       "durationMs": 1242,
+      "loudnessLufs": -13.6,
+      "truePeakDb": 0.1,
+      "gainDb": -2.4,
       "textHash": "b95520d58c7c5ef8",
       "text": "Digging through the data."
     },
@@ -458,6 +608,9 @@
       "claims": "ack",
       "file": "thinking_07.mp3",
       "durationMs": 2519,
+      "loudnessLufs": -16.3,
+      "truePeakDb": -0.4,
+      "gainDb": 0.3,
       "textHash": "3e05174ff05545da",
       "text": "Hold on, running some code in my head."
     },
@@ -467,6 +620,9 @@
       "claims": "done",
       "file": "task_complete_01.mp3",
       "durationMs": 2577,
+      "loudnessLufs": -16.1,
+      "truePeakDb": -0.4,
+      "gainDb": 0.1,
       "textHash": "35c15def4863acda",
       "text": "Your task is finished. Come take a look."
     },
@@ -476,6 +632,9 @@
       "claims": "done",
       "file": "task_complete_02.mp3",
       "durationMs": 2868,
+      "loudnessLufs": -16.6,
+      "truePeakDb": 0.1,
+      "gainDb": 0.6,
       "textHash": "148cdc5fcd4e621a",
       "text": "The long job is back. Nice and tidy."
     },
@@ -485,6 +644,9 @@
       "claims": "done",
       "file": "task_complete_03.mp3",
       "durationMs": 2450,
+      "loudnessLufs": -15.6,
+      "truePeakDb": -0.4,
+      "gainDb": -0.4,
       "textHash": "0545576720c02814",
       "text": "All wrapped up. That one took a while."
     },
@@ -494,6 +656,9 @@
       "claims": "done",
       "file": "task_complete_04.mp3",
       "durationMs": 2310,
+      "loudnessLufs": -16.4,
+      "truePeakDb": -0.4,
+      "gainDb": 0.4,
       "textHash": "5039663bfda5a015",
       "text": "Ding! Your task just came through."
     },
@@ -503,6 +668,9 @@
       "claims": "done",
       "file": "task_complete_05.mp3",
       "durationMs": 2450,
+      "loudnessLufs": -17.3,
+      "truePeakDb": -0.4,
+      "gainDb": 1.3,
       "textHash": "dd6387745ad7603b",
       "text": "Good news. That job just finished."
     },
@@ -512,6 +680,9 @@
       "claims": "done",
       "file": "task_complete_06.mp3",
       "durationMs": 2125,
+      "loudnessLufs": -16.4,
+      "truePeakDb": -0.3,
+      "gainDb": 0.4,
       "textHash": "1c88f8807f5cfe38",
       "text": "It's done. You can stop worrying."
     },
@@ -521,6 +692,9 @@
       "claims": "done",
       "file": "task_complete_07.mp3",
       "durationMs": 2392,
+      "loudnessLufs": -15.6,
+      "truePeakDb": -0.3,
+      "gainDb": -0.4,
       "textHash": "e3b6476d8f644d83",
       "text": "Task complete. I'd say it went well."
     }

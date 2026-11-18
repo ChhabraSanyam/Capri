@@ -18,7 +18,7 @@ import { Object3D, Quaternion, Vector3 } from '@iwsdk/core';
 import type { VRM } from '@pixiv/three-vrm';
 import type { FrameContext } from '../app/frame-context.js';
 import type { Rng } from '../app/rng.js';
-import { ANIMATOR, FLICK_PROFILE, POINT_ARM } from '../config/constants.js';
+import { ANIMATOR, FLICK_PROFILE, GLANCE_LOOK, POINT_ARM } from '../config/constants.js';
 import {
   breathingOffsets,
   EMOTION_EXPRESSIONS,
@@ -51,6 +51,10 @@ import { aimArm, createAimResult, POINT, POINT_FINGER_CURLS, type ArmGeometry } 
 import { SHRUG } from './gestures/shrug.js';
 import { SIT } from './gestures/sit.js';
 import { WAVE } from './gestures/wave.js';
+import { GLANCE } from './gestures/glance.js';
+import { IGNORED } from './gestures/ignored.js';
+import { STRETCH } from './gestures/stretch.js';
+import { TEASE } from './gestures/tease.js';
 import { AXIS_X, AXIS_Y, AXIS_Z, boneIndex, PoseBuffer, type AxisIndex } from './pose-buffer.js';
 
 /** What the animator needs from a loaded Avatar. `Avatar` from the loader satisfies it. */
@@ -101,6 +105,12 @@ class GestureSlot {
 }
 
 const AXIS_INDEX: Readonly<Record<'x' | 'y' | 'z', AxisIndex>> = { x: AXIS_X, y: AXIS_Y, z: AXIS_Z };
+
+/** True while the slot's gesture steers the look: an aiming gesture (`point`, `flick`) or a `glance`. */
+function ownsLook(slot: GestureSlot): boolean {
+  const def = slot.gesture?.def;
+  return def !== undefined && (def.aimsAtTarget === true || def.id === 'glance');
+}
 
 function compile(def: GestureDef): CompiledGesture {
   const bones = new Int16Array(def.tracks.length);
@@ -243,6 +253,10 @@ export class ProceduralAnimator implements Animator {
   private readonly rootQuat = new Quaternion();
   private readonly rootQuatInv = new Quaternion();
 
+  // glance: which side the next untargeted glance looks to (+1 her left, -1 her right)
+  private glanceSide = 1;
+  private readonly glanceScratch = new Vector3();
+
   constructor(avatar: AnimatedAvatar, options: ProceduralAnimatorOptions) {
     this.vrm = avatar.vrm;
     this.root = avatar.root;
@@ -265,6 +279,10 @@ export class ProceduralAnimator implements Animator {
     this.registerGesture(SHRUG);
     this.registerGesture(CELEBRATE);
     this.registerGesture(FIDGET);
+    this.registerGesture(STRETCH);
+    this.registerGesture(GLANCE);
+    this.registerGesture(IGNORED);
+    this.registerGesture(TEASE);
     for (const def of options.gestures ?? []) this.registerGesture(def);
     this.registerPosture(SIT);
     this.registerPosture(PERCH);
@@ -340,7 +358,9 @@ export class ProceduralAnimator implements Animator {
     if (g === 'sit' || g === 'perch') return this.holdPosture(g);
     const gesture = this.registry.get(g);
     if (gesture === undefined) return Promise.resolve();
-    if (opts?.target) this.setPointTarget(opts.target);
+    // A glance target is something to look at, not something to point at.
+    const glance = g === 'glance';
+    if (opts?.target && !glance) this.setPointTarget(opts.target);
     return new Promise<void>((resolve) => {
       this.interruptCurrent();
       const slot = this.current;
@@ -349,7 +369,40 @@ export class ProceduralAnimator implements Animator {
       slot.releasedS = -1;
       slot.resolve = resolve;
       if (gesture.def.aimsAtTarget && this.hasPointTarget) this.beginPointAim();
+      else if (glance) this.beginGlanceLook(opts?.target);
     });
+  }
+
+  /**
+   * Turn the head and eyes to `target` for the glance, or, without a finite target, to a point off
+   * to one side (`GLANCE_LOOK`), alternating sides. The previous look target is saved and given
+   * back when the glance ends, exactly as for `point`, and an outside `setLookTarget` call takes
+   * the look back early.
+   */
+  private beginGlanceLook(target: Vec3 | undefined): void {
+    const out = this.glanceScratch;
+    if (target !== undefined && Number.isFinite(target.x) && Number.isFinite(target.y) && Number.isFinite(target.z)) {
+      out.set(target.x, target.y, target.z);
+    } else {
+      const head = this.nodes[this.ids.head];
+      if (head == null) return;
+      const yaw = GLANCE_LOOK.sideYawRad * this.glanceSide;
+      this.glanceSide = -this.glanceSide;
+      const pitch = GLANCE_LOOK.pitchRad;
+      // Torso frame: +Z ahead, +X her left, +Y up. Then into the world at the head.
+      out.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+      this.root.getWorldQuaternion(this.rootQuat);
+      out.applyQuaternion(this.rootQuat).multiplyScalar(GLANCE_LOOK.distanceM);
+      head.getWorldPosition(this.headWorld);
+      out.add(this.headWorld);
+    }
+    if (!this.pointLookActive) {
+      this.savedLookMode = this.lookMode;
+      this.savedLookTarget.copy(this.lookTarget);
+      this.pointLookActive = true;
+    }
+    this.lookTarget.copy(out);
+    this.lookMode = 'point';
   }
 
   /**
@@ -629,13 +682,13 @@ export class ProceduralAnimator implements Animator {
 
   /** End a slot, and give the look target back when it was the last point gesture. */
   private finishSlot(slot: GestureSlot): void {
-    const wasAiming = slot.gesture?.def.aimsAtTarget === true;
+    const wasAiming = ownsLook(slot);
     slot.finish();
     if (wasAiming && !this.isAimingNow()) this.endPointLook();
   }
 
   private isAimingNow(): boolean {
-    return this.current.gesture?.def.aimsAtTarget === true || this.outgoing.gesture?.def.aimsAtTarget === true;
+    return ownsLook(this.current) || ownsLook(this.outgoing);
   }
 
   /** Choose the arm nearer the target, and turn the head and eyes toward it while she points. */

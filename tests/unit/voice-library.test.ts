@@ -2,13 +2,16 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import indexText from '../../public/voice/index.json?raw';
 import manifestText from '../../voice/voice-manifest.txt?raw';
+import { lineGainDb, parseEbur128, VOICE_LOUDNESS_TARGET } from '../../tools/voice-script/loudness.js';
 import {
   indexLine,
+  needsLoudness,
   parseIndex,
   planLines,
   refreshKept,
   serializeIndex,
   textHash,
+  withLoudness,
   type ManifestEntry,
   type VoiceIndex,
 } from '../../tools/voice-script/voice-library.js';
@@ -74,6 +77,54 @@ describe('Voice_Script planning (task 13.19)', () => {
   });
 });
 
+const EBUR128_SAMPLE = `[Parsed_ebur128_0 @ 0x1] t: 0.0999546  TARGET:-23 LUFS    M:-120.7 S:-120.7     I: -70.0 LUFS       LRA:   0.0 LU  FTPK:  -3.1 dBFS  TPK:  -3.1 dBFS
+[Parsed_ebur128_0 @ 0x1] t: 0.999955   TARGET:-23 LUFS    M: -16.4 S:-120.7     I: -16.9 LUFS       LRA:   0.0 LU  FTPK:  -5.1 dBFS  TPK:  -0.4 dBFS
+[Parsed_ebur128_0 @ 0x1] t: 1.099955   TARGET:-23 LUFS    M: -15.4 S:-120.7     I: -16.7 LUFS       LRA:   0.0 LU  FTPK:  -6.4 dBFS  TPK:  -0.4 dBFS
+[Parsed_ebur128_0 @ 0x1] Summary:
+  Integrated loudness:
+    I:         -17.2 LUFS
+    Threshold: -27.2 LUFS
+  Loudness range:
+    LRA:         0.0 LU
+  True peak:
+    Peak:       -0.4 dBFS
+`;
+
+describe('Voice_Library loudness (task 27.3)', () => {
+  it('reads the integrated loudness, true peak, and momentary maximum from ffmpeg output', () => {
+    expect(parseEbur128(EBUR128_SAMPLE)).toEqual({ integratedLufs: -17.2, truePeakDb: -0.4, momentaryMaxLufs: -15.4 });
+    expect(parseEbur128('no summary here')).toBeUndefined();
+  });
+
+  it('gains each line to the target, clamped, and leaves silence alone', () => {
+    expect(lineGainDb(-17.2)).toBe(1.2);
+    expect(lineGainDb(-13.6)).toBe(-2.4);
+    expect(lineGainDb(VOICE_LOUDNESS_TARGET.integratedLufs)).toBe(0);
+    expect(lineGainDb(-40)).toBe(VOICE_LOUDNESS_TARGET.maxGainDb);
+    expect(lineGainDb(10)).toBe(VOICE_LOUDNESS_TARGET.minGainDb);
+    expect(lineGainDb(-70)).toBe(0);
+    expect(lineGainDb(Number.NEGATIVE_INFINITY)).toBe(0);
+  });
+
+  it('stores the measurement in a fixed key order and round-trips it', () => {
+    const a = entry('greeting_01', 'Hello there.');
+    const line = indexLine(a, textHash(a.text), 1000, { integratedLufs: -15.04, truePeakDb: 0.27 });
+    expect(line).toMatchObject({ loudnessLufs: -15, truePeakDb: 0.3, gainDb: -1 });
+    expect(Object.keys(line)).toEqual(['id', 'category', 'claims', 'file', 'durationMs', 'loudnessLufs', 'truePeakDb', 'gainDb', 'textHash', 'text']);
+    const index: VoiceIndex = { version: 1, voice: VOICE, lines: [line] };
+    expect(parseIndex(serializeIndex(index))).toEqual(index);
+    // A kept line measured earlier gives the same text again (the script stays idempotent).
+    const again = withLoudness(refreshKept(line, a), { integratedLufs: -15, truePeakDb: 0.3 });
+    expect(serializeIndex({ ...index, lines: [again] })).toBe(serializeIndex(index));
+  });
+
+  it('marks a line from an older index as unmeasured', () => {
+    const a = entry('greeting_01', 'Hello there.');
+    expect(needsLoudness(indexLine(a, textHash(a.text), 1000))).toBe(true);
+    expect(needsLoudness(indexLine(a, textHash(a.text), 1000, { integratedLufs: -16, truePeakDb: -1 }))).toBe(false);
+  });
+});
+
 describe('generated Voice_Library', () => {
   const parsed = parseVoiceManifest(manifestText);
   if (!parsed.ok) throw new Error('voice manifest does not parse');
@@ -88,6 +139,15 @@ describe('generated Voice_Library', () => {
       expect(found).toMatchObject({ category, claims: line.claims, text: line.text, file: `${line.id}.mp3` });
       expect(found?.textHash).toBe(textHash(line.text));
       expect(found?.durationMs).toBeGreaterThan(0);
+    }
+  });
+
+  it('carries a measured loudness and the matching playback gain on every line', () => {
+    for (const line of index?.lines ?? []) {
+      expect(line.loudnessLufs).toBeDefined();
+      expect(line.truePeakDb).toBeDefined();
+      expect(line.gainDb).toBe(lineGainDb(line.loudnessLufs ?? Number.NaN));
+      expect(Math.abs((line.loudnessLufs ?? 0) + (line.gainDb ?? 0) - VOICE_LOUDNESS_TARGET.integratedLufs)).toBeLessThan(0.11);
     }
   });
 

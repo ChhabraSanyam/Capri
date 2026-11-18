@@ -217,7 +217,6 @@ describe('ProceduralAnimator gestures', () => {
   it('resolves immediately for a gesture with no definition', async () => {
     const { animator } = setup();
     await expect(animator.play('none')).resolves.toBeUndefined();
-    await expect(animator.play('tease')).resolves.toBeUndefined();
   });
 
   it('dispose resolves a pending play()', async () => {

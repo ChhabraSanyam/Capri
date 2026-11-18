@@ -22,7 +22,8 @@
 import type { FeatureFlags } from '../config/feature-flags.js';
 import type { Vec3 } from '../domain/geometry.js';
 import type { DeviceRecord } from '../domain/devices/registry.js';
-import { LocalStorageDeviceStore, type DeviceStore } from './device-store.js';
+import type { HomeKind } from '../domain/devices/home-scope.js';
+import { HomeScopedDeviceStore, LocalStorageDeviceStore, type DeviceStore } from './device-store.js';
 import type { KeyValueStorage } from './local-store.js';
 
 /** What the store needs from the XR runtime. Positions are in the session reference space. */
@@ -155,6 +156,11 @@ export interface DeviceStoreOptions {
   readonly anchors?: AnchorPort;
   /** Storage for the localStorage store. Defaults to `localStorage`. */
   readonly storage?: KeyValueStorage;
+  /**
+   * The current home (task 25.10). When given, the store loads and saves only that home's lights
+   * (`HomeScopedDeviceStore`, under the anchor store) and keeps the other home's records.
+   */
+  readonly getHome?: () => HomeKind;
 }
 
 /**
@@ -162,7 +168,8 @@ export interface DeviceStoreOptions {
  * work and an adapter is given, localStorage otherwise.
  */
 export function createDeviceStore(options: DeviceStoreOptions): DeviceStore {
-  const local = new LocalStorageDeviceStore(options.storage);
+  const plain = new LocalStorageDeviceStore(options.storage);
+  const local = options.getHome === undefined ? plain : new HomeScopedDeviceStore(plain, options.getHome);
   if (options.flags.anchorsWork && options.anchors !== undefined) return new AnchorDeviceStore(local, options.anchors);
   return local;
 }

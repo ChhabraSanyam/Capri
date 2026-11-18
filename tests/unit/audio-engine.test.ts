@@ -53,6 +53,10 @@ class FakeContext {
     this.state = 'running';
     return Promise.resolve();
   }
+  suspend(): Promise<void> {
+    this.state = 'suspended';
+    return Promise.resolve();
+  }
   close(): Promise<void> {
     return Promise.resolve();
   }
@@ -174,6 +178,31 @@ describe('AudioEngine', () => {
     engine.update(1 / 72);
     expect(engine.amplitude).toBe(0);
     expect(events).toEqual(['start:greeting_01', 'end:greeting_01']);
+  });
+
+  it('pause suspends the context and keeps the line in progress; resume runs it again (task 27.2)', async () => {
+    const { engine, ctx, events } = setup();
+    await engine.loadLibrary();
+    await engine.unlock();
+    await settle();
+    const done = engine.say({ text: 'Hi there!', libraryId: 'greeting_01' });
+    engine.pause();
+    engine.pause();
+    await settle();
+    expect(engine.paused).toBe(true);
+    expect(ctx.state).toBe('suspended');
+    expect(engine.audioRunning).toBe(false);
+    // The line is frozen, not ended, and sound cues stay silent.
+    expect(engine.speaking).toBe(true);
+    expect(ctx.sources[0]!.stopped).toBe(false);
+    expect(engine.playSfx('pulse')).toBe(false);
+    expect(events).toEqual(['start:greeting_01']);
+
+    expect(await engine.resume()).toBe(true);
+    expect(engine.paused).toBe(false);
+    expect(engine.audioRunning).toBe(true);
+    ctx.sources[0]!.onended?.();
+    expect(await done).toEqual({ tier: 'library', status: 'completed' });
   });
 
   it('decodes an uncached line on first use', async () => {

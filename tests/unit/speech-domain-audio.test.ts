@@ -5,7 +5,7 @@ import { SPEECH_OUTPUT } from '../../src/config/constants.js';
 import { bubbleHoldS, planChirp } from '../../src/domain/speech/chirp-plan.js';
 import { LruCache } from '../../src/domain/speech/lru-cache.js';
 import { rmsOf } from '../../src/domain/speech/rms.js';
-import { isSafeRelativePath, parseVoiceIndex } from '../../src/domain/speech/voice-index.js';
+import { dbToGain, isSafeRelativePath, parseVoiceIndex, VOICE_GAIN_RANGE_DB } from '../../src/domain/speech/voice-index.js';
 
 describe('parseVoiceIndex', () => {
   it('reads the design format and fills defaults', () => {
@@ -33,6 +33,18 @@ describe('parseVoiceIndex', () => {
   it('never throws and gives an empty index for garbage', () => {
     fc.assert(fc.property(fc.anything(), (value) => parseVoiceIndex(value).byId.size >= 0));
     expect(parseVoiceIndex('<!doctype html>').byId.size).toBe(0);
+  });
+  it('reads the line gain, defaults it to 0 dB, and clamps it (task 27.3)', () => {
+    const index = parseVoiceIndex([
+      { id: 'a', category: 'quip', gainDb: -1.4 },
+      { id: 'b', category: 'quip' },
+      { id: 'c', category: 'quip', gainDb: 40 },
+      { id: 'd', category: 'quip', gainDb: 'loud' },
+      { id: 'e', category: 'quip', gainDb: -99 },
+    ]);
+    expect([...index.byId.values()].map((e) => e.gainDb)).toEqual([-1.4, 0, VOICE_GAIN_RANGE_DB.max, 0, VOICE_GAIN_RANGE_DB.min]);
+    expect(dbToGain(0)).toBe(1);
+    expect(dbToGain(-6)).toBeCloseTo(0.501, 3);
   });
   it('rejects unsafe paths', () => {
     expect(isSafeRelativePath('x.mp3')).toBe(true);

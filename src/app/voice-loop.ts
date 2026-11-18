@@ -12,17 +12,32 @@
  * - Dispatch: a resolved light command goes to the `DeviceActionRunner` (`HackRunner`: the hacking
  *   sequence, then the backend call). Navigation, look, point, timers, places and
  *   "that one" run here. Clarifications, "say that again", refusals and every answer are Persona
- *   lines. Free-form chat has no agent yet, so Capri says so in character. A task goes to the task flow (task 19.3)
- *   when there is an agent, and otherwise gets the same line.
+ *   lines.
+ * - Tier 2 (task 21.12): the `TierRouter` picks the tier. Typed free-form text and chat phrases go to
+ *   the agent's `chat` with the Spatial_Context while it is connected. Capri shows a `thinking` line
+ *   and look while she waits, then plays the reply's emotion and animation, shows its speech as a
+ *   bubble plus chirp, and runs its gated action through the same path as Tier 1. A task goes to the
+ *   task flow (task 19.3) with the Spatial_Context. Without a connected agent, both get the
+ *   in-character "Hermes is unavailable" line and Tier 1 carries on.
  * - Grammar: rebuilt (`buildGrammar` then `stt.setGrammar`) when the devices or the places change,
  *   and when a session starts.
  * - Failure: a microphone or recogniser failure shows Quick_Actions and the Hand_Keyboard.
+ * - Pause (task 27.2): `pause` drops a push-to-talk in progress and releases the microphone, and no
+ *   push-to-talk starts until `resume`. Timers keep wall time and are announced in the first
+ *   `orchestrator` stage after the resume, because the app does not run that stage while paused.
  *
  * No Three.js and no IWSDK: every collaborator is a port, so the loop runs under Node. It runs in
  * the `voice` stage (`update`) and the `orchestrator` stage (`updateOrchestrator`) and allocates
  * nothing on a quiet frame.
  */
 import type { VoiceAbilities } from '../avatar/ability-dispatcher.js';
+import type { LightState } from '../backends/types.js';
+import { TIER2 } from '../config/constants.js';
+import { buildSpatialContext, type SpatialWorld } from '../domain/context/spatial-context.js';
+import type { ActionWorldView } from '../domain/contract/response-contract.js';
+import { HERMES_UNAVAILABLE, TierRouter, type ChatOutcome } from '../domain/contract/tier-router.js';
+import type { AvatarMode } from '../domain/avatar-state.js';
+import type { Emotion } from '../domain/animation-types.js';
 import { actionKindOf } from '../domain/persona/action-memory.js';
 import { announceExpired, type TimerService } from '../domain/actions/timers.js';
 import type { DeviceActionRunner } from '../domain/actions/device-runner.js';
@@ -45,6 +60,7 @@ import {
   type ProcessedText,
 } from '../domain/speech-lang/process-text.js';
 import type { DeviceDirectory, ResolvedCommand } from '../domain/speech-lang/resolver.js';
+import type { TaskKind } from '../domain/speech-lang/phrases.js';
 import type {
   SpeechFailureReason,
   SpeechRecognizerPort,
@@ -90,7 +106,20 @@ export interface PointingPort {
 }
 
 /** The Persona calls the loop makes. `Persona` satisfies it. */
-export type PersonaSink = Pick<Persona, 'say' | 'noteAction' | 'situation'>;
+export type PersonaSink = Pick<Persona, 'say' | 'noteAction' | 'situation' | 'relay'>;
+
+/** What the loop asks of the tier router. `TierRouter` satisfies it. */
+export type TierRouterPort = Pick<TierRouter, 'route' | 'chat'>;
+
+/** The Avatar's state for the Spatial_Context. Its emotion is the one the loop last set. */
+export interface AvatarStateReading {
+  readonly position: Vec3;
+  readonly mode: AvatarMode;
+}
+
+/** While a Tier 2 reply is on its way, Capri acknowledges with a `thinking` line, never an answer. */
+const THINKING_SUBJECT = { kind: 'task', label: 'question' } as const;
+const ORIGIN: Vec3 = { x: 0, y: 0, z: 0 };
 
 export interface VoiceLoopDeps {
   readonly events: Pick<EventBus<AppEvents>, 'on' | 'emit'>;
@@ -105,7 +134,7 @@ export interface VoiceLoopDeps {
   readonly abilities: VoiceAbilities;
   readonly runner: DeviceActionRunner;
   readonly timers: TimerService;
-  readonly getAnimator: () => Pick<Animator, 'play'> | undefined;
+  readonly getAnimator: () => Pick<Animator, 'play' | 'setEmotion'> | undefined;
   readonly getSurfaces: () => readonly Surface[];
   readonly getHead: () => HeadPose | undefined;
   /** The head forward ray, for "remember this as" when nothing is pointed at. */
@@ -122,6 +151,15 @@ export interface VoiceLoopDeps {
    * request gets the in-character "Hermes is unavailable" line instead of a pretend task.
    */
   readonly tasks?: TaskPort;
+  /**
+   * Picks the tier and runs Tier 2 chat (task 21.12). Defaults to a router with no agent, so chat and
+   * task requests get the "Hermes is unavailable" line.
+   */
+  readonly router?: TierRouterPort;
+  /** Current light state by entity id, for the Spatial_Context. */
+  readonly getLightState?: (entityId: string) => Pick<LightState, 'on' | 'brightnessPct'> | undefined;
+  /** The Avatar's position and mode, for the Spatial_Context. */
+  readonly getAvatarState?: () => AvatarStateReading | undefined;
 }
 
 /** Failures that send the user to Quick_Actions and the Hand_Keyboard. The model state covers the rest. */
@@ -129,7 +167,7 @@ function isMicFailure(reason: SpeechFailureReason): boolean {
   return reason !== 'model-loading' && reason !== 'model-failed' && reason !== 'stopped';
 }
 
-const NO_ANIMATOR: Pick<Animator, 'play'> = { play: () => Promise.resolve() };
+const NO_ANIMATOR: Pick<Animator, 'play' | 'setEmotion'> = { play: () => Promise.resolve(), setEmotion: () => undefined };
 
 function reasonOf(error: unknown): SpeechFailureReason {
   const reason = (error as { reason?: unknown } | null)?.reason;
@@ -150,8 +188,19 @@ export class VoiceLoop {
   private currentGrammar: readonly string[] = [];
   private processed: ProcessedText | undefined;
   private disposed = false;
+  private readonly router: TierRouterPort;
+  /** Bumped by every Tier 2 chat, so only the newest reply is presented. */
+  private chatTurn = 0;
+  private chatAbort: AbortController | undefined;
+  /** The emotion the loop last set, reported in the Spatial_Context. */
+  private emotion: Emotion = 'neutral';
+  /** True between `pause` and `resume` (task 27.2). */
+  private paused = false;
+  /** Work waiting for the resume: a Tier 2 reply that arrived while paused. */
+  private readonly resumeWaiters: (() => void)[] = [];
 
   constructor(private readonly deps: VoiceLoopDeps) {
+    this.router = deps.router ?? new TierRouter({ agent: undefined });
     this.cleanups.push(
       deps.events.on('registry:changed', () => this.rebuildGrammar()),
       deps.places.subscribe((change) => {
@@ -161,7 +210,9 @@ export class VoiceLoop {
       deps.stt.onFailure((reason, message) => this.onSttFailure(reason, message)),
     );
     deps.ui.setHandlers({
-      onMicOrb: () => this.apply(this.ptt.orbPress(this.nowS)),
+      onMicOrb: () => {
+        if (!this.paused) this.apply(this.ptt.orbPress(this.nowS));
+      },
       onQuickAction: (id) => void this.quickAction(id),
       onKeyboardSubmit: (text) => void this.submitText(text, 'keyboard'),
     });
@@ -230,17 +281,54 @@ export class VoiceLoop {
     announceExpired(expired, { animator: this.deps.getAnimator() ?? NO_ANIMATOR, persona: this.deps.persona });
   }
 
+  /** True between `pause` and `resume`. */
+  get isPaused(): boolean {
+    return this.paused;
+  }
+
+  /**
+   * Pause (task 27.2): a push-to-talk in progress is dropped, not acted on (the words before a system
+   * menu opened are not a command), and the microphone is released through the engine. Nothing opens
+   * the microphone again until the user starts a new push-to-talk after `resume`, so no permission
+   * prompt can appear in the session. A Tier 2 reply that arrives while paused is presented after the
+   * resume. Idempotent.
+   */
+  pause(): void {
+    if (this.paused || this.disposed) return;
+    this.paused = true;
+    this.gesture.reset();
+    if (this.ptt.active) {
+      this.session += 1;
+      this.ptt.reset();
+      this.deps.ui.setListening(false);
+    }
+    // Also ends a start that is still waiting for the microphone.
+    void this.deps.stt.stop().catch(() => '');
+  }
+
+  /** Resume: pinch edges start fresh (no talk carries over), then held replies are presented. */
+  resume(): void {
+    if (!this.paused || this.disposed) return;
+    this.paused = false;
+    this.gesture.reset();
+    for (const wake of this.resumeWaiters.splice(0)) wake();
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.chatAbort?.abort();
+    this.chatAbort = undefined;
     for (const cleanup of this.cleanups.splice(0)) cleanup();
     this.gesture.reset();
     this.ptt.reset();
+    for (const wake of this.resumeWaiters.splice(0)) wake();
   }
 
   // ---- Push-to-talk ------------------------------------------------------------------------------
 
   private apply(command: TalkCommand): void {
+    if (command === 'start' && this.paused) return;
     if (command === 'start') this.beginListening();
     else if (command === 'stop') void this.endListening();
   }
@@ -354,17 +442,133 @@ export class VoiceLoop {
     this.processed = processed;
     const { action } = processed;
     this.deps.events.emit('intent:resolved', { intent: processed.intent.type });
+    // Tier routing (Requirements 17.11, 20.1, 20.8, 20.9): deterministic intents stay Tier 1. Chat and
+    // tasks go to the agent only while it is connected, and otherwise get the "unavailable" line.
+    const route = this.router.route(action, source);
+    if (route.tier === 2) {
+      if (route.kind === 'chat') await this.chat(route.text);
+      else await this.startTask(route.taskKind, route.text);
+      return;
+    }
+    if (route.reason === 'agent_unavailable') {
+      if (action.type === 'resolved' && action.command.kind === 'task') this.deps.persona.noteAction({ kind: 'task' });
+      this.deps.persona.say(route.say);
+      return;
+    }
     if (action.type === 'resolved') {
       await this.execute(action.command);
       return;
     }
     if (action.type === 'unsupported' && action.reason === 'unrecognised') {
       // Heard speech can only be garble. Typed text is free-form chat, which needs the agent.
-      this.deps.persona.say(source === 'speech' ? { kind: 'ask_repeat' } : { kind: 'hermes_unavailable' });
+      this.deps.persona.say(source === 'speech' ? { kind: 'ask_repeat' } : HERMES_UNAVAILABLE);
       return;
     }
     const request = personaRequestFor(action);
     if (request !== undefined) this.deps.persona.say(request);
+  }
+
+  // ---- Tier 2 ------------------------------------------------------------------------------------
+
+  /**
+   * One free-form chat turn through the agent (Requirements 16.10, 20.1, 20.3, 20.5 to 20.9). Capri
+   * acknowledges with a `thinking` line and look while the reply takes its seconds, then presents
+   * the outcome. A newer chat replaces an older one, whose late reply is dropped.
+   */
+  private async chat(text: string): Promise<void> {
+    const turn = ++this.chatTurn;
+    this.chatAbort?.abort();
+    const abort = new AbortController();
+    this.chatAbort = abort;
+    // An acknowledgement only: it never answers and never claims anything was done.
+    this.deps.persona.say({ kind: 'call', state: 'pending', subject: THINKING_SUBJECT });
+    this.setEmotion(TIER2.thinkingEmotion);
+    const context = buildSpatialContext(this.spatialWorld());
+    const outcome = await this.router.chat(text, context, this.actionWorld(), abort.signal);
+    // A reply that arrives while paused waits, so she answers when the user can see and hear her.
+    if (this.paused && !this.disposed) await new Promise<void>((resolve) => this.resumeWaiters.push(resolve));
+    if (this.disposed || turn !== this.chatTurn) return;
+    this.chatAbort = undefined;
+    await this.present(outcome);
+  }
+
+  /**
+   * Present a chat outcome. A reply plays its emotion, its speech as a bubble plus chirp (tier 3 on
+   * Quest Browser, no mouth flap) with its animation, a refusal line for an action that cannot run,
+   * and the accepted action through the same execution path as Tier 1 (so a light runs the hacking
+   * sequence and reports the real result). A fallback says the Tier 1 "unavailable" line.
+   */
+  private async present(outcome: ChatOutcome): Promise<void> {
+    const { persona, logger } = this.deps;
+    if (outcome.tier === 1) {
+      const kind = outcome.errorKind === undefined ? '' : `, ${outcome.errorKind}`;
+      logger.info(`voice: Tier 2 fell back to Tier 1 (${outcome.reason}${kind})`);
+      this.setEmotion('neutral');
+      persona.say(outcome.say);
+      return;
+    }
+    this.setEmotion(outcome.emotion);
+    const gesture = outcome.animation === 'none' ? undefined : outcome.animation;
+    const spoken =
+      outcome.speech === ''
+        ? []
+        : persona.relay(outcome.speech, { emotion: outcome.emotion, ...(gesture === undefined ? {} : { gesture }) });
+    // With no bubble the gesture still plays; with one, the speech presenter plays it with the bubble.
+    if (spoken.length === 0 && gesture !== undefined) {
+      void this.deps.getAnimator()?.play(gesture).catch(() => undefined);
+    }
+    if (outcome.refusal !== undefined) {
+      logger.info(`voice: Tier 2 action ignored (${outcome.refusal.reason})`);
+      persona.say(outcome.refusal.say);
+    }
+    if (outcome.command !== undefined) await this.execute(outcome.command);
+  }
+
+  private async startTask(taskKind: TaskKind, text: string): Promise<void> {
+    const { persona } = this.deps;
+    persona.noteAction({ kind: 'task' });
+    if (this.deps.tasks === undefined) {
+      // No task flow: say so. The scripted task is never substituted for a missing Hermes.
+      persona.say(HERMES_UNAVAILABLE);
+      return;
+    }
+    // The flow acknowledges, shows the panel and reports the real outcome when the task ends.
+    await this.deps.tasks.start({ kind: taskKind, text, context: buildSpatialContext(this.spatialWorld()) });
+  }
+
+  private setEmotion(emotion: Emotion): void {
+    this.emotion = emotion;
+    this.deps.getAnimator()?.setEmotion(emotion);
+  }
+
+  /** The device the user means: the pointed one, else the selected one. */
+  private pointedOrSelected(): string | undefined {
+    return this.deps.pointing.pointed ?? this.deps.pointing.selected;
+  }
+
+  /** What `buildSpatialContext` reads, from the live state of this moment. */
+  private spatialWorld(): SpatialWorld {
+    const avatar = this.deps.getAvatarState?.();
+    const getLightState = this.deps.getLightState;
+    return {
+      devices: this.deps.registry.all(),
+      ...(getLightState === undefined ? {} : { lightState: getLightState }),
+      pointedId: this.pointedOrSelected(),
+      gaze: this.deps.getGazeRay(),
+      head: this.deps.getHead()?.position,
+      surfaces: this.deps.getSurfaces(),
+      avatar: { position: avatar?.position ?? ORIGIN, mode: avatar?.mode ?? 'idle', emotion: this.emotion },
+    };
+  }
+
+  /** What `gateAction` resolves a reply's action against: the same registry and places as Tier 1. */
+  private actionWorld(): ActionWorldView {
+    return {
+      registry: this.deps.registry,
+      surfaces: this.deps.getSurfaces(),
+      places: this.deps.places.names(),
+      pointed: this.pointedOrSelected(),
+    };
   }
 
   private async execute(command: ResolvedCommand): Promise<void> {
@@ -424,18 +628,11 @@ export class VoiceLoop {
         return;
       }
       case 'chat':
-        // No agent behind free-form chat yet (task 21). Capri says so, and Tier 1 keeps working.
-        persona.say({ kind: 'hermes_unavailable' });
+        // `run` routes chat through the tier router, so this is reached only without an agent.
+        persona.say(HERMES_UNAVAILABLE);
         return;
       case 'task':
-        persona.noteAction({ kind: 'task' });
-        if (this.deps.tasks === undefined) {
-          // No agent: say so. The scripted task is never substituted for a missing Hermes.
-          persona.say({ kind: 'hermes_unavailable' });
-          return;
-        }
-        // The flow acknowledges, shows the panel and reports the real outcome when the task ends.
-        await this.deps.tasks.start({ kind: command.taskKind, text: command.text });
+        await this.startTask(command.taskKind, command.text);
         return;
     }
   }

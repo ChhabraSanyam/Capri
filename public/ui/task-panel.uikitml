@@ -1,11 +1,18 @@
 <!--
-  Task_Panel (task 19.3, Requirements 19.6, 19.9, 19.10): the floating holographic panel that shows a
-  Hermes task. Title and status, the current step and percent, a progress bar, the result line, and one
-  button (Cancel while the task runs, Dismiss when it ended). Loaded through PanelUI by
-  src/ui/panels/task-panel.ts, which sets the text, the bar width, and the colours at run time.
-  Element ids addressed there: title, status, label, percent, fill, detail, btn-task, btn-task-label.
-  400 wide, 236 tall, 368 wide bar (keep TASK_FLOW.panel in src/config/constants.ts in step). The panel
-  is drawn at scale 0.125 (1.25 mm a unit) so it reads at 1.2 m. Plain ASCII text only.
+  Task_Panel (tasks 19.3 and 21.12, Requirements 19.6, 19.9, 19.10): the floating holographic panel
+  that shows a Hermes task. Title and status, the current step and percent (or the step alone when
+  the task reports no fraction), a progress bar, the result or approval line, and the button row:
+  Cancel while the task runs, Dismiss when it ended, plus Approve and Deny while an approval is pending.
+  Loaded through PanelUI by src/ui/panels/task-panel.ts, which sets the text, the bar width, the
+  colours, and which buttons show at run time.
+  Element ids addressed there: title, status, label, percent, track, fill, detail, btn-approve,
+  btn-deny, btn-task, btn-task-label.
+  400 wide, 236 tall, 16 padding, 368 wide bar and button row. The rows are spread with
+  space-between, so the 48 tall button row always sits on the bottom padding; with an
+  approval the row is Approve 120, Deny 120, Cancel 112 with 8 gaps (keep TASK_FLOW.panel in
+  src/config/constants.ts in step). The panel is drawn at scale 0.125 (1.25 mm a unit) so it reads at
+  1.2 m. Plain ASCII text only. Every element whose text is set at run time starts with placeholder
+  text: an empty div is a plain container, and setting text on it shows nothing.
 -->
 <style>
   .root {
@@ -15,8 +22,10 @@
   }
   .content {
     flex-direction: column;
-    gap: 8px;
+    justify-content: space-between;
     padding: 16px;
+    width: 400px;
+    height: 236px;
   }
   .row {
     flex-direction: row;
@@ -80,11 +89,32 @@
   .detail:dark {
     color: #dddfe3;
   }
+  .buttons {
+    flex-direction: row;
+    gap: 8px;
+    width: 368px;
+    height: 48px;
+  }
   .btn {
     width: 368px;
     height: 48px;
   }
+  .btn-approve {
+    width: 120px;
+    height: 48px;
+    background-color: #3ddc97;
+  }
+  .btn-deny {
+    width: 120px;
+    height: 48px;
+    background-color: #ff6b6b;
+  }
   .btn-label {
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .btn-label-dark {
+    color: #1c1d20;
     font-size: 20px;
     font-weight: 700;
   }
@@ -99,8 +129,12 @@
       <div id="label" class="label">Getting started</div>
       <div id="percent" class="percent">0%</div>
     </div>
-    <div class="track"><div id="fill" class="fill"></div></div>
-    <div id="detail" class="detail"></div>
-    <Button id="btn-task" class="btn"><ButtonLabel id="btn-task-label" class="btn-label">Cancel</ButtonLabel></Button>
+    <div id="track" class="track"><div id="fill" class="fill"></div></div>
+    <div id="detail" class="detail">Detail</div>
+    <div class="buttons">
+      <Button id="btn-approve" class="btn-approve"><ButtonLabel class="btn-label-dark">Approve</ButtonLabel></Button>
+      <Button id="btn-deny" class="btn-deny"><ButtonLabel class="btn-label-dark">Deny</ButtonLabel></Button>
+      <Button id="btn-task" class="btn"><ButtonLabel id="btn-task-label" class="btn-label">Cancel</ButtonLabel></Button>
+    </div>
   </div>
 </Panel>

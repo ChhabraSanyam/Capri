@@ -87,3 +87,17 @@ At about 36 KB per 4.5 s line, a library of roughly 60 to 80 short lines stays w
   Fail with a clear message that points here when the venv or model is missing.
 - Encode with `ffmpeg` to mono MP3 at about 64 kbps, as in the design.
 - Include the `MODEL_CARD` content (voice name, public-domain dataset, author) in the README third-party list.
+
+## Loudness (task 27.3)
+
+Piper lines come out between -17.9 and -13.6 LUFS integrated, with mp3 true peaks up to +3.0 dBTP.
+`npm run voice` measures every mp3 with `ffmpeg -af ebur128=peak=true` and writes `loudnessLufs`,
+`truePeakDb`, and `gainDb` into `public/voice/index.json`. The app applies `gainDb` when it plays the line,
+so every line plays at -16 LUFS. The mp3 files are not re-encoded. A kept line is measured once and the
+stored value is reused after that, so the script stays idempotent.
+
+`npm run audio:report` prints the per-line measurements, then renders the app's audio graph offline in
+headless Chromium and meters the voice, chirp, hack cues, the hack sequence, and a worst-case overlap.
+The bus levels and the limiter are `AUDIO_MIX` in `src/config/constants.ts`. To try other levels without
+editing that file, run `node .tmp/audio-mix/bin/render-mix.mjs --mix '{"sfxGain":0.4}'` after one
+`npm run audio:report`.

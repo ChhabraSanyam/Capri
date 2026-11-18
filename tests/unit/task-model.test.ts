@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  TASK_APPROVAL_DEFAULT_TEXT,
   TASK_LABEL_MAX_CHARS,
   TASK_NO_REASON,
   TaskModel,
@@ -77,5 +78,32 @@ describe('TaskModel', () => {
     const s = reduceTask(initialTask(), { type: 'progress', label: `a\nb\t${'x'.repeat(500)}` });
     expect(s.label).not.toMatch(/[\n\t]/);
     expect(s.label.length).toBeLessThanOrEqual(TASK_LABEL_MAX_CHARS);
+  });
+
+  it('tracks a text step without moving progress, and keeps it through the end', () => {
+    let s = initialTask();
+    s = reduceTask(s, { type: 'step', text: 'Using web_search' });
+    expect(s).toEqual({ state: 'running', progress: 0, label: '', step: 'Using web_search' });
+    expect(reduceTask(s, { type: 'step', text: '  ' })).toBe(s);
+    expect(reduceTask(s, { type: 'step', text: 'Using web_search' })).toBe(s);
+    s = reduceTask(s, { type: 'progress', fraction: 0.5 });
+    expect(s.step).toBe('Using web_search');
+    expect(reduceTask(s, { type: 'completed', summary: 'Done.' })).toMatchObject({ state: 'completed', step: 'Using web_search' });
+  });
+  it('holds one pending approval until it is resolved or the task ends', () => {
+    let s = initialTask();
+    s = reduceTask(s, { type: 'approval_requested', requestId: 'req_1', description: 'Delete a folder', choices: ['approve', 'deny'] });
+    expect(s.approval).toEqual({ requestId: 'req_1', description: 'Delete a folder', choices: ['approve', 'deny'] });
+    const same = reduceTask(s, { type: 'approval_requested', requestId: 'req_1', description: 'Delete a folder', choices: ['approve', 'deny'] });
+    expect(same).toBe(s);
+    expect(reduceTask(s, { type: 'approval_resolved', requestId: 'other' })).toBe(s);
+    expect(reduceTask(s, { type: 'approval_resolved', requestId: 'req_1' }).approval).toBeUndefined();
+    expect(reduceTask(s, { type: 'approval_resolved' }).approval).toBeUndefined();
+    expect(reduceTask(s, { type: 'failed', reason: 'Denied.' }).approval).toBeUndefined();
+    // No id: nothing to answer, so nothing is shown. No usable choices: both buttons.
+    expect(reduceTask(initialTask(), { type: 'approval_requested', requestId: ' ', description: 'x', choices: [] }).approval).toBeUndefined();
+    expect(
+      reduceTask(initialTask(), { type: 'approval_requested', requestId: 'r', description: '', choices: [] }).approval,
+    ).toEqual({ requestId: 'r', description: TASK_APPROVAL_DEFAULT_TEXT, choices: ['approve', 'deny'] });
   });
 });

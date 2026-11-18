@@ -82,6 +82,38 @@ export function glideStep(
   }
 }
 
+/**
+ * Clamp a horizontal step that two springs (`x`, `z`) just took from `(px, pz)`: the displacement to
+ * `maxSpeedMps * dtS` and the velocity to `maxSpeedMps`. Used by the idle follow glide, which
+ * steps its own springs, so it keeps the same 0.9 m/s cap as `glideStep` (task 27.6 comfort check).
+ * A non-finite or non-positive cap or step leaves the springs unchanged. Allocation-free.
+ */
+export function capPlanarSpeed(
+  x: SpringState,
+  z: SpringState,
+  px: number,
+  pz: number,
+  maxSpeedMps: number,
+  dtS: number,
+): void {
+  if (!Number.isFinite(dtS) || dtS <= 0 || !(maxSpeedMps > 0) || !Number.isFinite(maxSpeedMps)) return;
+  const dx = x.value - px;
+  const dz = z.value - pz;
+  const len = Math.hypot(dx, dz);
+  const cap = maxSpeedMps * dtS;
+  if (len > cap) {
+    const k = cap / len;
+    x.value = px + dx * k;
+    z.value = pz + dz * k;
+  }
+  const speed = Math.hypot(x.velocity, z.velocity);
+  if (speed > maxSpeedMps) {
+    const k = maxSpeedMps / speed;
+    x.velocity *= k;
+    z.velocity *= k;
+  }
+}
+
 const TWO_PI = Math.PI * 2;
 
 /** Smallest signed angle that turns `from` into `to`, in (-PI, PI]. */

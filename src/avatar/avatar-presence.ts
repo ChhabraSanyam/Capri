@@ -10,7 +10,8 @@
  *  - when the user stays turned more than 60 degrees away for more than 3 s, glides her to a fresh
  *    `idleHome`;
  *  - if the VRM fails to load, shows a speech bubble that names the failure and keeps the session
- *    running.
+ *    running (unless `failureBubble` is false because the loading panel shows it, task 27.1);
+ *  - reports the VRM download progress, the ready model, and a failure to `loadObserver`.
  *
  * She is wrapped in a pivot group, so position and yaw never overwrite the root rotation that
  * three-vrm sets for VRM 0.x files. MToon materials render black without scene lights, so the
@@ -30,11 +31,13 @@ import {
 } from '@iwsdk/core';
 import { VRMUtils } from '@pixiv/three-vrm';
 import type { FrameContext } from '../app/frame-context.js';
+import type { AvatarLoadObserver } from '../app/loading-status.js';
 import type { Logger } from '../app/logger.js';
 import type { Rng } from '../app/rng.js';
-import { AVATAR_PRESENCE, IDLE_PLACEMENT } from '../config/constants.js';
+import { AVATAR_PRESENCE, IDLE_PLACEMENT, LOCOMOTION } from '../config/constants.js';
 import { awayAngleDeg, FollowMonitor } from '../domain/follow.js';
 import type { Vec3 } from '../domain/geometry.js';
+import { capPlanarSpeed } from '../domain/glide.js';
 import {
   constrainIdlePosition,
   idleHome,
@@ -64,6 +67,16 @@ export interface AvatarPresenceDeps {
    * reports the result with `body.syncIdle`.
    */
   readonly body?: BodyPoseSource;
+  /**
+   * Loading screen (task 27.1): told about the VRM download progress, the ready model, and a failure.
+   * Also passed to `loadAvatar` as the progress callback unless `load` is injected.
+   */
+  readonly loadObserver?: AvatarLoadObserver;
+  /**
+   * Show the failure bubble in the session when the VRM fails. Default true. Off when the in-scene
+   * loading panel (`ui/loading.ts`) shows the failure instead, so the message is not shown twice.
+   */
+  readonly failureBubble?: boolean;
 }
 
 type Phase = 'loading' | 'ready' | 'failed';
@@ -210,7 +223,11 @@ export class AvatarPresence {
   }
 
   private async startLoading(): Promise<void> {
-    const load = this.deps.load ?? loadAvatar;
+    const observer = this.deps.loadObserver;
+    const load =
+      this.deps.load ??
+      (() =>
+        loadAvatar(undefined, observer === undefined ? {} : { onProgress: (loaded, total) => observer.progress(loaded, total) }));
     let result: AvatarLoadResult;
     try {
       result = await load();
@@ -233,6 +250,7 @@ export class AvatarPresence {
       if (this.deps.depthOcclusion) this.entity.addComponent(DepthOccludable);
       this.animator = new ProceduralAnimator(avatar, { rng: this.deps.rng, waveOnFirstAppear: true });
       this.phase = 'ready';
+      this.deps.loadObserver?.ready();
       this.deps.logger.info(`avatar ready in ${Math.round(avatar.loadMs)} ms, ${avatar.metrics.height.toFixed(2)} m tall`);
     } catch (cause) {
       this.fail(makeAvatarLoadError('invalid_model', 'avatar', cause));
@@ -242,6 +260,7 @@ export class AvatarPresence {
   private fail(error: AvatarLoadError): void {
     this.failure = error;
     this.phase = 'failed';
+    this.deps.loadObserver?.failed(error.message);
     this.deps.logger.error(`avatar failed to load: ${error.message}`, error.cause);
   }
 
@@ -321,7 +340,7 @@ export class AvatarPresence {
   }
 
   private showFailure(): void {
-    if (this.bubble.visible || this.failure === undefined) return;
+    if (this.deps.failureBubble === false || this.bubble.visible || this.failure === undefined) return;
     const spot = idleHome(this.head);
     const at: Vec3 = { x: spot.x, y: spot.y + AVATAR_PRESENCE.bubble.heightAboveHomeM, z: spot.z };
     this.bubble.show(`${this.failure.message}.`, at, this.headPos);
@@ -348,8 +367,14 @@ export class AvatarPresence {
     }
 
     if (this.following) {
-      this.pos.x = springStep(this.xSpring, this.goalX, cfg.follow.glideSmoothTimeS, step);
-      this.pos.z = springStep(this.zSpring, this.goalZ, cfg.follow.glideSmoothTimeS, step);
+      const fromX = this.xSpring.value;
+      const fromZ = this.zSpring.value;
+      springStep(this.xSpring, this.goalX, cfg.follow.glideSmoothTimeS, step);
+      springStep(this.zSpring, this.goalZ, cfg.follow.glideSmoothTimeS, step);
+      // Same 0.9 m/s cap as the ability glide: an uncapped spring peaks near 1.7 m/s on a long follow.
+      capPlanarSpeed(this.xSpring, this.zSpring, fromX, fromZ, LOCOMOTION.maxSpeedMps, step);
+      this.pos.x = this.xSpring.value;
+      this.pos.z = this.zSpring.value;
       if (Math.hypot(this.goalX - this.pos.x, this.goalZ - this.pos.z) < cfg.follow.arriveWithinM) {
         this.following = false;
       }

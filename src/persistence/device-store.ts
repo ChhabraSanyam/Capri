@@ -8,6 +8,7 @@
  */
 import { DEVICES_STORAGE_KEY, parseDevices, serializeDevices } from '../domain/devices/persistence.js';
 import type { DeviceRecord } from '../domain/devices/registry.js';
+import { homeOfRecords, mergeScopedDevices, scopeDevices, type HomeKind } from '../domain/devices/home-scope.js';
 import { browserLocalStorage, createMemoryStorage, safeGet, safeSet, type KeyValueStorage } from './local-store.js';
 
 export interface DeviceStore {
@@ -21,6 +22,31 @@ export interface DeviceStore {
    * anchors do not define it.
    */
   restoreAnchors?(records: readonly DeviceRecord[]): Promise<DeviceRecord[]>;
+}
+
+/**
+ * One home's view of a shared device store (task 25.10). `load` returns only the records of the
+ * current home (`getHome()`, read on every call, so a mode switch takes effect at the next load), and
+ * `save` keeps the other home's stored records next to the saved ones (`domain/devices/home-scope.ts`).
+ * Wrap the plain localStorage store with it, under the anchor store, so the anchor store only ever
+ * sees (and releases) anchors of the current home.
+ */
+export class HomeScopedDeviceStore implements DeviceStore {
+  constructor(
+    private readonly inner: DeviceStore,
+    private readonly getHome: () => HomeKind,
+  ) {}
+
+  async load(): Promise<DeviceRecord[]> {
+    return scopeDevices(await this.inner.load(), this.getHome());
+  }
+
+  async save(records: readonly DeviceRecord[]): Promise<void> {
+    // The registry only ever holds one home's lights, so the records name their home. That stays
+    // right for a save the anchor store queued just before a mode switch.
+    const home = homeOfRecords(records) ?? this.getHome();
+    await this.inner.save(mergeScopedDevices(await this.inner.load(), records, home));
+  }
 }
 
 export class LocalStorageDeviceStore implements DeviceStore {

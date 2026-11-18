@@ -58,3 +58,12 @@ export function safeRemove(storage: KeyValueStorage, key: string): boolean {
     return false;
   }
 }
+
+/** `window.sessionStorage`, or `undefined` when it is missing or access throws (task 25.2). */
+export function browserSessionStorage(): KeyValueStorage | undefined {
+  try {
+    return typeof sessionStorage === 'undefined' ? undefined : sessionStorage;
+  } catch {
+    return undefined;
+  }
+}

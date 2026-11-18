@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { createGlide, glideDistance, glideSpeed, glideStep, shortestAngle } from '../../src/domain/glide.js';
+import {
+  capPlanarSpeed,
+  createGlide,
+  glideDistance,
+  glideSpeed,
+  glideStep,
+  shortestAngle,
+} from '../../src/domain/glide.js';
+import { createSpring, springStep } from '../../src/domain/spring.js';
 
 describe('glideStep', () => {
   it('never exceeds the speed cap and reaches the goal', () => {
@@ -22,6 +30,34 @@ describe('glideStep', () => {
     glideStep(s, Number.NaN, 0, 0, 0.6, 0.9, 0.1);
     glideStep(s, 0, 0, 0, 0.6, 0.9, Number.NaN);
     expect([s.x.value, s.y.value, s.z.value]).toEqual([1, 2, 3]);
+  });
+});
+
+describe('capPlanarSpeed', () => {
+  it('holds a long follow glide (2.75 m, smooth time 1.2 s) to 0.9 m/s and still arrives', () => {
+    const x = createSpring(0);
+    const z = createSpring(0);
+    const dt = 1 / 72;
+    let peak = 0;
+    for (let i = 0; i < 72 * 10; i += 1) {
+      const px = x.value;
+      const pz = z.value;
+      springStep(x, 1.94, 1.2, dt);
+      springStep(z, -1.94, 1.2, dt);
+      capPlanarSpeed(x, z, px, pz, 0.9, dt);
+      peak = Math.max(peak, Math.hypot(x.value - px, z.value - pz) / dt, Math.hypot(x.velocity, z.velocity));
+    }
+    expect(peak).toBeLessThanOrEqual(0.9 + 1e-9);
+    expect(Math.hypot(1.94 - x.value, -1.94 - z.value)).toBeLessThan(0.05);
+  });
+
+  it('leaves a slow step and a bad step unchanged', () => {
+    const x = { value: 0.005, velocity: 0.3 };
+    const z = { value: 0, velocity: 0 };
+    capPlanarSpeed(x, z, 0, 0, 0.9, 1 / 72);
+    expect([x.value, x.velocity]).toEqual([0.005, 0.3]);
+    capPlanarSpeed(x, z, 5, 5, 0.9, Number.NaN);
+    expect(x.value).toBe(0.005);
   });
 });
 

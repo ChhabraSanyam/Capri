@@ -10,17 +10,43 @@
  * - `completed` sets progress to 1. `failed` keeps the progress reached so far.
  * - Labels, summaries, and reasons are single-line, trimmed, and length-capped, so a backend
  *   cannot put a multi-line or oversized string into a panel or a bubble.
+ * - `step` (task 21.10) is the current step as text, for agents that report steps rather than a
+ *   percentage (the live Hermes adapter: "Using web_search"). It never moves `progress`.
+ * - `approval_requested` (task 21.10) holds one pending approval with the `requestId` the answer
+ *   must carry. `approval_resolved` clears it (any id when the event has none). A terminal event
+ *   clears it too, so a finished task never shows Approve or Deny.
  *
  * The event type is the model's own input and matches the `TaskEvent` shape in the design
  * (`backends/types.ts`) structurally, so a `TaskEvent` can be passed in directly. Importing it
  * from the backend would couple the domain to the backend layer.
  */
 
+/** The two answers the Task_Panel offers for an approval. Approve means "this once". */
+export type ApprovalDecision = 'approve' | 'deny';
+
 /** A task event as the model consumes it. Same shape as the backend `TaskEvent`. */
 export type TaskModelEvent =
   | { readonly type: 'progress'; readonly fraction?: number; readonly label?: string }
+  | { readonly type: 'step'; readonly text: string }
+  | {
+      readonly type: 'approval_requested';
+      readonly requestId: string;
+      readonly description: string;
+      readonly choices: readonly ApprovalDecision[];
+    }
+  | { readonly type: 'approval_resolved'; readonly requestId?: string }
   | { readonly type: 'completed'; readonly summary: string }
   | { readonly type: 'failed'; readonly reason: string };
+
+/** An approval the agent is waiting for. Only present while the task runs. */
+export interface PendingApproval {
+  /** Opaque id to send back with the answer. */
+  readonly requestId: string;
+  /** What the agent wants to do, in plain words. Never the raw command. */
+  readonly description: string;
+  /** Which buttons to show. Never empty. */
+  readonly choices: readonly ApprovalDecision[];
+}
 
 export type TaskState = 'running' | 'completed' | 'failed';
 
@@ -34,6 +60,10 @@ export interface TaskSnapshot {
   readonly summary?: string;
   /** Set only when `state` is `failed`. Never empty. */
   readonly reason?: string;
+  /** The current step as text (no percentage). Absent until a `step` event arrives. */
+  readonly step?: string;
+  /** The approval the task waits for. Present only while `state` is `running`. */
+  readonly approval?: PendingApproval;
 }
 
 /** What the Persona announces when a task ends. */
@@ -44,6 +74,9 @@ export type TaskOutcome =
 export const TASK_LABEL_MAX_CHARS = 80;
 export const TASK_TEXT_MAX_CHARS = 200;
 export const TASK_NO_REASON = 'Something went wrong.';
+export const TASK_APPROVAL_ID_MAX_CHARS = 128;
+export const TASK_APPROVAL_DEFAULT_TEXT = 'Hermes needs your permission to continue.';
+const ALL_DECISIONS: readonly ApprovalDecision[] = ['approve', 'deny'];
 
 /** Single line, no control characters, trimmed, cut to `max` characters. */
 function cleanText(text: unknown, max: number): string {
@@ -55,6 +88,25 @@ function cleanText(text: unknown, max: number): string {
 /** A running task at 0 progress. */
 export function initialTask(label = ''): TaskSnapshot {
   return { state: 'running', progress: 0, label: cleanText(label, TASK_LABEL_MAX_CHARS) };
+}
+
+function sameApproval(a: PendingApproval, b: PendingApproval): boolean {
+  return (
+    a.requestId === b.requestId &&
+    a.description === b.description &&
+    a.choices.length === b.choices.length &&
+    a.choices.every((c, i) => c === b.choices[i])
+  );
+}
+
+function withoutApproval(snapshot: TaskSnapshot): TaskSnapshot {
+  const { approval: _dropped, ...rest } = snapshot;
+  return rest;
+}
+
+/** The step to carry into a terminal snapshot, without adding an empty key. */
+function stepOf(snapshot: TaskSnapshot): { step?: string } {
+  return snapshot.step === undefined ? {} : { step: snapshot.step };
 }
 
 /** Fold one event into the snapshot. Returns the same object when nothing changes. */
@@ -70,7 +122,28 @@ export function reduceTask(snapshot: TaskSnapshot, event: TaskModelEvent): TaskS
       const label = cleanText(event.label, TASK_LABEL_MAX_CHARS);
       const nextLabel = label === '' ? snapshot.label : label;
       if (progress === snapshot.progress && nextLabel === snapshot.label) return snapshot;
-      return { state: 'running', progress, label: nextLabel };
+      return { ...snapshot, progress, label: nextLabel };
+    }
+    case 'step': {
+      const step = cleanText(event.text, TASK_LABEL_MAX_CHARS);
+      if (step === '' || step === snapshot.step) return snapshot;
+      return { ...snapshot, step };
+    }
+    case 'approval_requested': {
+      const requestId = cleanText(event.requestId, TASK_APPROVAL_ID_MAX_CHARS);
+      if (requestId === '') return snapshot;
+      const description = cleanText(event.description, TASK_TEXT_MAX_CHARS) || TASK_APPROVAL_DEFAULT_TEXT;
+      const offered = Array.isArray(event.choices) ? event.choices : [];
+      const choices = ALL_DECISIONS.filter((d) => offered.includes(d));
+      const approval: PendingApproval = { requestId, description, choices: choices.length > 0 ? choices : ALL_DECISIONS };
+      if (snapshot.approval !== undefined && sameApproval(snapshot.approval, approval)) return snapshot;
+      return { ...snapshot, approval };
+    }
+    case 'approval_resolved': {
+      const pending = snapshot.approval;
+      if (pending === undefined) return snapshot;
+      if (event.requestId !== undefined && event.requestId !== pending.requestId) return snapshot;
+      return withoutApproval(snapshot);
     }
     case 'completed':
       return {
@@ -78,6 +151,7 @@ export function reduceTask(snapshot: TaskSnapshot, event: TaskModelEvent): TaskS
         progress: 1,
         label: snapshot.label,
         summary: cleanText(event.summary, TASK_TEXT_MAX_CHARS),
+        ...stepOf(snapshot),
       };
     case 'failed': {
       const reason = cleanText(event.reason, TASK_TEXT_MAX_CHARS);
@@ -86,6 +160,7 @@ export function reduceTask(snapshot: TaskSnapshot, event: TaskModelEvent): TaskS
         progress: snapshot.progress,
         label: snapshot.label,
         reason: reason === '' ? TASK_NO_REASON : reason,
+        ...stepOf(snapshot),
       };
     }
     default:
