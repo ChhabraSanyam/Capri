@@ -68,6 +68,9 @@
  * playback context is suspended. On resume the idle schedule shifts by the paused time, a
  * `ResumeHandGuard` in the `readFrame` stage holds back a hand that is still pinching, and the held
  * lines play once the context runs. Published as `world.globals.pause`.
+ *
+ * Arrival greeting (task 32.1). `GreetingWiring` (`greeting.ts`) runs in the `vfxUi` stage after the
+ * loading panel and the hand-lost monitor: one greeting line with her first wave, once per XR session.
  */
 import {
   PanelDocument,
@@ -109,7 +112,7 @@ import { wireModeAndConnections } from './mode-wiring.js';
 import { LiveHomeMonitor } from './live-home-monitor.js';
 import type { SessionMode } from './session-mode.js';
 import { AVATAR_PRESENCE } from '../config/constants.js';
-import { featureFlags, resolvePointPoseGate } from '../config/feature-flags.js';
+import { featureFlags, resolveClipIdle, resolvePointPoseGate } from '../config/feature-flags.js';
 import { DEV_ACTION_LABELS } from '../domain/actions/dev-actions.js';
 import { HackRunner } from '../domain/actions/hack-runner.js';
 import { TimerService } from '../domain/actions/timers.js';
@@ -144,6 +147,9 @@ import { LoadingStatus } from './loading-status.js';
 import { LoadingPanel } from '../ui/loading.js';
 import { PauseController, attachPauseSources } from '../ui/pause.js';
 import { ResumeHandGuard } from './resume-hand-guard.js';
+import { GreetingWiring } from './greeting.js';
+import { createGreetingInputs } from '../domain/greeting-gate.js';
+import type { Utterance } from '../domain/persona/utterance.js';
 
 /** Where the plain persona's bubble goes before the Avatar or the head has a position. */
 const ORIGIN: Vec3 = { x: 0, y: 0, z: 0 };
@@ -250,26 +256,33 @@ export class CapriSystem extends createSystem({
     const speechQueue = new SpeechQueue(speech);
     this.cleanupFuncs.push(() => speechQueue.dispose());
     const spoken: { text: string; claims: string; libraryId: string | undefined }[] = [];
+    // Also the arrival greeting's sink (task 32.1).
+    const deliverLine = (line: Utterance): void => {
+      if (import.meta.env.DEV) {
+        spoken.push({ text: line.text, claims: line.claims, libraryId: line.libraryId });
+        if (spoken.length > 50) spoken.shift();
+      }
+      speechQueue.enqueue(line);
+    };
     const persona = new Persona({
       rng: app.rng,
       clock: app.clock,
-      deliver: (line) => {
-        if (import.meta.env.DEV) {
-          spoken.push({ text: line.text, claims: line.claims, libraryId: line.libraryId });
-          if (spoken.length > 50) spoken.shift();
-        }
-        speechQueue.enqueue(line);
-      },
+      deliver: deliverLine,
     });
+    // The arrival greeting (task 32.1) waits for the index, so it can be a library line.
+    const voiceIndex = { settled: speech === undefined };
     if (speech !== undefined) {
-      void speech.loadLibrary().then(() => persona.setManifest(manifestFromVoiceIndex(speech.voice.index)));
+      void speech.loadLibrary().then(() => {
+        persona.setManifest(manifestFromVoiceIndex(speech.voice.index));
+        voiceIndex.settled = true;
+      });
     }
     // Speech bubbles fade and turn to the head in the `vfxUi` stage.
     const bubbles: SpeechBubble[] = [];
     const controller = new AvatarController({
       surfaces: { all: () => surfaceStore.surfaces },
       persona,
-      getAnimator: () => presenceRef.current?.proceduralAnimator,
+      getAnimator: () => presenceRef.current?.animator,
       getHead: () => presenceRef.current?.currentHead,
     });
     const abilities = new AbilityDispatcher({
@@ -296,6 +309,9 @@ export class CapriSystem extends createSystem({
       body: controller,
       loadObserver: loading,
       failureBubble: false,
+      // OPTIONAL idle clip (task 31.2): loaded after the VRM, plays only while she is free and still.
+      clipIdle: resolveClipIdle(window.location.search, import.meta.env.DEV),
+      getMode: () => controller.mode,
     });
     presenceRef.current = presence;
     this.cleanupFuncs.push(() => {
@@ -336,6 +352,8 @@ export class CapriSystem extends createSystem({
       getSurfaces: () => surfaceStore.surfaces,
       getAvatarPosition: () => (presence.isSpawned ? presence.position : undefined),
       dominant: hands.dominantHand,
+      // Task 32.2: the teach orb is hidden in Mock Mode (its bulbs are registered already).
+      getHomeKind: () => backend.kind,
     });
     this.cleanupFuncs.push(() => registration.dispose());
     // Marker tint (task 13.25): each marker shows its light's state, so on and off are visible. The
@@ -447,7 +465,7 @@ export class CapriSystem extends createSystem({
     const vfx = new HackingVfx({
       world,
       rng: app.rng,
-      getEmitter: () => presenceRef.current?.proceduralAnimator?.handEmitterWorld(),
+      getEmitter: () => presenceRef.current?.animator?.handEmitterWorld(),
       sfx: speech,
       onMarkerPulse: (target, durationS) => {
         for (const record of registration.registry.all()) {
@@ -478,7 +496,7 @@ export class CapriSystem extends createSystem({
     // sequence plays celebrate and shrug itself, so the Persona's call lines drop their gesture.
     // `controller` is the acting body, so she does not walk off during a sequence.
     const hackRunner = new HackRunner({
-      getAnimator: () => presenceRef.current?.proceduralAnimator,
+      getAnimator: () => presenceRef.current?.animator,
       vfx,
       backend,
       persona: { say: (request) => persona.say(request, { gestures: false }) },
@@ -527,7 +545,7 @@ export class CapriSystem extends createSystem({
         controller.lookAt({ x: c.x, y: c.y, z: c.z });
       },
       persona,
-      getAnimator: () => presenceRef.current?.proceduralAnimator,
+      getAnimator: () => presenceRef.current?.animator,
       panel: taskModel,
       logger: createLogger('task'),
     });
@@ -575,7 +593,7 @@ export class CapriSystem extends createSystem({
       abilities,
       runner: hackRunner,
       timers,
-      getAnimator: () => presenceRef.current?.proceduralAnimator,
+      getAnimator: () => presenceRef.current?.animator,
       getSurfaces: () => surfaceStore.surfaces,
       getHead: () => presenceRef.current?.currentHead,
       getGazeRay: () => {
@@ -583,7 +601,7 @@ export class CapriSystem extends createSystem({
         return { origin: { ...gazeScratch.origin }, direction: { ...gazeScratch.direction } };
       },
       getUiAim: () => registration.getUiAim(),
-      canTalk: () => registration.isTeachIdle,
+      canTalk: () => registration.canTalk,
       getDominant: () => hands.dominantHand,
       getLexicon: () => (lexicon.generated ? lexicon : undefined),
       tasks: taskFlow,
@@ -663,7 +681,7 @@ export class CapriSystem extends createSystem({
       logger: createLogger('idle'),
       events: app.events,
       persona,
-      getAnimator: () => presenceRef.current?.proceduralAnimator,
+      getAnimator: () => presenceRef.current?.animator,
       isPresent: () => presence.isSpawned,
       getMode: () => controller.mode,
       isSpeaking: () =>
@@ -721,7 +739,7 @@ export class CapriSystem extends createSystem({
           nextBehaviourAtMs: personality.scheduler.nextBehaviourAtMs,
           lastInputAtMs: personality.scheduler.lastInputAtMs,
           ignoredReacted: personality.scheduler.ignoredReacted,
-          activeGesture: presenceRef.current?.proceduralAnimator?.activeGesture ?? 'none',
+          activeGesture: presenceRef.current?.animator?.activeGesture ?? 'none',
           mode: controller.mode,
         }),
       };
@@ -797,10 +815,10 @@ export class CapriSystem extends createSystem({
           bubble: speechBubble,
           getAvatarPosition: () => presenceRef.current?.position ?? ORIGIN,
           getHeadPosition: () => presenceRef.current?.currentHead?.position ?? ORIGIN,
-          getAnimator: () => presenceRef.current?.proceduralAnimator,
+          getAnimator: () => presenceRef.current?.animator,
         }),
       );
-      const mouth = new MouthDriver(speech, () => presenceRef.current?.proceduralAnimator);
+      const mouth = new MouthDriver(speech, () => presenceRef.current?.animator);
       this.cleanupFuncs.push(() => {
         speech.cancel();
         speech.setPresenter(undefined);
@@ -835,7 +853,7 @@ export class CapriSystem extends createSystem({
       vfxDev = new VfxDevHandle({
         vfx,
         app,
-        getAnimator: () => presenceRef.current?.proceduralAnimator,
+        getAnimator: () => presenceRef.current?.animator,
         getDevices: () => registration.registry.all(),
       });
       const dev = window as unknown as { __capriVfx?: unknown };
@@ -862,6 +880,36 @@ export class CapriSystem extends createSystem({
       dev.__capriLoading = { status: loading, panel: loadingPanel };
       this.cleanupFuncs.push(() => {
         delete dev.__capriLoading;
+      });
+    }
+    // Arrival greeting (task 32.1): one Voice_Library greeting line with her first wave, once per XR
+    // session (a resume keeps the session). Held while the loading card or the hand-lost panel is up.
+    // Updated in the `vfxUi` stage after both, so it sees this frame's panels.
+    const greeting = new GreetingWiring({
+      persona,
+      deliver: deliverLine,
+      isAudioRunning: () => speech?.audioRunning ?? false,
+      getActiveGesture: () => presenceRef.current?.animator?.activeGesture ?? 'none',
+      isSpeaking: () => speechQueue.current !== undefined || speechQueue.pending > 0 || (speech?.speaking ?? false),
+      noteActivity: noteUserInput,
+      logger: createLogger('greeting'),
+    });
+    const greetingInputs = createGreetingInputs();
+    if (import.meta.env.DEV) {
+      const dev = window as unknown as { __capriGreeting?: unknown };
+      dev.__capriGreeting = {
+        wiring: greeting,
+        state: () => ({
+          greeted: greeting.greeted,
+          done: greeting.gate.done,
+          speaking: greeting.speaking,
+          waitedS: greeting.gate.waitedSeconds,
+          line: greeting.line ?? null,
+          inputs: { ...greetingInputs },
+        }),
+      };
+      this.cleanupFuncs.push(() => {
+        delete dev.__capriGreeting;
       });
     }
     // Status chips (task 17.5): Mode, Home Assistant, Hermes, Voice. Published as
@@ -908,9 +956,16 @@ export class CapriSystem extends createSystem({
         statusChips.setVoice(voiceUi.status);
         statusChips.update(frame);
         loadingPanel.update(frame);
+        greetingInputs.inSession = frame.inSession;
+        greetingInputs.avatarSpawned = presence.isSpawned;
+        greetingInputs.loadingOnScreen = loadingPanel.onScreen;
+        greetingInputs.handLostShown = monitor.visible;
+        greetingInputs.handsTracked = frame.hands.left.tracked || frame.hands.right.tracked;
+        greetingInputs.libraryReady = voiceIndex.settled;
+        greeting.update(frame.dt, greetingInputs);
         // The animator stage has run, so the fingertip is this frame's. The dev sequence goes first so
         // its stages reach the VFX before the VFX draws.
-        vfx.bindAnimator(presenceRef.current?.proceduralAnimator);
+        vfx.bindAnimator(presenceRef.current?.animator);
         vfxDev?.update(frame.dt);
         // The viewer is the camera. Its world position follows the headset in a session.
         world.camera.getWorldPosition(vfxViewer);
@@ -935,10 +990,19 @@ export class CapriSystem extends createSystem({
     // Developer controls for the spatial abilities (task 7.10): dev builds, or `?dev=1` in any build.
     if (shouldShowDevPanel(window.location.search)) {
       const devLogger = createLogger('dev-panel');
-      const devPanel = new DevPanel(world, devLogger, (id) => {
-        noteUserInput();
-        return describeDispatch(DEV_ACTION_LABELS[id], abilities.runDevAction(id));
-      });
+      const devPanel = new DevPanel(
+        world,
+        devLogger,
+        (id) => {
+          noteUserInput();
+          return describeDispatch(DEV_ACTION_LABELS[id], abilities.runDevAction(id));
+        },
+        // Task 32.2: the teach route in Mock Mode, where the teach orb is hidden.
+        () =>
+          registration.startTeach()
+            ? 'Teach a light: point at the lamp and pinch.'
+            : 'Teach a light: the teach panel is already open.',
+      );
       this.cleanupFuncs.push(() => devPanel.dispose());
       this.cleanupFuncs.push(registration.addUiRect(() => devPanel.getRect()));
       if (import.meta.env.DEV) {

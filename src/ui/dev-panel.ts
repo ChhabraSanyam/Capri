@@ -1,7 +1,8 @@
 /**
  * Developer test panel (task 7.10, Requirements 11.1 to 11.5, 11.7, 11.8). A hand-operated panel
  * with one button per spatial ability: Come here, Sit on table, Perch on table, Look at me, Point
- * at floor, and Go away. Poke a button with a fingertip or pinch at it from a distance. It reads no
+ * at floor, and Go away, plus "Teach a light", which opens the teach flow (task 32.2: the Mock Mode
+ * route while the teach orb is hidden). Poke a button with a fingertip or pinch at it from a distance. It reads no
  * controller input: IWSDK turns hand pokes and pinch rays into click events.
  *
  * It is shown during a session in dev builds, or in any build opened with `?dev=1` (so the hosted
@@ -37,6 +38,8 @@ const PANEL_DISTANCE_M = 0.45;
 const PANEL_DROP_M = 0.2;
 /** Shift to the user's right, clear of the hand test panel (0.42 m wide, straight ahead). */
 const PANEL_SIDE_M = 0.5;
+/** The button that opens the teach flow, the Mock Mode route while the orb is hidden (task 32.2). */
+const TEACH_BUTTON_ID = 'teach_light';
 
 export function shouldShowDevPanel(search: string): boolean {
   return import.meta.env.DEV || new URLSearchParams(search).get('dev') === '1';
@@ -58,6 +61,8 @@ export class DevPanel {
     private readonly world: World,
     private readonly logger: Logger,
     private readonly onAction: DevActionHandler,
+    /** Opens the teach flow (the "Teach a light" button, task 32.2) and returns the line to show. */
+    private readonly onTeach?: () => string,
   ) {
     this.entity = world.createTransformEntity();
     this.entity.addComponent(PanelUI, { config: DEV_PANEL_URL });
@@ -93,6 +98,14 @@ export class DevPanel {
       button.addEventListener('click', onClick);
       this.cleanups.push(() => button.removeEventListener('click', onClick));
     }
+    const teachButton = document.getElementById(TEACH_BUTTON_ID);
+    if (this.onTeach === undefined) {
+      teachButton?.setProperties({ display: 'none' });
+    } else if (teachButton !== null) {
+      const onClick = (): void => this.pressTeach();
+      teachButton.addEventListener('click', onClick);
+      this.cleanups.push(() => teachButton.removeEventListener('click', onClick));
+    }
   }
 
   /**
@@ -101,6 +114,21 @@ export class DevPanel {
    */
   press(id: DevActionId): void {
     this.onClick(id);
+  }
+
+  /** The "Teach a light" button: open the teach flow (the Mock Mode route, Requirement 23.12). */
+  pressTeach(): void {
+    const onTeach = this.onTeach;
+    if (onTeach === undefined) return;
+    let line: string;
+    try {
+      line = onTeach();
+    } catch (cause) {
+      this.logger.error('dev panel: teach failed', cause);
+      line = 'Teach a light: failed, see the console.';
+    }
+    this.status?.setProperties({ text: line });
+    this.logger.info(`dev panel: ${line}`);
   }
 
   dispose(): void {

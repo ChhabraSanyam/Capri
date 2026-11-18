@@ -2,7 +2,9 @@
  * Procedural animator core (Requirements 10.7 to 10.10, 10.12, 29.2, 29.3).
  *
  * Layers run in a fixed order each frame and write into one reused `PoseBuffer`:
- *   rest pose -> breathing -> look -> gestures
+ *   rest pose -> breathing -> [idle base pose] -> postures -> look -> gestures
+ * The idle base pose is the optional retargeted idle clip (task 31.2, `setBaseLayer`). It replaces
+ * the rest pose and breathing only while she is idle, and is absent unless a clip loaded.
  * The buffer is written to the VRM's normalized bones once, then expressions (blink, emotion, mouth)
  * are set, then `vrm.update(dt)` runs. That call copies the normalized pose to the raw skeleton and
  * applies look-at (eyes), expressions, and spring bones, so it must come last.
@@ -30,6 +32,7 @@ import {
 import {
   HUMANOID_BONE_NAMES,
   type Animator,
+  type BasePoseLayer,
   type Emotion,
   type GestureDef,
   type GestureId,
@@ -40,6 +43,7 @@ import {
 } from '../domain/animation-types.js';
 import { blinkWeight, BlinkScheduler } from '../domain/blink.js';
 import type { Vec3 } from '../domain/geometry.js';
+import { idleBaseGoal } from '../domain/idle-base-gate.js';
 import { solveLookAngles, type LookAngles } from '../domain/look.js';
 import { createSpring, springStep, type SpringState } from '../domain/spring.js';
 import { CELEBRATE } from './gestures/celebrate.js';
@@ -257,6 +261,12 @@ export class ProceduralAnimator implements Animator {
   private glanceSide = 1;
   private readonly glanceScratch = new Vector3();
 
+  // optional idle base pose (task 31.2): null unless a clip layer was attached
+  private baseLayer: BasePoseLayer | null = null;
+  private baseQuat = new Float32Array(0);
+  private readonly baseWeight = createSpring();
+  private baseAllowed = true;
+
   constructor(avatar: AnimatedAvatar, options: ProceduralAnimatorOptions) {
     this.vrm = avatar.vrm;
     this.root = avatar.root;
@@ -427,6 +437,14 @@ export class ProceduralAnimator implements Animator {
     });
   }
 
+  /**
+   * Fade out the playing gesture (not a held posture) and resolve its `play()` promise. The gesture
+   * router calls it when a clip takes over (task 31.3). Does nothing when no gesture plays.
+   */
+  stopGesture(): void {
+    this.interruptCurrent();
+  }
+
   setLookTarget(t: Vec3 | 'user' | null): void {
     // An outside caller takes the look back from the point gesture.
     this.pointLookActive = false;
@@ -453,6 +471,38 @@ export class ProceduralAnimator implements Animator {
     emotionTargets(e, this.emotionGoal);
   }
 
+  /**
+   * Attach an idle base pose (the optional idle clip, task 31.2), or detach it with null. The
+   * animator owns the layer from now on and disposes it when it is replaced or the animator is
+   * disposed. The layer fades in from the procedural pose, so attaching it mid-session never pops.
+   */
+  setBaseLayer(layer: BasePoseLayer | null): void {
+    if (this.baseLayer === layer) return;
+    this.baseLayer?.dispose();
+    this.baseLayer = layer;
+    this.baseQuat = new Float32Array(layer === null ? 0 : layer.bones.length * 4);
+    this.baseWeight.value = 0;
+    this.baseWeight.velocity = 0;
+  }
+
+  /**
+   * Whether her current mode lets the idle base pose play (`idleBaseAllowedInMode`: free idle or
+   * away, not gliding). The animator adds its own conditions: no posture and no gesture but `glance`.
+   */
+  setBaseLayerAllowed(allowed: boolean): void {
+    this.baseAllowed = allowed;
+  }
+
+  /** Current blend weight of the idle base pose, 0 (procedural) to 1 (clip). 0 without a layer. */
+  get baseLayerWeight(): number {
+    return this.baseLayer === null ? 0 : Math.min(1, Math.max(0, this.baseWeight.value));
+  }
+
+  /** True while an idle base pose is attached. */
+  get hasBaseLayer(): boolean {
+    return this.baseLayer !== null;
+  }
+
   setMouth(open01: number): void {
     this.mouthGoal = Number.isFinite(open01) ? Math.min(1, Math.max(0, open01)) : 0;
   }
@@ -469,6 +519,7 @@ export class ProceduralAnimator implements Animator {
     this.pose.begin();
     this.applyRestPose();
     this.applyBreathing();
+    this.applyBaseLayer(step);
     this.applyPostures(step);
     this.applyLook(step, f);
     this.applyGestures(step);
@@ -518,6 +569,7 @@ export class ProceduralAnimator implements Animator {
     this.releasePosture();
     this.markerCount = 0;
     this.markerListeners.length = 0;
+    this.setBaseLayer(null);
     if (this.vrm.lookAt) this.vrm.lookAt.target = undefined;
   }
 
@@ -596,6 +648,34 @@ export class ProceduralAnimator implements Animator {
     breathingOffsets(this.elapsedS, this.breathing);
     this.pose.rotateAxis(this.ids.spine, AXIS_X, this.breathing.spine);
     this.pose.rotateAxis(this.ids.chest, AXIS_X, this.breathing.chest);
+  }
+
+  /**
+   * Blend the idle base pose over the rest pose and breathing on the bones it drives, by a weight
+   * that eases toward `idleBaseGoal`. At weight 1 those bones take the clip outright. Look, postures,
+   * and gestures run after this, so they act on top of whichever pose is showing. The clip's clock
+   * only runs while it is visible, and with no weight the layer costs one spring step.
+   */
+  private applyBaseLayer(step: number): void {
+    const layer = this.baseLayer;
+    if (layer === null) return;
+    const goal = idleBaseGoal(this.baseAllowed, this.activeGesture, this.activePosture);
+    const w = springStep(this.baseWeight, goal, ANIMATOR.baseLayerSmoothTimeS, step);
+    if (!(w > 1e-3)) {
+      if (goal === 0) {
+        this.baseWeight.value = 0;
+        this.baseWeight.velocity = 0;
+      }
+      return;
+    }
+    const weight = w > 1 ? 1 : w;
+    const q = this.baseQuat;
+    const bones = layer.bones;
+    layer.sample(step, q);
+    for (let i = 0; i < bones.length; i++) {
+      const o = i * 4;
+      this.pose.blendQuat(bones[i]!, q[o]!, q[o + 1]!, q[o + 2]!, q[o + 3]!, weight);
+    }
   }
 
   private applyLook(step: number, f: FrameContext): void {

@@ -8,7 +8,9 @@
  * - it was aimed at a panel or the orb (a button press, not a talk request). The aim is the hand's
  *   ray from 200 ms before the pinch, the same lookback the pointing wiring uses, because closing
  *   the fingers bends the index finger and drops the ray;
- * - `canTalk` is false (the teach flow owns the non-dominant pinch while it is active).
+ * - `canTalk` is false: only while a teach step uses the non-dominant pinch ("Is this the spot?"
+ *   and the pick lists, `teachUsesOtherPinch`). The teach panel then says to poke the mic orb. While
+ *   teach waits for a point or shows "Got it", the pinch talks as usual (task 32.2).
  * The matching release of an ignored pinch is ignored too.
  *
  * Frames without a pinch edge allocate nothing. An edge builds one ray and the panel rectangles.

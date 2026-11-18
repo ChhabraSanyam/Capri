@@ -12,8 +12,11 @@
  *  - `HitCapture` (environment raycast while the flow waits for a point), `TeachController` (own
  *    pinch input), and `DeviceListPanel` (floating list with "Teach me your lights" and "Re-teach
  *    lights");
- *  - the `TeachOrb`: an always-visible floating entry beside the Avatar. A pinch aimed at it, or a
- *    fingertip poke, starts the flow, so the flow is reachable by hand even if UIKit clicks are not.
+ *  - the `TeachOrb`: a floating entry beside the Avatar, shown in Live Mode only (task 32.2,
+ *    Requirement 23.12; `isTeachOrbVisible`). A fingertip poke, or a ray-pinch that dwells on the
+ *    orb's own hit volume (Requirement 12.13, `TEACH_ORB_PRESS`), starts the flow, so the flow is
+ *    reachable by hand even if UIKit clicks are not. In Mock Mode `startTeach` (the dev panel's
+ *    "Teach a light" button) opens it instead.
  *
  * Pointing support (task 11.7): `pointTargets` is the marker list the selector uses (rebuilt only when
  * the registry changes), `setHighlight` shows the pointed marker with its ring and the selected one in
@@ -29,7 +32,7 @@ import type { World } from '@iwsdk/core';
 import type { LightState, SmartHomeBackend } from '../backends/types.js';
 import { featureFlags } from '../config/feature-flags.js';
 import { TEACH_FLOW, TEACH_ORB } from '../config/constants.js';
-import { OrbPressDetector } from '../domain/devices/teach-orb.js';
+import { isTeachOrbVisible, OrbPressDetector, TEACH_ORB_PRESS } from '../domain/devices/teach-orb.js';
 import { adoptStoredHandles, mergeRestoredPositions } from '../domain/devices/restore.js';
 import { DeviceRegistry, type DeviceRecord, type NewDevice } from '../domain/devices/registry.js';
 import { TeachFlow } from '../domain/devices/teach-flow.js';
@@ -71,6 +74,8 @@ export interface DeviceRegistrationDeps {
   readonly getAvatarPosition: () => Vec3 | undefined;
   /** The dominant hand. Defaults to the right hand. */
   readonly dominant?: 'left' | 'right';
+  /** The home in use (`HomeSwitch.kind`). The teach orb is hidden in Mock Mode. Defaults to live. */
+  readonly getHomeKind?: () => 'mock' | 'live';
 }
 
 export class DeviceRegistration {
@@ -84,7 +89,7 @@ export class DeviceRegistration {
   readonly loaded: Promise<void>;
 
   private readonly preview: DeviceMarker;
-  private readonly orbDetector = new OrbPressDetector();
+  private readonly orbDetector = new OrbPressDetector(TEACH_ORB_PRESS);
   private readonly unsubscribe: () => void;
   private markerById = new Map<string, DeviceMarker>();
   private markers: DeviceMarker[] = [];
@@ -137,6 +142,25 @@ export class DeviceRegistration {
   /** True while the teach flow is idle, so the dominant pinch is free to confirm a device. */
   get isTeachIdle(): boolean {
     return this.flow.state.kind === 'idle';
+  }
+
+  /**
+   * True unless the current teach step uses the non-dominant pinch (task 32.2, Requirement 15.6).
+   * While teach is idle, waiting for a point, or showing "Got it", that pinch is push-to-talk.
+   */
+  get canTalk(): boolean {
+    return !this.controller.ownsOtherPinch;
+  }
+
+  /**
+   * Open the teach flow from a button (the dev panel's "Teach a light", task 32.2), the Mock Mode
+   * route while the orb is hidden. False when the flow is already open.
+   */
+  startTeach(): boolean {
+    if (this.flow.state.kind !== 'idle') return false;
+    this.deps.logger.info('teach: opened from a button');
+    this.flow.start('teach');
+    return true;
   }
 
   /**
@@ -212,7 +236,7 @@ export class DeviceRegistration {
     const wasIdle = this.flow.state.kind === 'idle';
     this.controller.update(frame);
     const center = this.orb.isVisible ? this.orb.center : undefined;
-    if (this.orbDetector.update(frame.hands, center, wasIdle && this.flow.state.kind === 'idle')) {
+    if (this.orbDetector.update(frame.hands, center, wasIdle && this.flow.state.kind === 'idle', frame.time)) {
       this.deps.logger.info('teach: orb pressed');
       this.flow.start('teach');
     }
@@ -223,9 +247,14 @@ export class DeviceRegistration {
     const headX = frame.head.position[0]!;
     const headZ = frame.head.position[2]!;
     const avatar = this.deps.getAvatarPosition();
-    const showOrb = frame.inSession && avatar !== undefined && this.flow.state.kind === 'idle';
+    const showOrb = isTeachOrbVisible({
+      inSession: frame.inSession,
+      avatarPresent: avatar !== undefined,
+      teachIdle: this.flow.state.kind === 'idle',
+      home: this.deps.getHomeKind?.() ?? 'live',
+    });
     this.orb.setVisible(showOrb);
-    if (showOrb) {
+    if (showOrb && avatar !== undefined) {
       // The user's right, seen looking from the head toward the Avatar, is (-uz, ux).
       let ux = avatar.x - headX;
       let uz = avatar.z - headZ;

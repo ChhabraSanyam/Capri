@@ -48,6 +48,22 @@ export interface TeachView {
   readonly teach: TeachButton;
   /** Visible exactly when at least one device exists (Requirement 12.11). */
   readonly reteach: TeachButton;
+  /**
+   * How to talk while this step owns the other hand's pinch (task 32.2, Requirements 15.6, 15.7),
+   * or `undefined` when that pinch is free and still starts push-to-talk.
+   */
+  readonly talkHint: string | undefined;
+}
+
+/** The hint shown while a teach step uses the non-dominant pinch. Plain ASCII. */
+export const TEACH_TALK_HINT = 'To talk now, poke the mic orb. Here a pinch with your other hand means Try again or Next.';
+
+/**
+ * True for the teach steps that use the non-dominant pinch (Try again on "Is this the spot?", next
+ * row on the pick lists, see `TeachController`). In every other state that pinch stays push-to-talk.
+ */
+export function teachUsesOtherPinch(kind: TeachStateKind): boolean {
+  return kind === 'captured' || kind === 'pickEntity' || kind === 'pickNickname';
 }
 
 const HIDDEN: TeachButton = { visible: false, label: '' };
@@ -93,6 +109,7 @@ export function buildTeachView(state: TeachState, devices: readonly DeviceRecord
     cancel: HIDDEN,
     teach: shown('Teach me your lights'),
     reteach,
+    talkHint: teachUsesOtherPinch(state.kind) ? TEACH_TALK_HINT : undefined,
   };
 
   switch (state.kind) {

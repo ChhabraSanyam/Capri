@@ -141,7 +141,7 @@ export interface VoiceLoopDeps {
   readonly getGazeRay: () => GazeRay | undefined;
   /** Panels and the orb a pinch may be aimed at. Called on a pinch edge only. */
   readonly getUiAim: () => UiAimTargets;
-  /** False while another flow owns the non-dominant pinch (the teach flow). */
+  /** False while another flow owns the non-dominant pinch (a teach step that uses it). */
   readonly canTalk: () => boolean;
   readonly getDominant: () => HandSide;
   /** The generated word list, or `undefined` while only the small built-in one exists. */

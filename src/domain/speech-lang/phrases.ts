@@ -55,6 +55,17 @@ export const DEVICE_VERBS: readonly DeviceVerbEntry[] = [
   { verb: 'set_color', head: 'set to' },
 ];
 
+/**
+ * The split verb order, "turn that off" (Requirement 15.25): a verb word, the target, then a
+ * particle. Each particle gives the same verb as the joined head ("turn off that").
+ */
+export const SPLIT_VERB_WORDS: readonly string[] = ['turn', 'switch'];
+
+export const SPLIT_PARTICLES: readonly { readonly particle: string; readonly verb: 'turn_on' | 'turn_off' }[] = [
+  { particle: 'on', verb: 'turn_on' },
+  { particle: 'off', verb: 'turn_off' },
+];
+
 /** Brightness each brightness verb sets, in percent. Absolute, so no light state is read. */
 export const VERB_BRIGHTNESS_PCT: Readonly<{ dim: number; brighten: number }> = {
   dim: SPEECH_COMMANDS.dimPct,

@@ -845,25 +845,61 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
   - Run `npm run typecheck` and `npm test -- --run`, fix any failures, then continue to the next task without waiting for a reply
   - _Requirements: 7.6, 7.12_
 
-- [ ] 31. OPTIONAL: retargeted animation clips (cut first, only after the MVD cut-line and submission readiness)
-  - [ ]* 31.1 Select clips and record licenses
+- [x] 32. Demo fixes [POST-MVD] (run before task 31)
+  - [x] 32.1 Play a spoken greeting on arrival
+    - When Capri spawns and plays the wave at session start (`src/avatar/avatar-presence.ts`, `src/avatar/gestures/wave.ts`), have Persona pick one line from the Voice_Library `greeting` category (files already in `public/voice/`, pinned by the `preloadCategories: ['greeting', 'confirm']` preload in `src/audio/voice-player.ts`) and play it through Speech_Output, starting within the wave gesture so the line and the wave overlap. Use the existing variant picker so the variant differs from the last one played
+    - Play the greeting once per session: keep a session-scoped `greeted` flag that is set on first play and is not reset by pause and resume (`src/ui/pause.ts`, `src/app/resume-hand-guard.ts`). A resume never replays it
+    - If the playback `AudioContext` is not `running` when the greeting is due (the `audio-engine.ts` resume result is false), fall back to tier 3: show the greeting text in a Speech_Bubble and play the chirp, with no mouth flap
+    - Avoid collisions: wait until the loading card (`src/ui/loading.ts`) has closed before speaking, treat the greeting as activity start so the 60 s ignored-reaction timer (`src/domain/idle-scheduler.ts`, `src/app/personality.ts`) starts from the end of the greeting and does not fire over it, and skip or defer the greeting while the hand-lost panel (`src/domain/hand-lost.ts`) is showing, so the two never speak or display at once
+    - Add unit tests in `tests/unit/` for the once-per-session flag across pause and resume, the tier 3 fallback when the context is not running, and the deferral while the loading card or hand-lost panel is up
+    - Update `docs/demo-path.md` (the "Known limits" line saying Capri waves but says nothing) and `docs/demo-video-plan.md` (the "no spoken greeting" note and the arrival shot's "Spoken: none" line) to describe the greeting
+    - Run `npm run --if-present typecheck` and `npm test -- --run`, and confirm the greeting in the runtime with `browser_get_console_logs` and a `browser_screenshot` of the bubble fallback
+    - _Requirements: 10.10, 10.14, 16.8, 16.10, 16.12, 21.3, 22.2_
+
+  - [x] 32.2 Stop the teach orb catching stray pinches in Mock Mode
+    - In Mock Mode the three virtual bulbs are already registered (Requirement 12.9), so hide the "Teach me your lights" orb (`src/ui/teach-orb.ts`) by default while in Mock_Mode. Keep teach reachable in Mock Mode from the dev panel (`src/ui/dev-panel.ts`) or an explicit "Teach a light" entry in Quick_Actions (`src/ui/panels/quick-actions.ts`), and name the chosen route in the task completion note. Live Mode keeps the orb visible
+    - In all modes, open the teach flow only on a deliberate press: a fingertip poke of the orb, or a ray-pinch whose ray hits the orb's own hit volume and stays on it for a short dwell (add the dwell time as a named constant in `src/config/constants.ts`). A pinch whose ray only passes near the orb, or that is aimed at a bulb or another panel, must not open the flow. Wire the change in `src/ui/teach-controller.ts` and `src/app/device-registration.ts`
+    - While the teach flow is open, keep push-to-talk working: let the non-dominant pinch and the mic orb poke (`src/app/talk-gesture.ts`, `src/ui/panels/mic-orb.ts`) start Push_To_Talk during teach. If a teach step needs the non-dominant pinch, show a visible hint on the teach panel naming how to talk and keep the **Cancel** button visible instead of silently dropping the pinch
+    - Add unit tests in `tests/unit/` for the orb visibility rule per mode, the poke and dwell press rule (near-miss rays and too-short dwells do not open), and push-to-talk starting while the teach flow is open
+    - Update the `docs/demo-path.md` "Known limits" and troubleshooting lines about the orb catching a pinch and about push-to-talk not working while the teach panel is open, and the table row that describes the orb in Mock Mode
+    - Run `npm run --if-present typecheck` and `npm test -- --run`, and confirm in the runtime with `browser_screenshot` that the orb is absent in Mock Mode and the chosen teach route opens the flow
+    - _Requirements: 12.1, 12.9, 12.13, 15.6, 15.7, 23.9, 23.12_
+
+  - [x] 32.3 Make the spoken form "turn that off" / "turn that on" work
+    - Extend `src/domain/speech-lang/phrases.ts`, `grammar-builder.ts`, and `intent-parser.ts` (and `lexicon.ts` if a word is missing) so the `fragments` grammar lets Vosk emit the split verb order "turn that off", "turn that on", "turn it off", "turn it on", "turn this off", "turn this on", "switch that off", and "switch that on" (for example by adding the particle fragments "on" and "off" and the verb fragments "turn" and "switch" alongside the existing joined verbs). Parse each split form to the same intent as its joined form ("turn off that" and so on), resolved to the Pointed_Device as today
+    - Keep every existing phrase recognised and parsed as before, keep `[unk]` in the grammar, and keep the low-confidence rule: contradictory or repeated verbs and multi-fragment garble for a short command still return `{ type: 'repeat' }`. A bare "on" or "off", or "turn" with no particle, must not run a device action
+    - Add unit tests in `tests/unit/` for each new split form, each existing joined form, and the existing low-confidence cases ("turn on turn off", repeated verbs), and keep the existing parser and grammar tests passing
+    - Verify recognition with synthetic speech as the earlier Vosk tasks did: render a WAV for each new split form and each existing joined form with macOS `say` plus `ffmpeg` (16 kHz mono), feed each through vosk-browser in headless Chromium with the grammar the app builds for Mock Mode, and record the recognised text and parsed intent. Report per-phrase accuracy (correct intent out of attempts) in the task completion note
+    - If the split forms recognise reliably, update `docs/demo-path.md` (the "turn that off is not recognised by voice" lines, the phrase table, and the Demo_Path step) and `docs/demo-video-plan.md` (the word-order warning and the spoken lines in the signature shot and the Live Mode shot) to use "turn that off". If they do not, leave the docs on "turn off that" and state the measured accuracy in "Known limits"
+    - Run `npm run --if-present typecheck` and `npm test -- --run`
+    - _Requirements: 14.2, 14.3, 15.2, 15.3, 15.23, 15.24, 15.25_
+
+  - [x] 32.4 Accept the ONNX runtime install flag in the Vercel config test
+    - The user intentionally set `vercel.json` `installCommand` to `ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci`. Keep that value unchanged
+    - Update `tests/unit/vercel-config.test.ts` so it accepts that `installCommand`: assert the command ends with `npm ci`, and assert that any prefix before `npm ci` consists only of environment-variable assignments (`NAME=value` tokens separated by spaces)
+    - Add one sentence to `docs/hosting.md` explaining that `ONNXRUNTIME_NODE_INSTALL_CUDA=skip` skips the CUDA download of a transitive `onnxruntime-node` dependency during install
+    - Run `npm test` and confirm the full suite passes
+    - _Requirements: 30.3, 30.9_
+
+- [x] 31. OPTIONAL: retargeted animation clips (cut first, only after the MVD cut-line and submission readiness)
+  - [x]* 31.1 Select clips and record licenses
     - Choose permissively licensed clips for idle, wave, point, snap/flick, celebrate, and tease/shrug, and add a license and attribution entry for each to `docs/THIRD_PARTY.md`
     - _Requirements: 32.1, 32.2, 32.5_
 
-  - [ ]* 31.2 Implement the clip animator
+  - [x]* 31.2 Implement the clip animator
     - Create `src/avatar/clips/index.ts` using `@pixiv/three-vrm-animation` to retarget each clip to the Avatar's VRM humanoid bones, with graceful handling of load failures
     - If retargeting takes longer than the schedule allows, stop and keep the Procedural_Animator gesture
     - _Requirements: 32.2, 32.3, 32.7_
 
-  - [ ]* 31.3 Implement the gesture router
+  - [x]* 31.3 Implement the gesture router
     - Create `src/avatar/gesture-router.ts` discovering the clip module through `import.meta.glob('./clips/index.ts')` (empty when absent), and use a clip only when it is loaded, otherwise the procedural gesture
     - _Requirements: 32.4, 32.6_
 
-  - [ ]* 31.4 Write property test for gesture fallback
+  - [x]* 31.4 Write property test for gesture fallback
     - **Property 45: Gesture fallback without clips**
     - **Validates: Requirements 32.4, 32.6**
 
-  - [ ]* 31.5 Write the clip hand-off note
+  - [x]* 31.5 Write the clip hand-off note
     - **What to test:** trigger wave, point, flick, celebrate, and shrug, then delete `src/avatar/clips/` and rebuild
     - **What you should see:** smoother motion with clips, and identical behaviour from the procedural gestures with the folder removed
     - **Open on Quest:** `npm run dev`, then `https://<LAN-IP>:<port>/` in Quest Browser, or `adb reverse tcp:<port> tcp:<port>` and `https://localhost:<port>/`
@@ -873,7 +909,7 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
 
 - Tasks marked with `*` are optional and can be skipped for a faster MVD. The OPTIONAL group (task 31) contains only optional sub-tasks and is cut first.
 - The repository scaffold in task 1.2 is spike preparation. Step 1 (task 3) builds on it, and the Spike items themselves finish before Step 1 begins (Requirement 1.1).
-- Tasks 1 to 20 are the MVD. Task 20 marks the MVD cut-line. Tasks 21 to 30 are Post-MVD.
+- Tasks 1 to 20 are the MVD. Task 20 marks the MVD cut-line. Tasks 21 to 30 are Post-MVD. Task 32 (demo fixes) is Post-MVD, runs after task 29.3, and finishes before any task 31 sub-task starts. Tasks 32.1, 32.2, and 32.3 share one wave but all edit `docs/demo-path.md`, and 32.1 and 32.3 both edit `docs/demo-video-plan.md`. Each sub-task edits only the lines it names in those files, re-reads the file just before editing, and leaves the other sub-tasks' lines untouched.
 - Mock Mode (task 17) is built right after Step 7 (task 15), per Requirement 7.1. The mock home reducer is created earlier in task 9.1 so the teach flow and voice loop have a backend, and it is reused unchanged.
 - Gate H (tasks 21.1 to 21.3) must finish before any live Hermes client code (task 21.10). The scripted Hermes task in task 19 uses no real Hermes surface.
 - Each hand-off note tells the user what to test, what they should see, and how to open the build on the Quest. It never blocks the next task. The dev server is started with `npm run dev` outside the agent's foreground shell.
@@ -952,10 +988,12 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
     {"id": 63, "tasks": ["27.4"]},
     {"id": 64, "tasks": ["27.5", "29.1", "29.2"]},
     {"id": 65, "tasks": ["29.3"]},
-    {"id": 66, "tasks": ["31.1"]},
-    {"id": 67, "tasks": ["31.2"]},
-    {"id": 68, "tasks": ["31.3"]},
-    {"id": 69, "tasks": ["31.4", "31.5"]}
+    {"id": 66, "tasks": ["32.1", "32.2", "32.3"]},
+    {"id": 67, "tasks": ["32.4"]},
+    {"id": 68, "tasks": ["31.1"]},
+    {"id": 69, "tasks": ["31.2"]},
+    {"id": 70, "tasks": ["31.3"]},
+    {"id": 71, "tasks": ["31.4", "31.5"]}
   ]
 }
 ```

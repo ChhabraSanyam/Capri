@@ -416,6 +416,7 @@ means the origin is not allowed or something in front answered instead.
 | [`docs/performance-note.md`](docs/performance-note.md) | Frame-time measurements and performance levers |
 | [`docs/comfort-check.md`](docs/comfort-check.md) | Avatar distance, panel placement, and seated reach checks |
 | [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md) | Third-party assets in detail |
+| [`docs/animation-clips.md`](docs/animation-clips.md) | Optional idle animation clip: Quest checks, adding and removing clips |
 
 IWSDK guides: [minimal scene](https://iwsdk.dev/guides/01b-minimal-scene.html) and
 [IWER emulator controls](https://iwsdk.dev/guides/02-testing-experience.html#iwer-controls).
@@ -436,8 +437,11 @@ IWSDK guides: [minimal scene](https://iwsdk.dev/guides/01b-minimal-scene.html) a
   the [official Vosk models page](https://alphacephei.com/vosk/models)). It is downloaded at build
   time by `npm run fetch:vosk`, repackaged as `.tar.gz`, and served from `/vosk/`. It is not
   committed.
+- Optional idle animation clip `public/animations/idle.vrma`: `idle_loop.vrma` from
+  [pixiv/ChatVRM](https://github.com/pixiv/ChatVRM), (c) 2023 pixiv Inc., MIT License (notice in
+  `public/animations/LICENSE-idle.txt`). Unmodified. Details in `docs/THIRD_PARTY.md`.
 - npm dependencies keep their own licenses, for example `vosk-browser` (Apache-2.0), `@iwsdk/core`,
-  `three` (super-three), and `@pixiv/three-vrm` (MIT).
+  `three` (super-three), `@pixiv/three-vrm`, and `@pixiv/three-vrm-animation` (MIT).
 
 ## License
 

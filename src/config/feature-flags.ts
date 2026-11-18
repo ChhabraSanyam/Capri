@@ -47,6 +47,13 @@ export interface FeatureFlags {
    * carries `DepthOccludable`. It stays off until the frame time is measured with it on (task 27.6).
    */
   readonly depthOcclusion: boolean;
+  /**
+   * OPTIONAL clips (task 31.2, Requirement 32): after the Avatar has spawned, load the retargeted idle
+   * clip (`public/animations/idle.vrma`) and play it as her base pose while she is idle. A missing
+   * clip module or a failed load keeps the procedural idle. In a dev build `?clipidle=0|1` overrides
+   * it for one page load (`resolveClipIdle`).
+   */
+  readonly clipIdle: boolean;
 }
 
 export const featureFlags: FeatureFlags = {
@@ -61,7 +68,21 @@ export const featureFlags: FeatureFlags = {
   ttsUsable: false,
   ttsVoiceURI: undefined,
   depthOcclusion: false,
+  clipIdle: true,
 };
+
+/**
+ * Whether to load the idle clip on this page load. In a dev build `?clipidle=0` turns it off and
+ * `?clipidle=1` turns it on. Any other value, no parameter, or a production build gives
+ * `featureFlags.clipIdle`. Pure: pass `window.location.search` and `import.meta.env.DEV`.
+ */
+export function resolveClipIdle(search: string, isDev: boolean): boolean {
+  if (!isDev) return featureFlags.clipIdle;
+  const value = new URLSearchParams(search).get('clipidle');
+  if (value === '0') return false;
+  if (value === '1') return true;
+  return featureFlags.clipIdle;
+}
 
 /**
  * The point-pose gate for this page load. In a dev build, `?pointgate=0` turns the gate off and

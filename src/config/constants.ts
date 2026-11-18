@@ -155,6 +155,11 @@ export const ANIMATOR = {
   gestureFadeS: 0.15,
   /** Sit and perch blend in and out with this spring time (task 7.9). */
   postureSmoothTimeS: 0.25,
+  /**
+   * The optional idle clip (task 31.2) cross-fades with the procedural rest pose and breathing with
+   * this spring time, into idle and out of it when a gesture, posture, or move starts.
+   */
+  baseLayerSmoothTimeS: 0.25,
 } as const;
 
 /**
@@ -382,11 +387,19 @@ export const DEV_PANEL_RECT = {
 } as const;
 
 /**
- * The always-visible "Teach me your lights" orb (task 9.8, Requirement 12.1). A small glowing sphere
- * that floats beside the Avatar while the teach flow is idle. A pinch aimed at it, or a fingertip
- * poke, starts the flow, so the flow can be opened by hand without any UIKit button.
+ * The "Teach me your lights" orb (task 9.8, Requirements 12.1, 12.13, 23.12). A small glowing sphere
+ * that floats beside the Avatar while the teach flow is idle, in Live Mode only (Mock Mode hides it,
+ * task 32.2). A fingertip poke, or a ray-pinch that dwells on it, starts the flow, so the flow can be
+ * opened by hand without any UIKit button.
  *
- * - `visualRadiusM`: drawn size. `hitRadiusM`: the ray-pinch target is larger, so aiming is easy.
+ * - `visualRadiusM`: drawn size. `hitRadiusM`: the sphere that makes a pinch count as aimed at UI
+ *   (so it starts no talking and confirms no device). The mic orb shares it for its ray pinch.
+ * - `rayPressRadiusM`: the orb's own hit volume for opening the flow by ray (about the halo). A ray
+ *   that only passes near the orb, outside this sphere, opens nothing.
+ * - `rayDwellS`: the ray must stay inside `rayPressRadiusM` this long, before or during the pinch,
+ *   for a ray-pinch to open the flow. `rayGraceS`: a gap in the hits up to this long does not break
+ *   the dwell (closing the fingers bends the index finger and drops the ray for a moment; the same
+ *   200 ms lookback the pointing confirm uses).
  * - `pokeRadiusM`: a fingertip this close to the centre counts as a poke. It must leave the radius
  *   `pokeReleaseM` before it can poke again.
  * - `sideM`, `riseM`: where it floats relative to the Avatar's feet. Sideways it sits toward the
@@ -395,6 +408,9 @@ export const DEV_PANEL_RECT = {
 export const TEACH_ORB = {
   visualRadiusM: 0.045,
   hitRadiusM: 0.12,
+  rayPressRadiusM: 0.08,
+  rayDwellS: 0.35,
+  rayGraceS: 0.2,
   pokeRadiusM: 0.07,
   pokeReleaseM: 0.12,
   sideM: 0.3,
@@ -891,6 +907,16 @@ export const IDLE_SCHEDULE = {
   gapMinS: 8,
   gapMaxS: 18,
   ignoredAfterS: 60,
+} as const;
+/**
+ * Arrival greeting (task 32.1, Requirements 10.14, 16.8, 16.10). Once Capri has spawned, the greeting
+ * waits for the loading card to fade out, for a tracked hand (the hand-lost panel never shares the
+ * screen with it), and for the Voice_Library index. `maxDeferS` is the longest it waits after she
+ * spawned, counted in running frames (a pause does not count). After that the session goes without a
+ * greeting, so a line never pops up long after she arrived.
+ */
+export const GREETING = {
+  maxDeferS: 10,
 } as const;
 
 /**

@@ -45,10 +45,13 @@ import {
   type MutableVec3,
 } from '../domain/placement.js';
 import { createSpring, springStep } from '../domain/spring.js';
+import type { AvatarMode } from '../domain/avatar-state.js';
+import { idleBaseAllowedInMode } from '../domain/idle-base-gate.js';
 import { SpeechBubble } from '../ui/speech-bubble.js';
 import { makeAvatarLoadError, type AvatarLoadError } from './avatar-fit.js';
 import { loadAvatar, type Avatar, type AvatarLoadResult } from './avatar-loader.js';
 import type { BodyPoseSource } from './avatar-controller.js';
+import { GestureRouter, type ClipModule } from './gesture-router.js';
 import { ProceduralAnimator } from './procedural-animator.js';
 
 export interface AvatarPresenceDeps {
@@ -77,6 +80,16 @@ export interface AvatarPresenceDeps {
    * loading panel (`ui/loading.ts`) shows the failure instead, so the message is not shown twice.
    */
   readonly failureBubble?: boolean;
+  /**
+   * OPTIONAL clips (task 31.2): after the Avatar is ready, load the idle clip in the background and
+   * play it as her idle base pose. Default false. Spawn never waits for it, and a missing module or a
+   * failed load is logged and keeps the procedural idle.
+   */
+  readonly clipIdle?: boolean;
+  /** Her current mode, which decides whether the idle clip may play. Defaults to always `idle`. */
+  readonly getMode?: () => AvatarMode;
+  /** Test seam passed to the gesture router. Defaults to its `import.meta.glob` discovery. */
+  readonly loadClips?: () => Promise<ClipModule | undefined>;
 }
 
 type Phase = 'loading' | 'ready' | 'failed';
@@ -94,7 +107,7 @@ function angleDelta(from: number, to: number): number {
 export class AvatarPresence {
   private phase: Phase = 'loading';
   private avatar: Avatar | undefined;
-  private animator: ProceduralAnimator | undefined;
+  private router: GestureRouter | undefined;
   private entity: Entity | undefined;
   private failure: AvatarLoadError | undefined;
   private readonly pivot = new Group();
@@ -160,9 +173,12 @@ export class AvatarPresence {
     return this.following;
   }
 
-  /** The animator once the VRM has loaded, else undefined. For the ability controller (task 7.8). */
-  get proceduralAnimator(): ProceduralAnimator | undefined {
-    return this.animator;
+  /**
+   * Her animator once the VRM has loaded, else undefined: the gesture router (task 31.3), which plays
+   * a clip for a gesture when one is loaded and the procedural gesture otherwise.
+   */
+  get animator(): GestureRouter | undefined {
+    return this.router;
   }
 
   /** The head pose read this frame, or undefined until the headset reports one. Reused, do not keep it. */
@@ -192,13 +208,18 @@ export class AvatarPresence {
   /** The `animator` stage: bones, expressions, and `vrm.update`. */
   updateAnimator(frame: FrameContext): void {
     if (!this.spawned) return;
-    this.animator?.update(frame.dt, frame);
+    const animator = this.router;
+    if (animator === undefined) return;
+    if (animator.hasIdleClip) {
+      animator.setIdleClipAllowed(idleBaseAllowedInMode(this.deps.getMode?.() ?? 'idle', this.following));
+    }
+    animator.update(frame.dt, frame);
   }
 
   dispose(): void {
     this.disposed = true;
-    this.animator?.dispose();
-    this.animator = undefined;
+    this.router?.dispose();
+    this.router = undefined;
     this.bubble.dispose();
     this.lightsEntity.dispose();
     this.entity?.dispose();
@@ -248,10 +269,13 @@ export class AvatarPresence {
       this.pivot.add(avatar.root);
       this.entity = this.deps.world.createTransformEntity(this.pivot);
       if (this.deps.depthOcclusion) this.entity.addComponent(DepthOccludable);
-      this.animator = new ProceduralAnimator(avatar, { rng: this.deps.rng, waveOnFirstAppear: true });
+      const procedural = new ProceduralAnimator(avatar, { rng: this.deps.rng, waveOnFirstAppear: true });
+      const animator = new GestureRouter(procedural, { logger: this.deps.logger, loadClips: this.deps.loadClips });
+      this.router = animator;
       this.phase = 'ready';
       this.deps.loadObserver?.ready();
       this.deps.logger.info(`avatar ready in ${Math.round(avatar.loadMs)} ms, ${avatar.metrics.height.toFixed(2)} m tall`);
+      if (this.deps.clipIdle === true) void animator.attachClips(avatar.vrm);
     } catch (cause) {
       this.fail(makeAvatarLoadError('invalid_model', 'avatar', cause));
     }
@@ -297,7 +321,7 @@ export class AvatarPresence {
 
   private spawn(): void {
     const avatar = this.avatar;
-    const animator = this.animator;
+    const animator = this.router;
     if (avatar === undefined || animator === undefined) return;
     const home = idleHome(this.head, this.floorRef());
     const placed = constrainIdlePosition(this.head, home);
@@ -334,7 +358,7 @@ export class AvatarPresence {
     this.following = false;
     if (!this.spawned) return;
     this.deps.body?.reset();
-    this.animator?.releasePosture();
+    this.router?.releasePosture();
     this.spawned = false;
     this.pivot.visible = false;
   }

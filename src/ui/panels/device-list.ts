@@ -220,6 +220,8 @@ export class DeviceListPanel {
     const view = this.view;
     this.text(document, 'heading', view.heading);
     this.text(document, 'instruction', view.instruction);
+    document.requireElementById('talk-hint').setProperties({ display: view.talkHint === undefined ? 'none' : 'flex' });
+    if (view.talkHint !== undefined) this.text(document, 'talk-hint', view.talkHint);
     for (let slot = 0; slot < ROW_COUNT; slot += 1) {
       const row = view.rows[slot];
       const button = document.requireElementById(`row-${slot}`);

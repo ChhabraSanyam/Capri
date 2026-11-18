@@ -48,7 +48,7 @@ export function findOutOfLexicon(lexicon: Lexicon, phrase: string): string[] {
 
 const FALLBACK_WORDS = `
 a an the my this that it one is
-turn on off dim brighten set to color colour come here sit look at point remember as timer for
+turn switch on off dim brighten set to color colour come here sit look at point remember as timer for
 minutes minute go away stop yes no okay hello hey capri
 zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen
 sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred

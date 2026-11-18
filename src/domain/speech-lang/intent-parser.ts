@@ -1,5 +1,5 @@
 /**
- * Intent_Parser (task 13.2, Requirements 14.2, 14.3, 15.12, 15.14, 15.24, 17.2). Turns recognised
+ * Intent_Parser (task 13.2, Requirements 14.2, 14.3, 15.12, 15.14, 15.24, 15.25, 17.2). Turns recognised
  * text into a structured `Intent`. Pure and deterministic: the same text and the same device names
  * always give an equal intent, whatever order the registry lists devices in.
  *
@@ -21,6 +21,8 @@ import {
   DEVICE_VERBS,
   MINUTE_UNITS,
   normalizeText,
+  SPLIT_PARTICLES,
+  SPLIT_VERB_WORDS,
   TASK_PHRASES,
   UNK,
   WAKE_PHRASE,
@@ -91,9 +93,14 @@ function sameTokens(a: Tokens, b: Tokens): boolean {
 // Command fragments (low-confidence rule)
 // ---------------------------------------------------------------------------------------------
 
-/** Phrases that start or make a whole command, longest first. Two of them in one result is garble. */
+/**
+ * Phrases that start or make a whole command, longest first. Two of them in one result is garble.
+ * The split-order verb words ("turn", "switch") count too, so "turn that off turn that on" is
+ * garble. The particles "on" and "off" do not: they are common in typed chat.
+ */
 const COMMAND_FRAGMENTS: readonly Tokens[] = [
   ...DEVICE_VERBS.map((e) => norm(e.head)),
+  ...SPLIT_VERB_WORDS.map((w) => [w]),
   ...Object.values(AVATAR_HEADS).map((p) => norm(p)),
   ...CONFIRM_PHRASES.map((p) => norm(p)),
   ...CHAT_PHRASES.map((p) => norm(p)),
@@ -121,6 +128,8 @@ function countCommandFragments(tokens: Tokens): number {
 
 const DEICTIC_TOKENS: readonly Tokens[] = DEICTIC_PHRASES.map((p) => norm(p));
 
+const PARTICLE_VERB: ReadonlyMap<string, DeviceVerb> = new Map(SPLIT_PARTICLES.map((p) => [p.particle, p.verb]));
+
 function isDeictic(tokens: Tokens): boolean {
   return DEICTIC_TOKENS.some((d) => sameTokens(d, tokens));
 }
@@ -134,14 +143,15 @@ function namedRef(tokens: Tokens, ctx: ParseContext): Extract<DeviceRef, { kind:
 /**
  * The device a tail of words means. No words means the Pointed_Device (a Quick_Actions button has
  * no target). A name that no device answers to is `named` with no candidates, unless it holds
- * command fragments (then it is garble) or `strict` is set (the target must be known).
+ * command fragments or an "on"/"off" particle (then it is garble, as in "turn on that off") or
+ * `strict` is set (the target must be known).
  */
 function parseDeviceTarget(tokens: Tokens, ctx: ParseContext, strict = false): DeviceRef | undefined {
   if (tokens.length === 0) return strict ? undefined : { kind: 'deictic' };
   if (isDeictic(tokens)) return { kind: 'deictic' };
   const named = namedRef(tokens, ctx);
   if (named.candidates.length > 0) return named;
-  if (strict || countCommandFragments(tokens) > 0) return undefined;
+  if (strict || countCommandFragments(tokens) > 0 || tokens.some((w) => PARTICLE_VERB.has(w))) return undefined;
   return named;
 }
 
@@ -202,13 +212,17 @@ function parseDevice(tokens: Tokens, ctx: ParseContext): Intent | undefined {
     }
   }
 
-  // Typed word orders that speech never produces: "turn that off" and "set the lamp to red".
+  // The split order, spoken or typed: "turn that off", "switch it on", "turn the desk lamp off"
+  // (Requirement 15.25). The target must be a deictic word or a known device, so a bare particle,
+  // a verb with no target, and garble such as "turn on turn off" never match here.
   const first = tokens[0];
   const last = tokens[tokens.length - 1];
-  if (first === 'turn' && (last === 'on' || last === 'off')) {
+  const particleVerb = PARTICLE_VERB.get(last ?? '');
+  if (first !== undefined && SPLIT_VERB_WORDS.includes(first) && particleVerb !== undefined) {
     const target = parseDeviceTarget(tokens.slice(1, -1), ctx, true);
-    if (target !== undefined) return deviceIntent(last === 'on' ? 'turn_on' : 'turn_off', target);
+    if (target !== undefined) return deviceIntent(particleVerb, target);
   }
+  // A typed word order that speech never produces: "set the lamp to red".
   if (first === 'set' && tokens.length >= 4 && tokens[tokens.length - 2] === 'to' && COLOR_RGB.has(last ?? '')) {
     const target = parseDeviceTarget(tokens.slice(1, -2), ctx, true);
     if (target !== undefined) return deviceIntent('set_color', target, last);

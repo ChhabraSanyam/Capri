@@ -1,5 +1,10 @@
 {
-  "pbtResults": {},
+  "pbtResults": {
+    "31.4 Write property test for gesture fallback": {
+      "status": "passed",
+      "lastRunTimestamp": 1795015683415
+    }
+  },
   "executionHistory": {
     "1.1 Write the project plan and confirm IWSDK APIs": [
       {
@@ -1732,6 +1737,128 @@
         "executionId": "39dfb7de-6cbf-4e6e-a8f0-09cc55f21d62",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1794979497341
+      }
+    ],
+    "32.1 Play a spoken greeting on arrival": [
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795006234843
+      },
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795008595431
+      }
+    ],
+    "32.2 Stop the teach orb catching stray pinches in Mock Mode": [
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795006235862
+      },
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795008595808
+      }
+    ],
+    "32.3 Make the spoken form \"turn that off\" / \"turn that on\" work": [
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795006236475
+      },
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795008596100
+      }
+    ],
+    "32. Demo fixes [POST-MVD] (run before task 31)": [
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795008596223
+      }
+    ],
+    "32.4 Accept the ONNX runtime install flag in the Vercel config test": [
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795008695388
+      },
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795008788356
+      }
+    ],
+    "31.1 Select clips and record licenses": [
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795008788582
+      },
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795013157524
+      }
+    ],
+    "31. OPTIONAL: retargeted animation clips (cut first, only after the MVD cut-line and submission readiness)": [
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795013157747
+      }
+    ],
+    "31.2 Implement the clip animator": [
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795013157998
+      },
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795014640759
+      }
+    ],
+    "31.3 Implement the gesture router": [
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795014642055
+      },
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795015521852
+      }
+    ],
+    "31.4 Write property test for gesture fallback": [
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795015522567
+      },
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795015751274
+      }
+    ],
+    "31.5 Write the clip hand-off note": [
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795015523036
+      },
+      {
+        "executionId": "28317032-6ab9-470f-a344-a613768e8163",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795015751510
       }
     ]
   }

@@ -16,6 +16,11 @@
  * | PickNickname   | choose the highlighted row          | move the highlight to next row|
  * | Stored         | done                                | none                          |
  *
+ * The other-hand pinch is push-to-talk in every row where the table says "none" (task 32.2,
+ * Requirement 15.6). `ownsOtherPinch` tells the voice loop which rows those are. In the rows that
+ * use it, the panel shows how to talk instead (`TeachView.talkHint`: poke the mic orb) and keeps
+ * **Cancel** visible.
+ *
  * The panel buttons (poke or ray pinch through UIKit) do the same transitions when they work.
  * A pinch aimed at the floating panel is left to its buttons: when the pinching hand's pointing ray
  * passes through the panel's rectangle (or the fingertip touches it), this controller ignores it, so a button press never
@@ -31,6 +36,7 @@ import type { CapturedPoint } from '../domain/pointing/capture.js';
 import type { Surface } from '../domain/surfaces.js';
 import type { TeachFlow, TeachState } from '../domain/devices/teach-flow.js';
 import { rayHitsPanel, type PanelRect } from '../domain/devices/teach-input.js';
+import { teachUsesOtherPinch } from '../domain/devices/teach-view.js';
 import { PinchDetector } from '../domain/pointing/pinch.js';
 import { PointingRay } from '../domain/pointing/ray.js';
 
@@ -89,6 +95,11 @@ export class TeachController {
     if (this.deps.flow.state.kind === 'idle') return;
     if (dominantEdge === 'start') this.onDominantPinch();
     if (otherEdge === 'start') this.onOtherPinch();
+  }
+
+  /** True while the current step uses the other hand's pinch, so it must not also start talking. */
+  get ownsOtherPinch(): boolean {
+    return teachUsesOtherPinch(this.deps.flow.state.kind);
   }
 
   /** Forget pinch state, for example when the session ends. */

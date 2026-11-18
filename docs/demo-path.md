@@ -18,7 +18,7 @@ A few terms:
 2. Tap **Enable microphone** and allow it in the browser prompt. This step is optional. Without it, use the buttons described in step 6.
 3. Wait for **Voice model ready.** The first visit downloads about 40 MB. Later visits load it from the headset in a few seconds.
 4. Look straight ahead and tap **Enter AR**. Capri appears about 1.25 m in front of you, a little to the right, and waves. Three dark bulbs hang around her.
-5. Point your right index finger at the bulb on your left (the desk lamp). A ring appears on it and Capri looks at it. Keep pointing, pinch and hold with your left hand, say **"turn on that"**, then let go. Capri flicks her hand, beams hit the bulb, it lights up, and she brags about it.
+5. Point your right index finger at the bulb on your left (the desk lamp). A ring appears on it and Capri looks at it. Keep pointing, pinch and hold with your left hand, say **"turn that on"**, then let go. Capri flicks her hand, beams hit the bulb, it lights up, and she brags about it.
 6. No voice? Poke **Quick actions** on the small panel low on your right, keep pointing at a bulb with your right hand, and poke **Turn on** with your left index finger.
 7. Say **"run my evening routine"** or poke that button. A task panel tracks the progress, and Capri tells you when it is done.
 
@@ -50,7 +50,7 @@ Positions are relative to your head when the session starts.
 | Transcript | Straight ahead, just below eye height. It shows **Listening**, then your words. |
 | Status chips | Straight ahead, above eye height: **Mode: Mock Mode**, **Home Assistant: Connected**, **Hermes: Connected**, **Voice: Voice ready** (or **Voice loading**) |
 | Task panel | 30° to your right, 1.2 m away, while a task runs |
-| My lights panel and the **Teach me your lights** orb | The panel is on your left. The orb floats beside Capri. Neither is needed in Mock Mode. |
+| My lights panel and the **Teach me your lights** orb | The panel is on your left. In Mock Mode there is no orb: the three bulbs are already taught, and **Teach a light** on the dev panel (dev builds or `?dev=1`) opens the teach flow if you want it. In Live Mode the orb floats beside Capri. |
 
 ## The two-minute path
 
@@ -72,8 +72,8 @@ How to talk: point with the right hand first, then pinch and hold with the left 
 
 ### 0:20 to 0:35. The signature moment: a voice command and the hacking effect
 
-- **Do:** Point at the desk lamp. Pinch and hold with your left hand, say **"turn on that"**, let go.
-- **Capri:** The transcript shows "turn on that". She acknowledges with a recorded line (for example "On it. Jacking in."), turns to the lamp, flicks her hand, and sends beams and glyphs to it. A pulse lands on the marker, and only then is the command sent. The bulb lights warm white. She celebrates with a quip (for example "Too easy. You're welcome." or "Hacked it. No firewall stood a chance.") and a bubble says the result (for example "Lit up the desk lamp.").
+- **Do:** Point at the desk lamp. Pinch and hold with your left hand, say **"turn that on"**, let go.
+- **Capri:** The transcript shows "turn that on". She acknowledges with a recorded line (for example "On it. Jacking in."), turns to the lamp, flicks her hand, and sends beams and glyphs to it. A pulse lands on the marker, and only then is the command sent. The bulb lights warm white. She celebrates with a quip (for example "Too easy. You're welcome." or "Hacked it. No firewall stood a chance.") and a bubble says the result (for example "Lit up the desk lamp.").
 - **Misfire:**
   - She says "Say that again? I didn't catch it." or "Static on the line...": say it again, or use the named form **"turn on the desk lamp"**, which needs no pointing.
   - She says "Point at a light first, then tell me again.": nothing was pointed at when you talked. Point first, then pinch.
@@ -90,9 +90,9 @@ How to talk: point with the right hand first, then pinch and hold with the left 
 
 This beat flips the desk lamp twice more. With the "turn on" at 0:20, that makes three on/off toggles inside 60 s, which triggers a tease.
 
-- **Do:** Point at the desk lamp, hold the left pinch, say **"turn off that"**, let go. When the bulb has gone dark, keep pointing at it with the right hand, poke **Quick actions** if the buttons are hidden, then poke **Turn on** with the left index finger.
+- **Do:** Point at the desk lamp, hold the left pinch, say **"turn that off"**, let go. When the bulb has gone dark, keep pointing at it with the right hand, poke **Quick actions** if the buttons are hidden, then poke **Turn on** with the left index finger.
 - **Capri:** The lamp goes dark ("Lights out on the desk lamp."), then lights up again from the button. After the third toggle she teases you by name, for example "On, off, on, off. The desk lamp is getting dizzy."
-- **Misfire:** The tease needs three on/off toggles of the same bulb within 60 s. Colour and dim do not count. If you lost time, send one more "turn off that" or **Turn off**.
+- **Misfire:** The tease needs three on/off toggles of the same bulb within 60 s. Colour and dim do not count. If you lost time, send one more "turn that off" or **Turn off**.
 
 ### 1:10 to 1:22. Spatial movement
 
@@ -118,7 +118,8 @@ The recogniser listens only for a fixed set of phrase pieces (`src/domain/speech
 
 | Say | What happens |
 | --- | --- |
-| "turn on that", "turn off that" | The pointed bulb. "this", "it", "that one", "this one" work in place of "that". "turn on" or "turn off" alone also uses the pointed bulb. |
+| "turn that on", "turn that off", "switch that off", "turn on that", "turn off that" | The pointed bulb. Both word orders work. "this", "it", "that one", "this one" work in place of "that". "turn on" or "turn off" alone also uses the pointed bulb. |
+| "turn the desk lamp off", "turn the floor lamp on" | The split order with a bulb name, no pointing needed. |
 | "turn on the desk lamp", "turn off the ceiling light" | A named bulb, no pointing needed. The names are desk lamp, floor lamp, and ceiling light. |
 | "dim that", "brighten that" | 30 % and 100 % |
 | "set to red", "set to red that", "set to blue floor lamp" | Colour. The colours are red, green, blue, purple, pink, orange, yellow, white, cyan, magenta, warm, and cool. |
@@ -134,10 +135,9 @@ The recogniser listens only for a fixed set of phrase pieces (`src/domain/speech
 
 These forms work only when typed on the Hand_Keyboard, because the spoken grammar has no matching pieces:
 
-- "turn that off", "turn that on", "turn the desk lamp off"
 - "set that to red", "set the floor lamp to red"
 
-Say "turn off that" in the demo and in the video. "turn that off" is not recognised by voice.
+Say "turn that on" and "turn that off" in the demo and in the video. With synthetic speech through the app's Mock Mode grammar (task 32.3), the split forms were recognised and parsed correctly 75 times out of 80 attempts, the same as the joined forms ("turn off that") at 75 out of 80. These counts come from synthetic speech, not from a headset. If a take misfires, the joined form "turn off that" still works.
 
 ## Fallbacks when voice misfires
 
@@ -147,7 +147,7 @@ Say "turn off that" in the demo and in the video. "turn that off" is not recogni
 - **Quick actions**: **Turn on**, **Turn off**, **Dim**, and **Brighten** act on the bulb you point at with the right hand (or the one you confirmed with a right pinch in the last 8 s). **Come here**, **Sit on the desk**, **Go away**, and **Run my evening routine** need no target. Poke with the left index finger so the right hand can keep pointing.
 - **Keyboard**: poke **Keyboard** on Quick actions. Type with pokes, then poke **Send** (or **Close**). Typing takes longer than the 8 s a confirmed bulb stays selected, so type the name: **set floor lamp to red**, **turn desk lamp off**.
 - **The mic was never allowed**: the chip reads **Mic not allowed** and Quick actions opens by itself. Leave AR, tap **Enable microphone** on the 2D page, and enter again.
-- **A "Teach me a light" panel opened**: a pinch landed on the **Teach me your lights** orb beside Capri. Poke **Cancel**. Push-to-talk does not work while that panel is open.
+- **A "Teach me a light" panel opened** (Live Mode, or **Teach a light** on the dev panel): poke **Cancel**. A stray pinch no longer opens it: the orb opens only on a fingertip poke, or a pinch after aiming at the orb itself for about 0.35 s. While the panel waits for a point, the left pinch still talks. On **Is this the spot?** and the light or name lists the left pinch means **Try again** or next row, so the panel says to poke the mic orb to talk.
 
 ## Optional extras (when you have more time)
 
@@ -164,18 +164,19 @@ This beat needs a Home Assistant reachable over `https://` with `https://capri.s
 1. On the 2D page, open **Connect your own home (optional)**. Fill in **Home Assistant URL** and **Home Assistant long-lived token**. **Hermes URL** and **Hermes key** are optional.
 2. Turn on **Live Mode (use my Home Assistant instead of the virtual bulbs)**, select **Save**, then **Test connections**. Each backend gets one result line. The badge now reads **Live Mode**.
 3. Tap **Enter AR**. The chips read **Live Mode** and **Home Assistant: Connected**. No virtual bulbs appear.
-4. Poke or pinch the **Teach me your lights** orb beside Capri. Follow **Teach me a light**: point at your real lamp with the right index finger and pinch. On **Which light is it?**, tap the light. A marker appears where you pointed.
-5. Point at the lamp, hold the left pinch, and say **"turn off that"**. After the hacking effect your real lamp switches off, and Capri reacts to the result Home Assistant reports. If a request fails, she says so in character and gives the reason, with the origin to allow when it is a CORS failure.
+4. Poke the **Teach me your lights** orb beside Capri, or aim at it for a moment and pinch. Follow **Teach me a light**: point at your real lamp with the right index finger and pinch. On **Which light is it?**, tap the light. A marker appears where you pointed.
+5. Point at the lamp, hold the left pinch, and say **"turn that off"**. After the hacking effect your real lamp switches off, and Capri reacts to the result Home Assistant reports. If a request fails, she says so in character and gives the reason, with the origin to allow when it is a CORS failure.
 6. Without a configured Hermes, "run my evening routine" gets the line "My smart friend isn't answering. I'll handle it on my own." (or a similar one). The scripted task is never substituted in Live Mode.
 
 To return to Mock Mode, turn Live Mode off and select **Save**, or select **Forget credentials**.
 
 ## Known limits that affect the demo
 
-- Every mock bulb starts off, so the first command must be "turn on", not "turn off". The task 20 hand-off note and the task 29.2 video plan open with "turn off that" or "turn that off". The second is not recognised by voice.
-- Capri waves on arrival but says nothing. The greeting lines exist in the voice library and are preloaded, but nothing plays them.
+- Every mock bulb starts off, so the first command must be "turn on", not "turn off". The task 20 hand-off note and the task 29.2 video plan open with "turn off that" or "turn that off".
+- Capri greets you once per AR session: one recorded line from the voice library's greeting set (a different one from the last time) plays while she waves. It waits until the loading card has gone and a hand is tracked, so it never shares the screen with the hand-lost message. If no hand shows up within 10 s, she skips the greeting for that session. Resuming from the Meta menu never repeats it. If the audio did not start, the line shows as a speech bubble with chirps instead. The 60 s ignored timer starts when the greeting ends.
 - In Mock Mode, every chat phrase ("hello", "what can you do", "tell me a joke") gets the same canned reply.
 - The evening routine reports progress only and changes no bulbs.
+- Mock Mode hides the **Teach me your lights** orb, so a stray pinch cannot open the teach panel. Teaching in Mock Mode goes through **Teach a light** on the dev panel, which the hosted link shows only with `?dev=1`. The demo does not need it.
 - The dominant hand is always the right hand. No setting changes it in the session.
 - The ignored reaction needs 60 s of no input, so it does not fit inside the two-minute path.
 - Lines outside the recorded voice library, such as "Lit up the desk lamp.", show as a speech bubble with chirps and no spoken voice, because Quest Browser has no speech synthesis.

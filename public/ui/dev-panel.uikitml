@@ -1,6 +1,7 @@
 <!--
   Developer test panel (task 7.10), shown with ?dev=1. Loaded through PanelUI by src/ui/dev-panel.ts.
   Six buttons run the spatial abilities from the hand: poke with a fingertip or pinch from a distance.
+  "Teach a light" opens the teach flow, the Mock Mode route while the teach orb is hidden (task 32.2).
   Element ids are addressed by src/ui/dev-panel.ts. Sizes are UIKit units (cm at scale 1).
 -->
 <style>
@@ -47,6 +48,9 @@
     <div class="row">
       <Button id="point_floor"><ButtonLabel>Point at floor</ButtonLabel></Button>
       <Button id="go_away"><ButtonLabel>Go away</ButtonLabel></Button>
+    </div>
+    <div class="row">
+      <Button id="teach_light"><ButtonLabel>Teach a light</ButtonLabel></Button>
     </div>
     <div id="status" class="status">Waiting for a tap.</div>
   </div>

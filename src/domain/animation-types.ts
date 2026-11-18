@@ -102,6 +102,24 @@ export interface PostureDef {
   readonly hipsBackM: number;
 }
 
+/**
+ * An optional base pose under the procedural layers (OPTIONAL clips, task 31.2, Requirement 32). The
+ * animator blends it in place of the rest pose and breathing while she is idle (`idleBaseGoal`), and
+ * look, postures, and gestures still apply on top. Without one the animator is fully procedural.
+ * Nothing outside the avatar adapter knows whether a layer exists.
+ */
+export interface BasePoseLayer {
+  /** Bones the layer drives, as indices into `HUMANOID_BONE_NAMES`. */
+  readonly bones: Int16Array;
+  /**
+   * Advance the layer's own clock by `dtS` seconds (it loops) and write one local rotation
+   * quaternion per driven bone into `out`: `x, y, z, w` at `out[4 * i]` for `bones[i]`, relative to
+   * the normalized T-pose. Must not allocate.
+   */
+  sample(dtS: number, out: Float32Array): void;
+  /** Release what the layer holds. The animator calls it when the layer is replaced or disposed. */
+  dispose(): void;
+}
 /** The only animation surface that core code and the orchestrator see (design: Animator port). */
 export interface Animator {
   /**

@@ -32,6 +32,14 @@
   .instruction:dark {
     color: #dddfe3;
   }
+  .hint {
+    color: #8a4b00;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .hint:dark {
+    color: #ffc857;
+  }
   .stack {
     flex-direction: column;
     gap: 8px;
@@ -54,6 +62,7 @@
   <div class="content">
     <div id="heading" class="heading">My lights</div>
     <div id="instruction" class="instruction">Tap Teach me your lights.</div>
+    <div id="talk-hint" class="hint">To talk now, poke the mic orb.</div>
     <div class="stack">
       <Button id="row-0" class="big"><ButtonLabel id="row-label-0" class="label">-</ButtonLabel></Button>
       <Button id="row-1" class="big"><ButtonLabel id="row-label-1" class="label">-</ButtonLabel></Button>

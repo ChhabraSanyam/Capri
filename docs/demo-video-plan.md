@@ -16,9 +16,9 @@ A few terms:
 
 These come from task 27.7 and override older wording in `tasks.md`.
 
-- **All three mock bulbs start off.** The signature moment is **"turn on that"**. Never open with a "turn off" command.
-- **Spoken word order is "turn on that" / "turn off that".** "turn that off" works only when typed on the Hand_Keyboard. Do not script it as a spoken line.
-- **Capri waves on arrival but has no spoken greeting.** Do not script "hey Capri" or a hello exchange.
+- **All three mock bulbs start off.** The signature moment is **"turn that on"**. Never open with a "turn off" command.
+- **Spoken word order is "turn that on" / "turn that off".** Both word orders are recognised by voice (task 32.3). The joined order "turn on that" / "turn off that" is the fallback for a misfired take.
+- **Capri says one recorded greeting while she waves on arrival**, once per AR session, picked at random from the voice library's greeting set. It waits for a tracked hand (keep a hand in view after tapping **Enter AR**) and is skipped if none shows within 10 s. It does not replay after the Meta menu, so a retake of the arrival needs a fresh **Enter AR**. Do not script a hello exchange: the user says nothing back.
 - **Mock Mode chat replies are canned.** "hello", "what can you do", and "tell me a joke" all get the same reply. Keep chat out of the video.
 - **Lines with a bulb name or a result are speech bubbles with chirps, not spoken audio**, because Quest Browser has no speech synthesis. Examples: "Lit up the desk lamp.", the toggle tease. Caption every one of them.
 - **Capri picks some lines at random.** Lines marked "for example" below may differ in your take. Caption the line that actually appears.
@@ -31,7 +31,7 @@ Video time is the time in the final cut. "Take source" says where the footage co
 
 Caption styles used below:
 
-- **SPEECH**: the words the user says, in quotes, bottom centre (for example `"turn on that"`).
+- **SPEECH**: the words the user says, in quotes, bottom centre (for example `"turn that on"`).
 - **CAPRI**: what Capri says or shows in a bubble, bottom centre, a different colour from SPEECH.
 - **LOWER THIRD**: a short explainer, lower left, 3 to 4 s.
 
@@ -40,9 +40,9 @@ Caption styles used below:
 - **Take source:** main take, the 0:20 to 0:35 beat of the demo path. Use the uncut real-time clip.
 - **On screen:** the real room in passthrough. Capri stands ahead and to the right. The desk lamp hangs dark on the left.
 - **Action:** point the right index finger at the desk lamp. A ring appears on it and Capri turns her head to look. Pinch and hold with the left hand, say the phrase, let go.
-- **Spoken:** "turn on that"
-- **Capri:** the transcript shows "turn on that". She says a recorded acknowledgement (for example "On it. Jacking in."), turns to the lamp, flicks her hand, and sends beams and glyphs to it. A pulse lands on the bulb, which then lights warm white. She celebrates with a quip (for example "Too easy. You're welcome.") and a bubble says the result (for example "Lit up the desk lamp.").
-- **Captions:** SPEECH `"turn on that"`. CAPRI the acknowledgement, the quip, and the bubble text.
+- **Spoken:** "turn that on"
+- **Capri:** the transcript shows "turn that on". She says a recorded acknowledgement (for example "On it. Jacking in."), turns to the lamp, flicks her hand, and sends beams and glyphs to it. A pulse lands on the bulb, which then lights warm white. She celebrates with a quip (for example "Too easy. You're welcome.") and a bubble says the result (for example "Lit up the desk lamp.").
+- **Captions:** SPEECH `"turn that on"`. CAPRI the acknowledgement, the quip, and the bubble text.
 - **Lower third (at the pointing, about 0:02):** "Point at a light." Then (at the hacking effect, about 0:09): "Say it. Capri hacks it."
 - **Framing:** turn the head slowly so the lamp sits left of centre and Capri right of centre. The lamp is 35° left and Capri 25° right of the start direction, which is wider than one recorded eye's frame.
 
@@ -60,7 +60,7 @@ Caption styles used below:
 - **Take source:** main take, the 0:00 to 0:10 beat.
 - **On screen:** Capri appears about 1.25 m ahead, on the floor if one was scanned, and waves. She breathes, blinks, and follows the head with her eyes. Three dark bulbs hang around her. The status chips above read **Mode: Mock Mode**.
 - **Action:** look at Capri, then glance slowly around the room. Raise both hands into view once, open, to show there are no controllers.
-- **Spoken:** none. She has no spoken greeting, so the wave carries the shot.
+- **Spoken:** none from the user. Capri says her recorded greeting while she waves (for example "Hello, human. I'm feeling mischievous."). Caption the line that actually plays as CAPRI.
 - **Captions:** LOWER THIRD: "She lives in your real room." Then: "Hands only. No controllers."
 
 ### Shot 4. 0:42 to 0:55. Pointing
@@ -83,12 +83,12 @@ Caption styles used below:
 
 ### Shot 6. 1:08 to 1:28. Quick actions and the toggle tease
 
-- **Take source:** main take, the 0:50 to 1:10 beat. The tease needs three on/off toggles of the same bulb within 60 s of recording time, counting the "turn on that" of shot 1. Run the take at the demo-path pace and it lands.
+- **Take source:** main take, the 0:50 to 1:10 beat. The tease needs three on/off toggles of the same bulb within 60 s of recording time, counting the "turn that on" of shot 1. Run the take at the demo-path pace and it lands.
 - **On screen:** the desk lamp goes dark. Then the **Quick actions** panel, low on the right, and the left index finger poking **Turn on** while the right hand points at the lamp. The lamp lights again.
 - **Action:** point at the desk lamp, hold the left pinch, say the phrase, let go. When the lamp is dark, keep pointing, poke **Quick actions** if the buttons are hidden, then poke **Turn on** with the left index finger.
-- **Spoken:** "turn off that"
+- **Spoken:** "turn that off"
 - **Capri:** a bubble "Lights out on the desk lamp.", then after the button press she teases (for example "On, off, on, off. The desk lamp is getting dizzy.").
-- **Captions:** SPEECH `"turn off that"`. CAPRI both bubble lines. LOWER THIRD (on the poke): "Every command has a poke button too."
+- **Captions:** SPEECH `"turn that off"`. CAPRI both bubble lines. LOWER THIRD (on the poke): "Every command has a poke button too."
 - **Trim:** cut the wait while the Quick actions panel expands.
 
 ### Shot 7. 1:28 to 1:45. Spatial moves
@@ -120,7 +120,7 @@ Include this shot **only if the full beat has been verified on the headset with 
 - **Setup (off camera):** on the 2D page, open **Connect your own home (optional)**, fill in the Home Assistant and Hermes fields, turn on Live Mode, **Save**, **Test connections**. Teach Capri the real lamp with **Teach me your lights** before recording. Switch the real lamp on. Never film the settings form, the URLs with tokens, or the keys.
 - **On screen:** the chips read **Live Mode** and **Home Assistant: Connected**. No virtual bulbs. The marker sits on the real lamp.
 - **Action:** point at the real lamp, hold the left pinch, say the first phrase, let go. Then say the second phrase.
-- **Spoken:** "turn off that", then a Hermes task phrase confirmed on the headset in Live Mode (for example "run my evening routine").
+- **Spoken:** "turn that off", then a Hermes task phrase confirmed on the headset in Live Mode (for example "run my evening routine").
 - **Capri:** the hacking effect, then the real lamp switches off and Capri reacts to the result Home Assistant reports. For the Hermes task, the Task_Panel shows qualitative progress from the real agent (step labels, no percentages) and Capri announces the result.
 - **Captions:** SPEECH both phrases. CAPRI the lines that appear. LOWER THIRD: "Live Mode: my real lamp, through Home Assistant." Then: "My real Hermes agent."
 - **Cut:** split screen or a 2 s cut to the phone B-roll of the physical lamp switching off. This is the proof that the result is real.
@@ -197,7 +197,7 @@ Film this in every case. It shows the judges what the headset footage cannot: a 
 
 - **Game audio:** Capri's recorded lines, chirps, and hacking sounds come out of the headset speakers. Methods A and B record app audio. Keep headset volume near 70 % so the phone mic does not clip.
 - **Your voice:** judges must hear the spoken commands. Use the Camera settings mic option (Method A) if it exists and works while Quest Browser holds the mic. As a safety net, record the phone B-roll audio in every take: it hears your voice and the speakers. In the edit, use the phone track for your voice if the headset track lacks it, and caption every command either way.
-- **Test first:** before the real takes, record 30 s on the 2D page and in AR, saying "turn on that" at a bulb. Play it back and check that passthrough is visible, Capri's voice is audible, your voice is audible, and the command still worked during recording.
+- **Test first:** before the real takes, record 30 s on the 2D page and in AR, saying "turn that on" at a bulb. Play it back and check that passthrough is visible, Capri's voice is audible, your voice is audible, and the command still worked during recording.
 
 ### Takes
 
@@ -205,7 +205,7 @@ Film this in every case. It shows the judges what the headset footage cannot: a 
 | --- | --- | --- |
 | Test take | 1 | 30 s check of passthrough, audio, and that voice still works while recording |
 | Main take (full demo path, shots 2 to 8) | 3 | Pick the best beat from each. Each must run from a fresh reload in demo-path order, because the bulb states and the toggle tease depend on it. |
-| Signature pickups (reload, Enter AR, point, "turn on that") | 2 to 3 | A clean real-time clip for shot 1, with the lamp and Capri well framed |
+| Signature pickups (reload, Enter AR, point, "turn that on") | 2 to 3 | A clean real-time clip for shot 1, with the lamp and Capri well framed |
 | Phone B-roll | 1 per main take | Hands-only proof and sync |
 | Live Mode take (optional) | 2 | Only after the Live Mode beat has been verified on the headset |
 
@@ -216,7 +216,7 @@ Each main take lasts about 2:30 to 3:00 in real time. Plan about 45 minutes, inc
 - [ ] Assemble the shots in shot-list order. The cold open (shot 1) comes first, so the signature moment lands within the first 15 to 20 s.
 - [ ] Keep shot 1 uncut from the spoken words to the bulb lighting, including the 2.5 s recognition wait. It is the proof that the moment is real.
 - [ ] Trim dead time elsewhere: pauses before commands, panel expansion, glides, and the 10 s routine (label it "shortened" or "sped up"). Never cut so that a result appears before the effect that causes it.
-- [ ] Caption every spoken command exactly as said (`"turn on that"`, not "turn that on"). They match the transcript panel.
+- [ ] Caption every spoken command exactly as said (`"turn that on"`, not "turn on that", unless you said the joined order). They match the transcript panel.
 - [ ] Caption every Capri line, and always the bubble-only ones (results, the toggle tease, the routine's final bubble). Quest Browser has no speech synthesis, so those lines have no voice, and the bubble is hard to read at 1080p. Use the text from your take, not the "for example" text here.
 - [ ] Add the lower thirds and the title card from the shot list.
 - [ ] Burn the captions into the video (open captions). Also export an `.srt` if the submission site accepts one.

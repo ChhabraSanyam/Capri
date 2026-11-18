@@ -163,6 +163,11 @@ export class LoadingPanel {
     return this.shown;
   }
 
+  /** True while any of the card is on screen, its fade-out included. The greeting waits for false. */
+  get onScreen(): boolean {
+    return this.shown || this.level > 0;
+  }
+
   /** The view last drawn on the card. */
   get view(): LoadingView {
     return this.currentView;

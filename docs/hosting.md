@@ -4,7 +4,7 @@ Capri is a static Vite build served from the root of the user's custom subdomain
 
 ## What the Vercel build does
 
-`vercel.json` runs `npm ci`, then `npm run build:vercel`, and serves `dist/`:
+`vercel.json` runs `ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci`, then `npm run build:vercel`, and serves `dist/`. The `ONNXRUNTIME_NODE_INSTALL_CUDA=skip` assignment skips the CUDA download of `onnxruntime-node`, a transitive dependency of the `@iwsdk/reference` dev dependency (through `@huggingface/transformers`), during install; the app never uses it.
 
 ```
 npm run typecheck
@@ -101,7 +101,7 @@ Status when this section was written: the repo is a git repository on branch `ma
    git push -u origin main
    ```
 2. In Vercel, choose Add New, Project, import that repository.
-3. Leave Framework Preset as "Other". `vercel.json` already sets the install command (`npm ci`), build command (`npm run build:vercel`), and output directory (`dist`). Do not override them in the dashboard.
+3. Leave Framework Preset as "Other". `vercel.json` already sets the install command (`ONNXRUNTIME_NODE_INSTALL_CUDA=skip npm ci`), build command (`npm run build:vercel`), and output directory (`dist`). Do not override them in the dashboard.
 
 **B. Vercel CLI (no GitHub needed).**
 ```

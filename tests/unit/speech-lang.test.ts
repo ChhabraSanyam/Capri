@@ -86,6 +86,17 @@ describe('buildGrammar', () => {
     for (const color of COLOR_NAMES) expect(grammar).toContain(color);
   });
 
+  it('offers the single words for the split order "turn that off" (Requirement 15.25)', () => {
+    const grammar = buildGrammar(input, 'fragments');
+    for (const word of ['turn', 'switch', 'on', 'off', 'turn on', 'turn off', '[unk]']) {
+      expect(grammar, word).toContain(word);
+    }
+    const utterances = buildGrammar(input, 'utterances');
+    for (const phrase of ['turn that off', 'turn it on', 'switch this off', 'turn desk lamp off']) {
+      expect(utterances, phrase).toContain(phrase);
+    }
+  });
+
   it('expands whole commands with the utterances strategy', () => {
     const grammar = buildGrammar(input, 'utterances');
     expect(grammar).toContain('turn off that');
@@ -232,6 +243,63 @@ describe('parseIntent', () => {
       const intent = parseIntent(text, ctx);
       expect(parseIntent(text, ctx)).toEqual(intent);
       expect(parseIntent(renderIntent(intent), ctx), text).toEqual(intent);
+    }
+  });
+});
+
+describe('split verb order (Requirement 15.25)', () => {
+  const registry = makeRegistry('desk lamp');
+  const ctx = { registry, pointed: 'id-1' };
+
+  it.each([
+    ['turn that off', 'turn off that'],
+    ['turn that on', 'turn on that'],
+    ['turn it off', 'turn off it'],
+    ['turn it on', 'turn on it'],
+    ['turn this off', 'turn off this'],
+    ['turn this on', 'turn on this'],
+    ['switch that off', 'turn off that'],
+    ['switch that on', 'turn on that'],
+    ['turn that one off', 'turn off that one'],
+    ['turn the desk lamp off', 'turn off the desk lamp'],
+  ])('"%s" gives the same intent and action as "%s"', (split, joined) => {
+    const want = parseIntent(joined, ctx);
+    expect(want.type).toBe('device');
+    expect(parseIntent(split, ctx)).toEqual(want);
+    expect(processText(split, ctx)).toEqual(processText(joined, ctx));
+  });
+
+  it('resolves the split deictic form to the Pointed_Device', () => {
+    expect(processText('turn that off', ctx).action).toMatchObject({
+      type: 'resolved',
+      command: { kind: 'light', device: { id: 'id-1' }, command: { kind: 'off' } },
+    });
+    expect(processText('switch it on', ctx).action).toMatchObject({ command: { command: { kind: 'on' } } });
+  });
+
+  it('keeps every joined form parsing as before', () => {
+    for (const [text, verb] of [
+      ['turn on that', 'turn_on'],
+      ['turn off that', 'turn_off'],
+      ['turn on it', 'turn_on'],
+      ['turn off this', 'turn_off'],
+      ['turn on', 'turn_on'],
+      ['turn off', 'turn_off'],
+    ] as const) {
+      expect(parseIntent(text, ctx), text).toEqual({ type: 'device', verb, target: { kind: 'deictic' } });
+    }
+  });
+
+  it('never runs a device action for a bare particle, a verb with no particle, or split garble', () => {
+    for (const text of ['on', 'off', 'turn', 'switch', 'turn that', 'switch it', 'that off', 'turn on that off', 'turn that on off']) {
+      expect(parseIntent(text, ctx).type, text).not.toBe('device');
+      expect(processText(text, ctx).action.type, text).not.toBe('resolved');
+    }
+  });
+
+  it('treats repeated split commands as low confidence', () => {
+    for (const text of ['turn that off turn that on', 'turn on turn that off', 'switch that off turn it off']) {
+      expect(parseIntent(text, ctx), text).toEqual({ type: 'repeat' });
     }
   });
 });

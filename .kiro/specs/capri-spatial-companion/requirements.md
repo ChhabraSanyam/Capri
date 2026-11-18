@@ -240,6 +240,7 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 11. THE Capri_App SHALL keep the Avatar between 1.0 m and 1.5 m from the seated user's head during idle.
 12. THE Procedural_Animator SHALL limit head yaw to 70 degrees and head pitch to 40 degrees relative to the Avatar's torso.
 13. IF the VRM file fails to load, THEN THE Capri_App SHALL display an error naming the failure and keep the session running.
+14. WHEN the Avatar first appears in a session, THE Speech_Output SHALL play one greeting line from the Voice_Library together with the wave gesture, and SHALL NOT replay the greeting on resume from pause.
 
 ### Requirement 11: Step 3, spatial interaction
 
@@ -277,6 +278,7 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 10. WHEN a persisted spatial anchor is restored after a page reload, THE Capri_App SHALL treat the restored Device_Marker position as approximate, with an expected error of up to roughly 10 cm.
 11. WHILE any Device_Marker exists, THE Capri_App SHALL keep the "Re-teach lights" action visible.
 12. THE Capri_App SHALL NOT state or imply that a restored Device_Marker position is exact.
+13. THE Capri_App SHALL open the "Teach me your lights" flow only on a fingertip poke of its orb or a ray-pinch aimed at the orb for a short dwell, and SHALL ignore pinches whose ray only passes near the orb.
 
 ### Requirement 13: Step 5, pointing selection
 
@@ -338,6 +340,7 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 22. THE STT_Engine SHALL NOT download or initialise the Vosk model while an immersive AR session is active.
 23. THE Grammar_Builder SHALL use the fragments grammar strategy, so that phrase pieces such as "turn off" and "that" can be chained in one utterance.
 24. WHEN the STT_Engine returns a multi-word hypothesis for a single-word or short command (for example "turn on turn off" for "come here"), THE Intent_Parser SHALL treat the result as low confidence and SHALL ask the user to confirm or repeat the command instead of executing a device action.
+25. THE Grammar_Builder and Intent_Parser SHALL accept the split verb order ("turn that off", "turn it off", "turn this on", "switch that off") and SHALL parse each to the same intent as the joined order ("turn off that").
 
 ### Requirement 16: Speech output, voice library, and lip-flap
 
@@ -478,6 +481,7 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 9. WHILE in Mock_Mode, THE Capri_App SHALL support the full loop of pointing, voice command, Hacking_VFX, device state change, and reaction.
 10. WHILE in Mock_Mode, THE Capri_App SHALL support a Tier_1 conversation and one scripted Hermes task as the Tier_2 stand-in.
 11. WHILE in Mock_Mode, THE Entry_Page SHALL offer the Mic_Setup_Step and the Model_Preload with progress, and SHALL NOT block the "Enter AR" action on either step.
+12. WHILE in Mock_Mode, THE Capri_App SHALL hide the "Teach me your lights" orb by default and SHALL keep the teach flow reachable from the dev panel or a Quick_Actions entry.
 
 ### Requirement 24: Setup page and credential handling
 

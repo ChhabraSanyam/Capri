@@ -7,7 +7,8 @@
  *
  * Strategies (assumption A10, confirmed on the headset by the spike: `fragments`):
  * - `fragments`: the phrase pieces ("turn off", "that", a device name), which the decoder chains
- *   into a whole command such as "turn off that".
+ *   into a whole command such as "turn off that". The single words "turn", "switch", "on", and
+ *   "off" let it chain the split order "turn that off" too (Requirement 15.25).
  * - `utterances`: the same table expanded into whole commands, for a decoder that cannot chain.
  */
 import { featureFlags, type GrammarStrategy } from '../../config/feature-flags.js';
@@ -24,6 +25,8 @@ import {
   FILLER_WORDS,
   MINUTE_UNITS,
   SIT_SURFACES,
+  SPLIT_PARTICLES,
+  SPLIT_VERB_WORDS,
   TASK_PHRASES,
   TIMER_NUMBER_WORDS,
   timerUtterances,
@@ -56,6 +59,9 @@ function placeNames(input: GrammarInput): string[] {
 function fragmentPhrases(input: GrammarInput): string[] {
   return [
     ...DEVICE_VERBS.map((e) => e.head),
+    // Single words for the split order: "turn" + "that" + "off".
+    ...SPLIT_VERB_WORDS,
+    ...SPLIT_PARTICLES.map((p) => p.particle),
     ...COLOR_NAMES,
     ...DEICTIC_PHRASES,
     ...deviceNames(input),
@@ -88,6 +94,11 @@ function utterancePhrases(input: GrammarInput): string[] {
     } else {
       out.push(entry.head);
       for (const target of targets) out.push(`${entry.head} ${target}`);
+    }
+  }
+  for (const verb of SPLIT_VERB_WORDS) {
+    for (const { particle } of SPLIT_PARTICLES) {
+      for (const target of targets) out.push(`${verb} ${target} ${particle}`);
     }
   }
   out.push(AVATAR_HEADS.come_here, AVATAR_HEADS.go_away, ...SIT_PHRASES);
