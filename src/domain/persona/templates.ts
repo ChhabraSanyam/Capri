@@ -64,6 +64,7 @@ export type BanterKind =
   | 'surface_not_found'
   | 'surface_unsuitable'
   | 'hermes_unavailable'
+  | 'hermes_not_connected'
   | 'unsupported'
   | 'unknown_device'
   | 'bad_timer'
@@ -193,6 +194,17 @@ export const BANTER_CONTEXTS: Readonly<Record<BanterKind, BanterContext>> = {
       "Hermes is out of reach. I'm handling this one myself.",
       "No answer from the agent. I'll do what I can offline.",
       'The cloud brain is napping. Local me has this.',
+    ]),
+    gesture: 'shrug',
+    emotion: 'neutral',
+  },
+  // A Tier 2 request (task phrase, Ask Hermes prompt, typed chat) while no Hermes is connected,
+  // Mock Mode included (Requirement 33.18). Points the user at the setup page.
+  hermes_not_connected: {
+    templates: make('hermes_not_connected', 'neutral', [
+      "Hermes isn't connected. You can add it on the setup page.",
+      "No Hermes hooked up yet. Add it on the setup page and I'll call it in.",
+      "My agent friend isn't plugged in. Set up Hermes on the setup page.",
     ]),
     gesture: 'shrug',
     emotion: 'neutral',

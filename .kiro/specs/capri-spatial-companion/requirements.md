@@ -30,7 +30,7 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 |------|----------|
 | Milestone 0 | Feasibility spike, items a to e (Requirements 1 to 6) |
 | MVD (minimum viable demo) | Steps 1 to 7 (Requirements 9 to 18), plus Mock Mode (Requirement 23), then one Hermes task (Requirement 19), then the first Vercel deploy of the Mock Mode build on the custom subdomain (Requirements 8.9, 30.3) |
-| Post-MVD | Remaining scope of Steps 8 to 11 (Requirements 19 to 21, 24 to 29, 31) |
+| Post-MVD | Remaining scope of Steps 8 to 11 (Requirements 19 to 21, 24 to 29, 31), then the headset feedback fixes and HUD declutter (Requirement 33) |
 | OPTIONAL | Retargeted animation clips (Requirement 32). No core requirement depends on this tier. |
 
 ## Glossary
@@ -50,10 +50,10 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 - **Pointed_Device**: The Device_Marker currently selected by the Pointing_Selector.
 - **STT_Engine**: The speech-to-text component, which uses vosk-browser (WASM) with a small English model.
 - **Grammar_Builder**: The Capri_App component that builds the restricted Vosk grammar.
-- **Push_To_Talk**: The gesture that opens the microphone, either a pinch with the non-dominant hand or a poke on the floating mic orb.
-- **Transcript_Panel**: The small holographic panel that shows the live transcript.
-- **Quick_Actions**: The floating hand-operated quick-action buttons used when the microphone fails.
-- **Hand_Keyboard**: The pinch-to-open on-screen keyboard used when the microphone fails.
+- **Push_To_Talk**: The gesture that opens the microphone, either a pinch with the non-dominant hand or a poke on the floating mic orb. **Superseded in part by Requirement 33.23:** the non-dominant hold-pinch is the only Push_To_Talk gesture and the mic orb is removed.
+- **Transcript_Panel**: The small holographic panel that shows the live transcript. **Superseded by the Transcript_Bubble (Requirements 33.24 to 33.28).**
+- **Quick_Actions**: The floating hand-operated quick-action buttons used when the microphone fails. **Superseded by the Commands_Tile (Requirements 33.49 to 33.51).**
+- **Hand_Keyboard**: The pinch-to-open on-screen keyboard used when the microphone fails. **Superseded by the System_Keyboard (Requirements 33.52 to 33.54).**
 - **Intent_Parser**: The Tier_1 component that converts recognised text into a structured intent using a deterministic grammar.
 - **Tier_1**: The default, fully offline, on-headset intelligence tier.
 - **Tier_2**: The intelligence tier that uses Hermes, active only when Hermes is connected.
@@ -70,7 +70,7 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 - **HA_Client**: The Capri_App component that calls the Home Assistant REST or WebSocket API from the browser.
 - **Hermes_Client**: The Capri_App component that calls the Hermes endpoint from the browser.
 - **Task_Panel**: The floating holographic panel that shows Hermes task progress.
-- **Mock_Mode**: The default operating mode, in which simulated Home Assistant with 3 virtual light bulbs and a scripted Hermes task replace the real backends and no network calls to Home Assistant or Hermes are made.
+- **Mock_Mode**: The default operating mode, in which simulated Home Assistant with 3 virtual light bulbs and a scripted Hermes task replace the real backends and no network calls to Home Assistant or Hermes are made. **Superseded in part by Requirement 33.17:** Mock_Mode has no scripted Hermes task and no AgentBackend.
 - **Live_Mode**: The operating mode in which HA_Client and Hermes_Client call real endpoints using user-supplied credentials.
 - **Setup_Page**: The 2D web page shown before the "Enter AR" action that collects URLs and tokens, offers the Mic_Setup_Step, and loads the Vosk model.
 - **Entry_Page**: The 2D page that holds the "Enter AR" action. In Live_Mode it includes the Setup_Page. In Mock_Mode it is the zero-configuration page that offers the Mic_Setup_Step and the model preload without collecting credentials.
@@ -86,6 +86,14 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 - **Dev_Server**: The Vite HTTPS development server used for on-device testing.
 - **Demo_Path**: The scripted 2-minute sequence that demonstrates the full Capri loop.
 - **Submission_Package**: The hosted playable link, the demo video, and the submission text.
+- **Boundaryless_Space**: The XR reference space that the Quest_Browser documents as running without the Quest room-scale boundary in passthrough sessions (expected to be `unbounded`, confirmed in task 33.1).
+- **HUD_Menu**: The world-fixed hand-operated menu that the user opens from the Wrist_Button and that holds the Status, Lights, Commands, Ask Hermes, Give Hermes a task, and Close tiles.
+- **Wrist_Button**: The small glowing button shown on the non-dominant wrist while that palm faces the user, poked with the dominant index fingertip to open or close the HUD_Menu.
+- **Commands_Tile**: The HUD_Menu tile that lists every supported command phrase, grouped by Lights, Capri, and Hermes, generated from the phrase table.
+- **System_Keyboard**: The Meta Quest system keyboard shown on demand during an immersive session for text entry.
+- **Transcript_Bubble**: The small bubble above the Avatar that shows the listening state, the live transcript, and short voice failure reasons.
+- **Teach_Reticle**: The marker drawn where the teach pointer ray hits the room, marking the position a pinch captures.
+- **Comfort_Radius**: The personal-space radius of 0.5 m around the user's head inside which the Avatar steps aside.
 
 ## Requirements
 
@@ -212,7 +220,7 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 2. THE Capri_App SHALL be scaffolded with `npm create @iwsdk@latest`.
 3. WHEN the user selects "Enter AR" in the Quest_Browser, THE Capri_App SHALL start an immersive AR session with passthrough.
 4. WHILE the immersive AR session is active, THE Capri_App SHALL track both hands.
-5. WHILE the immersive AR session is active, THE Capri_App SHALL render a visible hand skeleton for each tracked hand.
+5. WHILE the immersive AR session is active, THE Capri_App SHALL render a visible hand skeleton for each tracked hand. **Superseded by Requirements 33.6 and 33.7.**
 6. THE Capri_App SHALL run in the IWSDK emulator.
 7. THE Dev_Server SHALL serve the Capri_App over HTTPS.
 8. THE Capri_App SHALL use IWSDK APIs for hand tracking, passthrough or AR session handling, and anchors or planes where IWSDK provides them.
@@ -237,7 +245,7 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 8. WHILE the Avatar is visible, THE Procedural_Animator SHALL blink the Avatar's eyes at randomized intervals between 2 s and 6 s.
 9. WHILE the Avatar is visible, THE Procedural_Animator SHALL orient the Avatar's head and eyes toward the user's head position.
 10. WHEN the Avatar first appears in a session, THE Procedural_Animator SHALL play a wave gesture.
-11. THE Capri_App SHALL keep the Avatar between 1.0 m and 1.5 m from the seated user's head during idle.
+11. THE Capri_App SHALL keep the Avatar between 1.0 m and 1.5 m from the seated user's head during idle. **Superseded by Requirements 33.29 to 33.31.**
 12. THE Procedural_Animator SHALL limit head yaw to 70 degrees and head pitch to 40 degrees relative to the Avatar's torso.
 13. IF the VRM file fails to load, THEN THE Capri_App SHALL display an error naming the failure and keep the session running.
 14. WHEN the Avatar first appears in a session, THE Speech_Output SHALL play one greeting line from the Voice_Library together with the wave gesture, and SHALL NOT replay the greeting on resume from pause.
@@ -276,9 +284,9 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 8. WHEN the Device_Registry changes, THE Grammar_Builder SHALL rebuild the grammar as specified in Requirement 15.
 9. WHILE in Mock_Mode, THE Capri_App SHALL render the 3 virtual light bulbs as registered devices with Device_Markers.
 10. WHEN a persisted spatial anchor is restored after a page reload, THE Capri_App SHALL treat the restored Device_Marker position as approximate, with an expected error of up to roughly 10 cm.
-11. WHILE any Device_Marker exists, THE Capri_App SHALL keep the "Re-teach lights" action visible.
+11. WHILE any Device_Marker exists, THE Capri_App SHALL keep the "Re-teach lights" action visible. **Superseded by Requirement 33.46:** "Re-teach lights" lives in the HUD_Menu Lights tile.
 12. THE Capri_App SHALL NOT state or imply that a restored Device_Marker position is exact.
-13. THE Capri_App SHALL open the "Teach me your lights" flow only on a fingertip poke of its orb or a ray-pinch aimed at the orb for a short dwell, and SHALL ignore pinches whose ray only passes near the orb.
+13. THE Capri_App SHALL open the "Teach me your lights" flow only on a fingertip poke of its orb or a ray-pinch aimed at the orb for a short dwell, and SHALL ignore pinches whose ray only passes near the orb. **Superseded by Requirements 33.36 and 33.46:** the orb is removed and the teach flow opens from the Lights tile.
 
 ### Requirement 13: Step 5, pointing selection
 
@@ -322,21 +330,21 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 4. WHEN a device is added to the Device_Registry, THE Grammar_Builder SHALL rebuild the grammar within 1 s.
 5. WHEN a device is renamed in the Device_Registry, THE Grammar_Builder SHALL rebuild the grammar within 1 s.
 6. WHEN the user pinches with the non-dominant hand, THE Capri_App SHALL start Push_To_Talk.
-7. WHEN the user pokes the floating mic orb, THE Capri_App SHALL start Push_To_Talk.
-8. WHILE Push_To_Talk is active, THE Transcript_Panel SHALL show the live transcript.
-9. WHEN Push_To_Talk ends, THE Transcript_Panel SHALL show the final transcript.
-10. IF the microphone fails to start, THEN THE Capri_App SHALL display the Quick_Actions buttons and the Hand_Keyboard.
-11. WHEN the user pinches the Hand_Keyboard open control, THE Capri_App SHALL display the on-screen keyboard.
-12. WHEN the user submits text through the Hand_Keyboard, THE Intent_Parser SHALL process that text as a recognised result.
-13. WHEN the user activates a Quick_Actions button, THE Capri_App SHALL execute the intent assigned to that button.
+7. WHEN the user pokes the floating mic orb, THE Capri_App SHALL start Push_To_Talk. **Superseded by Requirement 33.23.**
+8. WHILE Push_To_Talk is active, THE Transcript_Panel SHALL show the live transcript. **Superseded by Requirements 33.24 and 33.25.**
+9. WHEN Push_To_Talk ends, THE Transcript_Panel SHALL show the final transcript. **Superseded by Requirements 33.25 and 33.26.**
+10. IF the microphone fails to start, THEN THE Capri_App SHALL display the Quick_Actions buttons and the Hand_Keyboard. **Superseded by Requirements 33.28, 33.49, and 33.52:** the failure shows in the Transcript_Bubble and the fallback is the Commands_Tile and the System_Keyboard.
+11. WHEN the user pinches the Hand_Keyboard open control, THE Capri_App SHALL display the on-screen keyboard. **Superseded by Requirement 33.52.**
+12. WHEN the user submits text through the Hand_Keyboard, THE Intent_Parser SHALL process that text as a recognised result. **Superseded by Requirement 33.53.**
+13. WHEN the user activates a Quick_Actions button, THE Capri_App SHALL execute the intent assigned to that button. **Superseded by Requirement 33.51.**
 14. IF the STT_Engine returns "[unk]" as the whole result, THEN THE Persona SHALL ask the user, in character, to repeat the command.
 15. THE Entry_Page SHALL provide the Mic_Setup_Step before the "Enter AR" action.
 16. WHEN the user activates the Mic_Setup_Step, THE Entry_Page SHALL call `getUserMedia` on the 2D page and release every track of the returned stream immediately after permission is granted.
 17. THE Capri_App SHALL NOT call `getUserMedia` or trigger any microphone permission prompt while an immersive AR session is active.
-18. IF microphone permission is denied or not yet granted when the user enters AR, THEN THE Capri_App SHALL start the session with the Quick_Actions buttons and the Hand_Keyboard available and without any microphone prompt.
-19. WHERE microphone permission has not been granted, THE Entry_Page SHALL allow the "Enter AR" action and SHALL show a hint that voice commands need the microphone and that Quick_Actions and Hand_Keyboard are the fallback.
+18. IF microphone permission is denied or not yet granted when the user enters AR, THEN THE Capri_App SHALL start the session with the Quick_Actions buttons and the Hand_Keyboard available and without any microphone prompt. **Superseded in part by Requirements 33.49 and 33.52:** the fallback is the Commands_Tile and the System_Keyboard, and the no-prompt rule stays.
+19. WHERE microphone permission has not been granted, THE Entry_Page SHALL allow the "Enter AR" action and SHALL show a hint that voice commands need the microphone and that Quick_Actions and Hand_Keyboard are the fallback. **Superseded in part by Requirements 33.49 and 33.52:** the hint names the Commands_Tile and the System_Keyboard.
 20. WHEN the Entry_Page loads and the Vosk model is not cached, THE Entry_Page SHALL start the Model_Preload and display a progress indicator until the model is loaded.
-21. WHILE the Model_Preload is running, THE Entry_Page SHALL keep the "Enter AR" action available and SHALL show the Quick_Actions and Hand_Keyboard fallback if the user enters AR before the model is ready.
+21. WHILE the Model_Preload is running, THE Entry_Page SHALL keep the "Enter AR" action available and SHALL show the Quick_Actions and Hand_Keyboard fallback if the user enters AR before the model is ready. **Superseded in part by Requirements 33.28, 33.49, and 33.52:** the fallback is the Commands_Tile and the System_Keyboard.
 22. THE STT_Engine SHALL NOT download or initialise the Vosk model while an immersive AR session is active.
 23. THE Grammar_Builder SHALL use the fragments grammar strategy, so that phrase pieces such as "turn off" and "that" can be chained in one utterance.
 24. WHEN the STT_Engine returns a multi-word hypothesis for a single-word or short command (for example "turn on turn off" for "come here"), THE Intent_Parser SHALL treat the result as low confidence and SHALL ask the user to confirm or repeat the command instead of executing a device action.
@@ -474,14 +482,14 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 2. THE Capri_App SHALL work in Mock_Mode with zero configuration.
 3. THE Mock_Mode SHALL simulate Home Assistant with 3 virtual light bulbs rendered in the room.
 4. THE Mock_Mode SHALL support on, off, brightness, and colour actions on the 3 virtual light bulbs, and the rendered bulbs SHALL reflect the resulting state.
-5. THE Mock_Mode SHALL include a scripted Hermes task with fake progress that completes and reports to the user.
+5. THE Mock_Mode SHALL include a scripted Hermes task with fake progress that completes and reports to the user. **Superseded by Requirements 33.17 and 33.18.**
 6. WHILE in Mock_Mode, THE Capri_App SHALL make no network request to Home Assistant or Hermes.
-7. WHILE in Mock_Mode, THE Capri_App SHALL display a Mock_Mode Status_Indicator.
+7. WHILE in Mock_Mode, THE Capri_App SHALL display a Mock_Mode Status_Indicator. **Superseded in part by Requirements 33.35 and 33.45:** the indicator is shown in the HUD_Menu Status tile.
 8. THE Mock_Mode and Live_Mode backends SHALL share one interface so that the Persona and Procedural_Animator code paths are identical in both modes.
 9. WHILE in Mock_Mode, THE Capri_App SHALL support the full loop of pointing, voice command, Hacking_VFX, device state change, and reaction.
-10. WHILE in Mock_Mode, THE Capri_App SHALL support a Tier_1 conversation and one scripted Hermes task as the Tier_2 stand-in.
+10. WHILE in Mock_Mode, THE Capri_App SHALL support a Tier_1 conversation and one scripted Hermes task as the Tier_2 stand-in. **Superseded in part by Requirements 33.17 and 33.18:** the Tier_1 conversation stays and the Tier_2 stand-in is removed.
 11. WHILE in Mock_Mode, THE Entry_Page SHALL offer the Mic_Setup_Step and the Model_Preload with progress, and SHALL NOT block the "Enter AR" action on either step.
-12. WHILE in Mock_Mode, THE Capri_App SHALL hide the "Teach me your lights" orb by default and SHALL keep the teach flow reachable from the dev panel or a Quick_Actions entry.
+12. WHILE in Mock_Mode, THE Capri_App SHALL hide the "Teach me your lights" orb by default and SHALL keep the teach flow reachable from the dev panel or a Quick_Actions entry. **Superseded by Requirements 33.36 and 33.46.**
 
 ### Requirement 24: Setup page and credential handling
 
@@ -542,7 +550,7 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 
 #### Acceptance Criteria
 
-1. THE Capri_App SHALL display a Status_Indicator for Home Assistant, for Hermes, and for the current mode (Mock_Mode or Live_Mode).
+1. THE Capri_App SHALL display a Status_Indicator for Home Assistant, for Hermes, and for the current mode (Mock_Mode or Live_Mode). **Superseded in part by Requirements 33.35 and 33.45:** the indicators are shown in the HUD_Menu Status tile instead of always-visible chips.
 2. WHEN an integration's connection state changes, THE Capri_App SHALL update the corresponding Status_Indicator within 0.5 s.
 3. THE Status_Indicator SHALL distinguish at least the states connected, connecting, failed, and not configured.
 4. WHERE Live_Mode is selected and required credentials are missing, THE Capri_App SHALL remain in Mock_Mode and display which credential is missing.
@@ -560,7 +568,7 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 3. THE developer SHALL run comfort checks covering the Avatar distance range, panel placement, and seated reach, and record the results.
 4. THE developer SHALL tune the audio mix so that Avatar speech, sound effects, and chirps are each audible without masking the others.
 5. THE developer SHALL provide a Demo_Path that completes in 2 minutes.
-6. THE Demo_Path SHALL show passthrough presence, pointing, a voice command, the Hacking_VFX, a quip, and one Hermes task.
+6. THE Demo_Path SHALL show passthrough presence, pointing, a voice command, the Hacking_VFX, a quip, and one Hermes task. **Superseded in part by Requirement 33.60:** the Mock_Mode Demo_Path replaces the Hermes task beat with a Commands_Tile or spatial beat.
 7. THE developer SHALL confirm that Mock_Mode works from the Hosted_Site link on a Meta Quest headset.
 8. THE repository SHALL contain the README, `vercel.json`, and the Demo_Path script.
 
@@ -613,7 +621,7 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 1. THE Submission_Package SHALL include a hosted playable WebXR link.
 2. THE Submission_Package SHALL include a demo video shorter than 3 minutes.
 3. THE Submission_Package SHALL include submission text.
-4. THE demo video SHALL show Mock_Mode working from the hosted link, hands-only interaction, the signature moment, and one Hermes task.
+4. THE demo video SHALL show Mock_Mode working from the hosted link, hands-only interaction, the signature moment, and one Hermes task. **Superseded in part by Requirement 33.60:** the Mock_Mode part shows no scripted Hermes task.
 5. THE submission text SHALL state the Track as Productivity, the Division as New Experience, and the target of the "Best Agentic Interaction" special award.
 6. THE submission text SHALL describe Capri's Avatar, spatial awareness, and Persona as the product, with Home Assistant and Hermes as plug-in backends.
 7. THE README SHALL describe how to run Mock_Mode from the hosted link with no setup.
@@ -634,3 +642,72 @@ Work proceeds in strict order: Milestone 0 (feasibility spike), then Steps 1 to 
 5. WHERE retargeted animation clips are added, THE Capri_App SHALL include a license and attribution entry for each clip.
 6. THE Capri_App SHALL satisfy every other requirement with the Clip_Animator absent.
 7. WHEN retargeting a clip takes longer than the schedule allows, THE developer SHALL use the Procedural_Animator gesture instead.
+
+### Requirement 33: Headset feedback fixes and HUD declutter [POST-MVD]
+
+**User Story:** As a user testing Capri on the Quest, I want stable positions, a clean view with a menu I summon from my wrist, a visible teach pointer, and no fake Hermes workflow, so that the experience feels calm, honest, and reliable.
+
+#### Acceptance Criteria
+
+1. WHEN the Capri_App starts an immersive AR session, THE Capri_App SHALL request the Boundaryless_Space.
+2. IF the Boundaryless_Space is not granted, THEN THE Capri_App SHALL fall back to the `local-floor` reference space and log which reference space was granted.
+3. WHEN the active reference space emits a `reset` event, THE Capri_App SHALL, within 0.5 s, re-resolve each anchored Device_Marker position from its anchor, re-place the Mock_Mode bulbs, and recompute the Avatar idle home.
+4. IF a reference space reset occurs while a Device_Marker has no anchor, THEN THE Capri_App SHALL flag that Device_Marker position as approximate and offer "Re-teach lights" for it in the HUD_Menu Lights tile.
+5. WHILE the Boundaryless_Space or the `local-floor` fallback is active, THE Capri_App SHALL take the Avatar's standing height from the floor-labelled plane as specified in Requirement 11.11.
+6. WHERE the page URL contains the query parameter `hands=1`, THE Capri_App SHALL render the hand joint skeleton for each tracked hand.
+7. WHERE the page URL lacks the query parameter `hands=1`, THE Capri_App SHALL render no hand joint markers.
+8. WHERE the page URL contains the query parameter `dev=1`, THE Capri_App SHALL show the dev panel in development and production builds alike.
+9. WHERE the page URL contains the query parameter `handtest=1`, THE Capri_App SHALL show the hand test panel in development and production builds alike.
+10. WHERE the page URL contains neither `dev=1` nor `handtest=1`, THE Capri_App SHALL show neither the dev panel nor the hand test panel.
+11. WHILE the teach flow waits for a point, THE Capri_App SHALL render a ray from the dominant index fingertip and the Teach_Reticle at the current capture point, updated every frame.
+12. WHEN the user pinches while the Teach_Reticle is shown, THE Capri_App SHALL capture the Teach_Reticle position as the light position.
+13. THE point capture SHALL choose the environment hit-test result against the real room mesh first, then the nearest labelled plane intersection, then the 2.0 m fallback along the ray.
+14. THE point capture SHALL exclude the global or unlabelled room mesh, and every Surface box that contains the user's head, from box intersection.
+15. THE point capture SHALL return a capture point whose along-ray distance from the fingertip is greater than 0.05 m.
+16. IF the pointing ray hits no surface, THEN THE Capri_App SHALL show the Teach_Reticle at 2.0 m along the ray together with the Nearer and Farther controls.
+17. WHILE in Mock_Mode, THE Capri_App SHALL run with no AgentBackend, and THE Hermes Status_Indicator SHALL read "Not configured".
+18. WHILE Hermes is not connected, WHEN the user makes a Tier_2 request (a task phrase, an Ask Hermes prompt, or typed chat), THE Persona SHALL reply with one in-character line stating that Hermes is not connected and can be added on the Setup_Page.
+19. THE Commands_Tile SHALL contain no one-tap entry that starts the evening routine task.
+20. WHERE Hermes is connected in Live_Mode, THE Task_Panel SHALL show task progress and approvals as specified in Requirement 19.
+21. WHILE the Avatar is visible, THE Procedural_Animator SHALL keep the Avatar's hair hanging downward from the head and settled at rest within 2 s after the Avatar's head stops moving.
+22. WHERE the hair spring-bone fix is unavailable, THE Procedural_Animator SHALL hold the hair joints in the VRM rest pose.
+23. THE Capri_App SHALL provide Push_To_Talk only through the non-dominant hold-pinch gesture and SHALL render no floating mic orb.
+24. WHILE Push_To_Talk is active, THE Transcript_Bubble SHALL show above the Avatar a listening animation driven by the microphone input level.
+25. WHEN the STT_Engine produces a partial or final result, THE Transcript_Bubble SHALL show the result text.
+26. WHEN the final result has been handled, THE Transcript_Bubble SHALL hide within 3 s.
+27. WHILE the Speech_Bubble and the Transcript_Bubble are both due on screen, THE Capri_App SHALL stack the two bubbles or replace one with the other so that they do not overlap, with each bubble facing the user's head.
+28. IF the microphone is not allowed or the voice model is still loading when Push_To_Talk starts, THEN THE Transcript_Bubble SHALL show the reason for 2.5 s and then hide.
+29. WHILE the user's head is farther than the Comfort_Radius from the Avatar, THE Avatar SHALL keep the current position when the user moves closer.
+30. WHEN the user's head comes within the Comfort_Radius of the Avatar, THE Avatar SHALL step sideways, across the head-to-Avatar direction, to a position outside the Comfort_Radius.
+31. WHEN the Avatar has been outside the user's view for the follow timeout (more than 60° from the head forward for more than 3 s), THE Avatar SHALL glide back to the idle home.
+32. THE Capri_App SHALL accept an Avatar destination or idle home only when the segment from the user's head to the candidate crosses no detected wall plane and the candidate lies inside the room mesh bounds.
+33. IF a candidate Avatar destination or idle home fails the room check in criterion 33.32, THEN THE Capri_App SHALL pull the candidate toward the head until the room check passes.
+34. WHILE the Avatar is moving, THE Avatar glide speed SHALL stay at or below 0.9 m/s.
+35. WHILE the HUD_Menu is closed, THE Capri_App SHALL show no status chips, Quick_Actions panel, keyboard button, or device list panel in the scene.
+36. THE Capri_App SHALL render no "Teach me your lights" orb in any mode.
+37. WHILE the non-dominant palm faces the user's head (palm normal within 45° of the direction to the head), THE Capri_App SHALL show the Wrist_Button on the non-dominant wrist.
+38. WHEN the dominant index fingertip pokes the Wrist_Button, THE Capri_App SHALL toggle the HUD_Menu between open and closed.
+39. THE Wrist_Button SHALL respond only to a fingertip poke, because the Quest system reserves the palm-up pinch for its system menu.
+40. WHEN the HUD_Menu opens, THE Capri_App SHALL place the HUD_Menu once in front of the user inside the seated zone and SHALL keep the HUD_Menu fixed in the world until it closes.
+41. THE HUD_Menu SHALL be operable by fingertip poke and by ray-pinch.
+42. IF the HUD_Menu receives no interaction for 30 s, THEN THE Capri_App SHALL close the HUD_Menu.
+43. WHEN a HUD_Menu tile starts a flow, THE Capri_App SHALL close the HUD_Menu.
+44. THE HUD_Menu SHALL contain the tiles Status, Lights, Commands, Ask Hermes, Give Hermes a task, and Close.
+45. WHEN the user opens the Status tile, THE HUD_Menu SHALL show the mode, Home Assistant, Hermes, and voice Status_Indicators.
+46. WHEN the user opens the Lights tile, THE HUD_Menu SHALL offer "Teach a light", "Re-teach lights", and the list of registered lights.
+47. WHEN a live Hermes task runs, THE Capri_App SHALL show the Task_Panel and its approval buttons while the HUD_Menu is closed.
+48. THE Capri_App SHALL keep the loading card and the hand-lost panel behaviour unchanged by the HUD_Menu.
+49. THE Commands_Tile SHALL list every command type the grammar supports, grouped as Lights, Capri, and Hermes, with the exact phrase to say on each row.
+50. THE Commands_Tile SHALL build the list from the phrase table, so that every command type in the phrase table appears in the list.
+51. WHEN the user taps a Commands_Tile row whose command needs no parameter, THE Capri_App SHALL run that command through the same text-processing path as speech.
+52. WHEN the user activates a text-entry tile, THE Capri_App SHALL open the System_Keyboard.
+53. WHEN the user submits text through the System_Keyboard, THE Intent_Parser SHALL process that text as a recognised result.
+54. IF the System_Keyboard is unsupported in the immersive session, THEN THE HUD_Menu SHALL hide the text-entry tiles and show a line stating that text entry is unavailable.
+55. WHILE Hermes is connected, WHEN the user submits text from the Ask Hermes tile, THE Hermes_Client SHALL send the text as a chat request and THE Speech_Output SHALL show the reply in the Avatar's Speech_Bubble.
+56. WHILE Hermes is connected, WHEN the user submits text from the Give Hermes a task tile, THE Hermes_Client SHALL start a long-running task and THE Task_Panel SHALL show the task steps and approvals.
+57. WHEN the user says "ask hermes", THE Capri_App SHALL open the Ask Hermes prompt with the System_Keyboard.
+58. WHILE Hermes is not connected, THE Ask Hermes and Give Hermes a task tiles SHALL show the label "Set up Hermes on the 2D page".
+59. THE Setup_Page Hermes section SHALL contain one plain sentence stating what Hermes does in Capri.
+60. THE Mock_Mode Demo_Path SHALL contain no "run my evening routine" beat and SHALL use a Commands_Tile beat or a spatial beat in its place.
+61. THE README, Demo_Path, demo video plan, submission documents, and animation clips note SHALL describe the HUD_Menu, the Commands_Tile, the System_Keyboard, Ask Hermes and Give Hermes a task, the teach pointer, the Boundaryless_Space, and the Comfort_Radius behaviour, and SHALL describe the mic orb, the teach orb, and the Mock_Mode scripted Hermes routine as removed.
+62. WHEN the docs change, THE repository smoke checks (`npm run check`) SHALL confirm that every README link resolves.

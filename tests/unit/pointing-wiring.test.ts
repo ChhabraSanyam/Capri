@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PointingWiring, type PointingView } from '../../src/app/pointing-wiring.js';
 import { createFrameContext, type FrameContext } from '../../src/app/frame-context.js';
-import { TEACH_ORB } from '../../src/config/constants.js';
+import { WRIST_BUTTON } from '../../src/config/constants.js';
 import type { PanelRect } from '../../src/domain/devices/teach-input.js';
 import type { Vec3 } from '../../src/domain/geometry.js';
 import { RayHistory } from '../../src/domain/pointing/ray-history.js';
@@ -21,7 +21,7 @@ interface Rig {
   readonly events: string[];
   readonly looks: (Vec3 | 'user')[];
   readonly highlights: string[];
-  ui: { panels: PanelRect[]; orbCenter: Vec3 | undefined };
+  ui: { panels: PanelRect[]; buttonCenter: Vec3 | undefined };
   /** Advance `n` frames with the right hand at `command`, then return. */
   run(n: number, command: FakeHandCommand | null, confirmAllowed?: boolean): void;
 }
@@ -39,7 +39,7 @@ function createRig(targets: { id: string; position: Vec3 }[], head: Vec3 = { x: 
     setHighlight: (p, s) => highlights.push(`${p ?? '-'}|${s ?? '-'}`),
     lookAt: (t) => looks.push(t),
   };
-  const ui = { panels: [] as PanelRect[], orbCenter: undefined as Vec3 | undefined };
+  const ui = { panels: [] as PanelRect[], buttonCenter: undefined as Vec3 | undefined };
   const wiring = new PointingWiring({
     events: { emit: (name, payload) => events.push(`${String(name)}:${JSON.stringify(payload)}`) },
     hands,
@@ -116,7 +116,7 @@ describe('PointingWiring', () => {
     expect(lookingAtA.wiring.pointed).toBe('a');
   });
 
-  it('does not confirm when the pinch is aimed at a panel or the orb', () => {
+  it('does not confirm when the pinch is aimed at a panel or the Wrist_Button', () => {
     const rig = createRig([{ id: 'a', position: A }]);
     rig.run(30, pointAt(A));
     // A panel in front of the hand, between it and the marker, in the way of the aim ray.
@@ -126,7 +126,7 @@ describe('PointingWiring', () => {
     rig.run(3, { pose: 'fist' });
 
     rig.ui.panels.length = 0;
-    rig.ui.orbCenter = { x: 0.2, y: 1.15, z: -1.5 };
+    rig.ui.buttonCenter = { x: 0.2, y: 1.15, z: -1.5 };
     rig.run(30, pointAt(A));
     rig.run(3, pinchAt(A));
     expect(rig.wiring.selected).toBeUndefined();
@@ -185,20 +185,20 @@ describe('isAimedAtUi', () => {
   const ray = { origin: { x: 0, y: 1.2, z: 0 }, direction: { x: 0, y: 0, z: -1 } };
   const panel: PanelRect = { center: { x: 0, y: 1.2, z: -0.8 }, yawRad: 0, halfWidthM: 0.2, halfHeightM: 0.2 };
 
-  it('is true for a ray through a panel or the orb, false otherwise', () => {
-    expect(isAimedAtUi(ray, { panels: [panel], orbCenter: undefined })).toBe(true);
-    expect(isAimedAtUi(ray, { panels: [], orbCenter: { x: 0, y: 1.2, z: -1 } })).toBe(true);
-    expect(isAimedAtUi(ray, { panels: [], orbCenter: undefined })).toBe(false);
+  it('is true for a ray through a panel or the Wrist_Button, false otherwise', () => {
+    expect(isAimedAtUi(ray, { panels: [panel], buttonCenter: undefined })).toBe(true);
+    expect(isAimedAtUi(ray, { panels: [], buttonCenter: { x: 0, y: 1.2, z: -1 } })).toBe(true);
+    expect(isAimedAtUi(ray, { panels: [], buttonCenter: undefined })).toBe(false);
     expect(
-      isAimedAtUi(ray, { panels: [{ ...panel, center: { x: 1.5, y: 1.2, z: -0.8 } }], orbCenter: undefined }),
+      isAimedAtUi(ray, { panels: [{ ...panel, center: { x: 1.5, y: 1.2, z: -0.8 } }], buttonCenter: undefined }),
     ).toBe(false);
   });
 
-  it('counts a fingertip poking the orb and ignores an orb behind the hand', () => {
-    const orb = { x: 0.01, y: 1.2, z: 0.0 };
-    expect(isAimedAtUi({ ...ray, direction: { x: 1, y: 0, z: 0 } }, { panels: [], orbCenter: orb })).toBe(true);
-    const behind = { x: 0, y: 1.2, z: TEACH_ORB.hitRadiusM * 6 };
-    expect(isAimedAtUi(ray, { panels: [], orbCenter: behind })).toBe(false);
+  it('counts a fingertip poking the Wrist_Button and ignores a button behind the hand', () => {
+    const button = { x: 0.01, y: 1.2, z: 0.0 };
+    expect(isAimedAtUi({ ...ray, direction: { x: 1, y: 0, z: 0 } }, { panels: [], buttonCenter: button })).toBe(true);
+    const behind = { x: 0, y: 1.2, z: WRIST_BUTTON.hitRadiusM * 6 };
+    expect(isAimedAtUi(ray, { panels: [], buttonCenter: behind })).toBe(false);
   });
 });
 

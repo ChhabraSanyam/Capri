@@ -56,7 +56,8 @@ export interface TeachView {
 }
 
 /** The hint shown while a teach step uses the non-dominant pinch. Plain ASCII. */
-export const TEACH_TALK_HINT = 'To talk now, poke the mic orb. Here a pinch with your other hand means Try again or Next.';
+export const TEACH_TALK_HINT =
+  'Here a pinch with your other hand means Try again or Next. To talk, finish this step, then hold that pinch.';
 
 /**
  * True for the teach steps that use the non-dominant pinch (Try again on "Is this the spot?", next
@@ -91,7 +92,16 @@ function rowsFor(labels: readonly string[], highlight: number): TeachChoiceRow[]
   }));
 }
 
-export function buildTeachView(state: TeachState, devices: readonly DeviceRecord[]): TeachView {
+/**
+ * @param pointerFallbackM while the flow waits for a point and the Teach_Reticle sits at the
+ *   fallback distance (nothing was hit), that distance. The view then offers Nearer and Farther
+ *   (task 33.3, Requirement 33.16). `undefined` while the reticle is on a hit or not shown.
+ */
+export function buildTeachView(
+  state: TeachState,
+  devices: readonly DeviceRecord[],
+  pointerFallbackM?: number,
+): TeachView {
   const taught = new Set(devices.map((d) => d.entityId));
   const reteach: TeachButton = devices.length > 0 ? shown('Re-teach lights') : HIDDEN;
   const base = {
@@ -123,14 +133,26 @@ export function buildTeachView(state: TeachState, devices: readonly DeviceRecord
             : `I know ${devices.length} ${devices.length === 1 ? 'light' : 'lights'}. My markers sit about where you pointed. Tap Re-teach lights to move one.`,
       };
 
-    case 'awaitPoint':
+    case 'awaitPoint': {
+      const heading = state.mode === 'reteach' ? 'Re-teach a light' : 'Teach me a light';
+      if (pointerFallbackM !== undefined && Number.isFinite(pointerFallbackM)) {
+        return {
+          ...base,
+          heading,
+          instruction: `I see no surface there, so the dot sits ${formatMetres(pointerFallbackM)} along your finger. Move it with Nearer or Farther, then pinch to place the light.`,
+          nearer: shown('Nearer'),
+          farther: shown('Farther'),
+          cancel: shown('Cancel'),
+        };
+      }
       return {
         ...base,
-        heading: state.mode === 'reteach' ? 'Re-teach a light' : 'Teach me a light',
+        heading,
         instruction:
-          'Point at the lamp with your index finger and pinch your thumb to your index finger. Do not point at this panel.',
+          'Point at the lamp with your index finger. The dot shows the spot. Pinch your thumb to your index finger to place it. Do not point at this panel.',
         cancel: shown('Cancel'),
       };
+    }
 
     case 'captured':
       return {

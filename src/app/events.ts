@@ -20,6 +20,11 @@ export interface AppEvents {
   'speech:start': { lineId: string | null };
   'speech:end': { lineId: string | null };
   'session:paused': { paused: boolean };
+  /**
+   * The session's reference space sent `reset` (task 33.1, Requirement 33.3): its origin moved, so
+   * every position in it may now point somewhere else in the room. `type` is the granted space type.
+   */
+  'space:reset': { type: string | undefined };
 }
 
 export type AppEventName = keyof AppEvents;

@@ -47,8 +47,12 @@ export class SpeechBubble {
   private currentText = '';
   /** 0 hidden, 1 fully shown. Moves toward 1 while shown and toward 0 while hiding. */
   private level = 0;
+  private readonly halfWidthM: number;
+  private readonly halfHeightM: number;
 
   constructor(world: World, widthM: number) {
+    this.halfWidthM = widthM / 2;
+    this.halfHeightM = (widthM * CANVAS_HEIGHT_PX) / CANVAS_WIDTH_PX / 2;
     this.canvas = document.createElement('canvas');
     this.canvas.width = CANVAS_WIDTH_PX;
     this.canvas.height = CANVAS_HEIGHT_PX;
@@ -89,6 +93,21 @@ export class SpeechBubble {
       this.level = 0;
       this.apply();
     }
+  }
+
+  /**
+   * Write the bubble's rectangle (centre and full-size half extents, tail included) into `out` while
+   * it is on screen, fading out included, and return true. Returns false when it is not drawn.
+   * Allocation-free, for the Transcript_Bubble stacking (task 33.6).
+   */
+  readRect(out: { center: { x: number; y: number; z: number }; halfWidthM: number; halfHeightM: number }): boolean {
+    if (!this.mesh.visible) return false;
+    out.center.x = this.mesh.position.x;
+    out.center.y = this.mesh.position.y;
+    out.center.z = this.mesh.position.z;
+    out.halfWidthM = this.halfWidthM;
+    out.halfHeightM = this.halfHeightM;
+    return true;
   }
 
   /** Start the fade-out. The quad hides when the fade ends, in `update`. */

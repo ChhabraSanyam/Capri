@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { createMockAgent, MOCK_CHAT_REPLY } from '../../src/backends/mock/mock-agent.js';
 import { createStore } from '../../src/backends/observable.js';
 import {
   err,
@@ -20,6 +19,7 @@ import {
 import type { ActionWorldView } from '../../src/domain/contract/response-contract.js';
 import {
   ACTION_NOT_POSSIBLE,
+  HERMES_NOT_CONNECTED,
   HERMES_UNAVAILABLE,
   interpretReply,
   routeTier,
@@ -76,8 +76,9 @@ describe('routeTier', () => {
     expect(routeTier(chatPhrase, 'speech', 'connected')).toEqual({ tier: 2, kind: 'chat', text: 'tell me a joke' });
     expect(routeTier(task, 'speech', 'connected')).toMatchObject({ tier: 2, kind: 'task', taskKind: 'routine' });
     for (const state of ['connecting', 'failed', 'not_configured', undefined] as const) {
-      expect(routeTier(unrecognised, 'keyboard', state)).toEqual({ tier: 1, reason: 'agent_unavailable', say: HERMES_UNAVAILABLE });
-      expect(routeTier(task, 'speech', state)).toEqual({ tier: 1, reason: 'agent_unavailable', say: HERMES_UNAVAILABLE });
+      expect(routeTier(unrecognised, 'keyboard', state)).toEqual({ tier: 1, reason: 'agent_unavailable', say: HERMES_NOT_CONNECTED });
+      expect(routeTier(chatPhrase, 'speech', state)).toEqual({ tier: 1, reason: 'agent_unavailable', say: HERMES_NOT_CONNECTED });
+      expect(routeTier(task, 'speech', state)).toEqual({ tier: 1, reason: 'agent_unavailable', say: HERMES_NOT_CONNECTED });
     }
   });
 
@@ -118,15 +119,16 @@ describe('TierRouter.chat', () => {
     expect(agent.requests[0]).toEqual({ text: 'hi', context });
   });
 
-  it('works with the Mock Mode agent', async () => {
-    const out = await new TierRouter({ agent: createMockAgent({ timeScale: 0 }) }).chat('hi', context, world);
-    expect(out).toMatchObject({ tier: 2, speech: MOCK_CHAT_REPLY.speech });
+  it('says the not-connected line with no agent (Mock Mode) or an agent that is not connected', async () => {
+    const offline = agentWith(async () => ok({ speech: 'Hi.' } as ResponseContract), 'failed');
+    for (const router of [new TierRouter({ agent: undefined }), new TierRouter({ agent: offline })]) {
+      expect(await router.chat('hi', context, world)).toEqual({ tier: 1, reason: 'not_connected', say: HERMES_NOT_CONNECTED });
+    }
+    expect(offline.requests).toHaveLength(0);
   });
 
-  it('falls back with the Hermes-unavailable line on every failure', async () => {
+  it('falls back with the Hermes-unavailable line on every failed call', async () => {
     const cases: Array<[TierRouter, string]> = [
-      [new TierRouter({ agent: undefined }), 'not_connected'],
-      [new TierRouter({ agent: agentWith(async () => ok(MOCK_CHAT_REPLY), 'failed') }), 'not_connected'],
       [new TierRouter({ agent: agentWith(async () => err({ kind: 'server', message: 'x' })) }), 'failed'],
       [new TierRouter({ agent: agentWith(async () => err({ kind: 'timeout', message: 'x' })) }), 'timeout'],
       [new TierRouter({ agent: agentWith(() => Promise.reject(new Error('boom'))) }), 'failed'],

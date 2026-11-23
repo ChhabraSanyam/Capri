@@ -1,24 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { KeyboardModel } from '../../src/domain/keyboard-model.js';
 import type { SpeechFailureReason } from '../../src/domain/speech-lang/speech-recognizer-port.js';
 import {
   describeVoice,
-  orbModeFor,
+  micLevelFromRms,
   speechStateOfModelStatus,
-  TranscriptModel,
+  TranscriptBubbleModel,
 } from '../../src/domain/voice-ui-model.js';
-
 describe('describeVoice', () => {
   it('shows no chip and no fallback when voice is ready', () => {
     const status = describeVoice('ready', undefined);
-    expect(status).toMatchObject({ chip: undefined, fallback: false, orb: 'idle' });
+    expect(status).toMatchObject({ chip: undefined, fallback: false, indicator: 'ready' });
   });
-
   it('shows the "Voice loading" chip and the fallback while the model loads (15.21)', () => {
     const status = describeVoice('loading', undefined);
-    expect(status).toMatchObject({ chip: 'Voice loading', fallback: true, orb: 'loading' });
+    expect(status).toMatchObject({ chip: 'Voice loading', fallback: true, indicator: 'loading' });
   });
-
   it('shows the fallback for every microphone failure (15.10, 15.18) except a deliberate stop', () => {
     const reasons: SpeechFailureReason[] = [
       'model-failed',
@@ -33,119 +29,112 @@ describe('describeVoice', () => {
       const status = describeVoice('ready', reason);
       expect(status.fallback, reason).toBe(true);
       expect(status.chip, reason).toBeDefined();
-      expect(status.orb, reason).toBe('unavailable');
+      expect(status.indicator, reason).toBe('unavailable');
     }
     expect(describeVoice('ready', 'stopped').fallback).toBe(false);
   });
-
   it('keeps chip and hint text plain ASCII', () => {
     for (const reason of ['model-loading', 'model-failed', 'permission-not-granted', 'permission-denied'] as const) {
       const status = describeVoice('ready', reason);
       expect(`${status.chip}${status.hint}`).toMatch(/^[\x20-\x7e]*$/u);
     }
   });
-
-  it('draws the orb as listening only when voice works', () => {
-    expect(orbModeFor(describeVoice('ready', undefined), true)).toBe('listening');
-    expect(orbModeFor(describeVoice('ready', undefined), false)).toBe('idle');
-    expect(orbModeFor(describeVoice('loading', undefined), true)).toBe('loading');
-  });
-
   it('maps model statuses to recogniser states', () => {
     expect(speechStateOfModelStatus('ready')).toBe('ready');
     expect(speechStateOfModelStatus('failed')).toBe('failed');
     for (const s of ['idle', 'downloading', 'loading']) expect(speechStateOfModelStatus(s)).toBe('loading');
   });
 });
-
-describe('TranscriptModel', () => {
-  it('is hidden until something happens', () => {
-    expect(new TranscriptModel().view.visible).toBe(false);
+describe('micLevelFromRms', () => {
+  it('removes the noise floor, scales, and clamps to [0, 1]', () => {
+    expect(micLevelFromRms(0, 0.01, 10)).toBe(0);
+    expect(micLevelFromRms(0.005, 0.01, 10)).toBe(0);
+    expect(micLevelFromRms(0.06, 0.01, 10)).toBeCloseTo(0.5, 9);
+    expect(micLevelFromRms(0.5, 0.01, 10)).toBe(1);
+    expect(micLevelFromRms(Number.NaN)).toBe(0);
   });
-
-  it('shows the live words while listening, then the final words for the hold time (15.8, 15.9)', () => {
-    const m = new TranscriptModel(6);
+});
+describe('TranscriptBubbleModel (33.24 to 33.28)', () => {
+  const READY = describeVoice('ready', undefined);
+  const model = (): TranscriptBubbleModel => {
+    const m = new TranscriptBubbleModel({ finalHoldS: 2.5, noticeS: 2.5 });
+    m.setStatus(READY);
+    return m;
+  };
+  it('is hidden until push-to-talk starts, and shows nothing just because voice is unavailable', () => {
+    const m = new TranscriptBubbleModel();
+    expect(m.view.kind).toBe('hidden');
+    m.setStatus(describeVoice('loading', undefined));
+    expect(m.view.kind).toBe('hidden');
+  });
+  it('listens with the mic level, then shows the partial and final words, then hides', () => {
+    const m = model();
     m.setListening(true);
-    expect(m.view).toMatchObject({ visible: true, heading: 'Listening', text: 'Say a command' });
+    expect(m.view).toEqual({ kind: 'listening', text: '' });
+    m.setLevel(0.6);
+    expect(m.level).toBeCloseTo(0.6, 9);
     m.setPartial('turn off');
-    expect(m.view.text).toBe('turn off');
-    m.setFinal('turn off that');
-    expect(m.view).toMatchObject({ visible: true, heading: 'I heard', text: 'turn off that' });
-    m.tick(5.9);
-    expect(m.view.visible).toBe(true);
+    expect(m.view).toEqual({ kind: 'partial', text: 'turn off' });
+    expect(m.level).toBe(0);
+    m.setFinal(' turn off that ');
+    expect(m.view).toEqual({ kind: 'final', text: 'turn off that' });
+    m.tick(2.4);
+    expect(m.view.kind).toBe('final');
     m.tick(0.2);
-    expect(m.view.visible).toBe(false);
+    expect(m.view.kind).toBe('hidden');
   });
-
-  it('says so when nothing was heard', () => {
-    const m = new TranscriptModel();
+  it('hides at once on an empty final (Capri asks again in her own bubble)', () => {
+    const m = model();
     m.setListening(true);
     m.setFinal('  ');
-    expect(m.view.text).toBe('Nothing. Try again.');
+    expect(m.view.kind).toBe('hidden');
   });
-
-  it('shows the voice chip with its hint when voice is unavailable and nothing else is up', () => {
-    const m = new TranscriptModel();
-    m.setStatus(describeVoice('loading', undefined));
-    expect(m.view).toMatchObject({ visible: true, chip: 'Voice loading' });
-    m.setStatus(describeVoice('ready', undefined));
-    expect(m.view.visible).toBe(false);
+  it('shows "Voice loading" or "Mic not allowed" for 2.5 s when push-to-talk starts, then hides', () => {
+    for (const [status, text] of [
+      [describeVoice('loading', undefined), 'Voice loading'],
+      [describeVoice('ready', 'permission-not-granted'), 'Mic not allowed'],
+    ] as const) {
+      const m = model();
+      m.setStatus(status);
+      m.setListening(true);
+      expect(m.view).toEqual({ kind: 'notice', text });
+      m.setListening(false);
+      m.tick(2.4);
+      expect(m.view.kind).toBe('notice');
+      m.tick(0.2);
+      expect(m.view.kind).toBe('hidden');
+    }
   });
-
-  it('bumps the revision only when the view changes', () => {
-    const m = new TranscriptModel();
+  it('shows a failure that is reported while push-to-talk is on, and drops a stale one when the start works', () => {
+    const failed = model();
+    failed.setListening(true);
+    failed.setStatus(describeVoice('ready', 'permission-denied'));
+    failed.setListening(false);
+    expect(failed.view).toEqual({ kind: 'notice', text: 'Mic blocked' });
+    const recovered = model();
+    recovered.setStatus(describeVoice('ready', 'mic-unavailable'));
+    recovered.setListening(true);
+    expect(recovered.view.kind).toBe('notice');
+    recovered.setStatus(READY);
+    expect(recovered.view.kind).toBe('listening');
+  });
+  it('bumps the revision only when the view changes, not for the level', () => {
+    const m = model();
     m.setListening(true);
     const rev = m.revision;
     m.setPartial('');
+    m.setLevel(0.9);
     m.tick(1);
     expect(m.revision).toBe(rev);
     m.setPartial('dim');
     expect(m.revision).toBe(rev + 1);
   });
-
-  it('starting a new push-to-talk clears the previous result', () => {
-    const m = new TranscriptModel();
+  it('a new push-to-talk clears the previous result and stays up while held', () => {
+    const m = model();
     m.setFinal('come here');
     m.setListening(true);
-    expect(m.view.heading).toBe('Listening');
+    expect(m.view.kind).toBe('listening');
     m.tick(100);
-    expect(m.view.visible).toBe(true);
-  });
-});
-
-describe('KeyboardModel', () => {
-  const type = (m: KeyboardModel, text: string): void => {
-    for (const c of text) m.press(c === ' ' ? 'key-space' : `key-${c}`);
-  };
-
-  it('types, deletes, and sends a line for the parser (15.12)', () => {
-    const m = new KeyboardModel();
-    type(m, 'turn on');
-    expect(m.text).toBe('turn on');
-    expect(m.display).toBe('turn on_');
-    m.press('key-delete');
-    expect(m.text).toBe('turn o');
-    type(m, 'ff');
-    expect(m.press('key-send')).toEqual({ type: 'submit', text: 'turn off' });
-    expect(m.text).toBe('');
-  });
-
-  it('ignores a leading space, double spaces, an empty send, and unknown keys', () => {
-    const m = new KeyboardModel();
-    expect(m.press('key-space').type).toBe('none');
-    expect(m.press('key-send').type).toBe('none');
-    expect(m.press('key-delete').type).toBe('none');
-    expect(m.press('key-unknown').type).toBe('none');
-    type(m, 'a');
-    m.press('key-space');
-    expect(m.press('key-space').type).toBe('none');
-    expect(m.press('key-send')).toEqual({ type: 'submit', text: 'a' });
-  });
-
-  it('caps the line and reports close', () => {
-    const m = new KeyboardModel(3);
-    type(m, 'abcd');
-    expect(m.text).toBe('abc');
-    expect(m.press('key-close').type).toBe('close');
+    expect(m.view.kind).toBe('listening');
   });
 });

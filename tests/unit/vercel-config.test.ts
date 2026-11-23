@@ -156,7 +156,7 @@ describe('vercel.json', () => {
         '/voice/missing_99.mp3',
         '/vosk/vosk-model-small-en-us-0.15.tar.gz',
         '/models/capri.vrm',
-        '/ui/quick-actions.uikitml',
+        '/ui/hud-menu.uikitml',
       ]) {
         expect(matches(path)).toBe(false);
       }

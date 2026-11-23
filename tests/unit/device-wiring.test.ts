@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createLazyLexicon, loadGeneratedLexicon, MIN_GENERATED_LEXICON_WORDS } from '../../src/app/lexicon-loader.js';
-import { CORE_JOINT, JOINT_FLOATS, TEACH_ORB } from '../../src/config/constants.js';
 import { DeviceRegistry, type DeviceRecord } from '../../src/domain/devices/registry.js';
 import { adoptStoredHandles, mergeRestoredPositions } from '../../src/domain/devices/restore.js';
-import { OrbPressDetector, type OrbHands } from '../../src/domain/devices/teach-orb.js';
 import type { Vec3 } from '../../src/domain/geometry.js';
 
 function record(id: string, position: Vec3, anchorHandle?: string): DeviceRecord {
@@ -56,70 +54,6 @@ describe('adoptStoredHandles', () => {
     expect(adopted?.[0]?.anchorHandle).toBe('ha');
     expect(adopted?.[1]?.anchorHandle).toBeUndefined();
     expect(adoptStoredHandles(adopted ?? [], stored)).toBeUndefined();
-  });
-});
-
-type Side = 'left' | 'right';
-
-function hand(tip: Vec3, pinched: boolean, along: Vec3 = { x: 0, y: 0, z: -1 }) {
-  const joints = new Float32Array(30 * JOINT_FLOATS);
-  const set = (slot: number, p: Vec3): void => {
-    joints[slot * JOINT_FLOATS] = p.x;
-    joints[slot * JOINT_FLOATS + 1] = p.y;
-    joints[slot * JOINT_FLOATS + 2] = p.z;
-  };
-  set(CORE_JOINT.indexTip, tip);
-  set(CORE_JOINT.indexProximal, { x: tip.x - along.x * 0.05, y: tip.y - along.y * 0.05, z: tip.z - along.z * 0.05 });
-  set(CORE_JOINT.thumbTip, { x: tip.x, y: tip.y - (pinched ? 0.01 : 0.08), z: tip.z });
-  return { tracked: true, joints };
-}
-
-const OFF = { tracked: false, joints: new Float32Array(30 * JOINT_FLOATS) };
-function hands(side: Side, h: ReturnType<typeof hand>): OrbHands {
-  return side === 'right' ? { left: OFF, right: h } : { left: h, right: OFF };
-}
-
-describe('OrbPressDetector', () => {
-  const orb: Vec3 = { x: 0, y: 1.2, z: -1.5 };
-  const farAway: Vec3 = { x: 0, y: 1.2, z: -0.2 };
-
-  it('presses on a pinch that starts while pointing at the orb', () => {
-    const d = new OrbPressDetector();
-    expect(d.update(hands('right', hand(farAway, false)), orb, true)).toBe(false);
-    expect(d.update(hands('right', hand(farAway, true)), orb, true)).toBe(true);
-    expect(d.update(hands('right', hand(farAway, true)), orb, true)).toBe(false);
-  });
-
-  it('works with the left hand too', () => {
-    const d = new OrbPressDetector();
-    d.update(hands('left', hand(farAway, false)), orb, true);
-    expect(d.update(hands('left', hand(farAway, true)), orb, true)).toBe(true);
-  });
-
-  it('ignores a pinch aimed away from the orb', () => {
-    const d = new OrbPressDetector();
-    d.update(hands('right', hand(farAway, false, { x: 1, y: 0, z: 0 })), orb, true);
-    expect(d.update(hands('right', hand(farAway, true, { x: 1, y: 0, z: 0 })), orb, true)).toBe(false);
-  });
-
-  it('ignores presses while not armed or while the orb is hidden, and a pinch held across arming', () => {
-    const d = new OrbPressDetector();
-    d.update(hands('right', hand(farAway, false)), orb, false);
-    expect(d.update(hands('right', hand(farAway, true)), orb, false)).toBe(false);
-    // Still pinched when the orb arms again: not a new press.
-    expect(d.update(hands('right', hand(farAway, true)), orb, true)).toBe(false);
-    d.update(hands('right', hand(farAway, false)), orb, true);
-    expect(d.update(hands('right', hand(farAway, true)), undefined, true)).toBe(false);
-  });
-
-  it('presses once per fingertip poke and again after the hand backs off', () => {
-    const d = new OrbPressDetector();
-    const touching = { x: orb.x, y: orb.y, z: orb.z + TEACH_ORB.pokeRadiusM / 2 };
-    const away = { x: orb.x, y: orb.y, z: orb.z + 0.5 };
-    expect(d.update(hands('right', hand(touching, false, { x: 1, y: 0, z: 0 })), orb, true)).toBe(true);
-    expect(d.update(hands('right', hand(touching, false, { x: 1, y: 0, z: 0 })), orb, true)).toBe(false);
-    d.update(hands('right', hand(away, false, { x: 1, y: 0, z: 0 })), orb, true);
-    expect(d.update(hands('right', hand(touching, false, { x: 1, y: 0, z: 0 })), orb, true)).toBe(true);
   });
 });
 

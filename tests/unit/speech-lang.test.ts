@@ -2,14 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { DeviceRegistry } from '../../src/domain/devices/registry.js';
 import { buildGrammar } from '../../src/domain/speech-lang/grammar-builder.js';
 import { parseIntent, renderIntent, type Intent } from '../../src/domain/speech-lang/intent-parser.js';
-import { createLexicon } from '../../src/domain/speech-lang/lexicon.js';
-import {
-  COLOR_NAMES,
-  COLOR_RGB,
-  normalizeText,
-  QUICK_ACTIONS,
-} from '../../src/domain/speech-lang/phrases.js';
-import { processQuickAction, processText } from '../../src/domain/speech-lang/process-text.js';
+import { createLexicon, FALLBACK_LEXICON } from '../../src/domain/speech-lang/lexicon.js';
+import fc from 'fast-check';
+import { buildCommandCatalog } from '../../src/domain/commands/command-catalog.js';
+import { COLOR_NAMES, COLOR_RGB, normalizeText, PHRASE_TABLE } from '../../src/domain/speech-lang/phrases.js';
+import { processText } from '../../src/domain/speech-lang/process-text.js';
 import { resolve } from '../../src/domain/speech-lang/resolver.js';
 
 function makeRegistry(...names: string[]): DeviceRegistry {
@@ -80,9 +77,17 @@ describe('buildGrammar', () => {
       'hey capri',
       'tell me a joke',
       'run my evening routine',
+      'ask hermes',
+      'perch on the table',
+      'look at me',
     ]) {
       expect(grammar, phrase).toContain(phrase);
     }
+    // Property 14 for the task 33.9 phrases: also in the whole-utterance grammar, and in the lexicon.
+    const utterances = buildGrammar(input, 'utterances');
+    for (const phrase of ['ask hermes', 'perch on the table', 'look at me']) expect(utterances, phrase).toContain(phrase);
+    const withLexicon = buildGrammar({ ...input, lexicon: FALLBACK_LEXICON }, 'fragments');
+    for (const phrase of ['ask hermes', 'perch on the table', 'look at me']) expect(withLexicon, phrase).toContain(phrase);
     for (const color of COLOR_NAMES) expect(grammar).toContain(color);
   });
 
@@ -220,6 +225,28 @@ describe('parseIntent', () => {
     expect(parseIntent('hey capri turn off that', ctx)).toMatchObject({ type: 'device', verb: 'turn_off' });
   });
 
+  it('parses "ask hermes", "perch on the table", and "look at me" (task 33.9)', () => {
+    expect(parseIntent('ask hermes', ctx)).toEqual({ type: 'hermes_prompt', mode: 'ask' });
+    expect(parseIntent('Ask Hermes.', ctx)).toEqual({ type: 'hermes_prompt', mode: 'ask' });
+    expect(parseIntent('hey capri ask hermes', ctx)).toEqual({ type: 'hermes_prompt', mode: 'ask' });
+    expect(parseIntent('perch on the table', ctx)).toEqual({ type: 'avatar', ability: 'perch_on', surface: 'table' });
+    expect(parseIntent('look at me', ctx)).toEqual({ type: 'avatar', ability: 'look_at_me' });
+    expect(processText('ask hermes', ctx).action).toEqual({ type: 'resolved', command: { kind: 'hermes_prompt', mode: 'ask' } });
+    expect(processText('perch on the table', ctx).action).toEqual({
+      type: 'resolved',
+      command: { kind: 'navigate', request: { type: 'perch', surface: 'table' } },
+    });
+    expect(processText('look at me', ctx).action).toEqual({ type: 'resolved', command: { kind: 'look_user' } });
+  });
+
+  it('keeps the low-confidence rule for "ask hermes" mixed with another command (task 33.9)', () => {
+    for (const text of ['ask hermes turn off', 'turn on ask hermes', 'ask hermes ask hermes', 'come here ask hermes']) {
+      expect(parseIntent(text, ctx), text).toEqual({ type: 'repeat' });
+    }
+    // One fragment with free words is typed chat, not garble.
+    expect(parseIntent('ask hermes about the weather', ctx).type).toBe('unknown');
+  });
+
   it('returns unknown for free text', () => {
     expect(parseIntent('what is the weather like', ctx)).toEqual({ type: 'unknown', text: 'what is weather like' });
   });
@@ -239,6 +266,9 @@ describe('parseIntent', () => {
       'come here',
       'that one',
       'tell me a joke',
+      'ask hermes',
+      'perch on the table',
+      'look at me',
     ]) {
       const intent = parseIntent(text, ctx);
       expect(parseIntent(text, ctx)).toEqual(intent);
@@ -447,36 +477,47 @@ describe('resolve', () => {
   });
 });
 
-describe('keyboard and Quick_Actions parity (Requirements 15.12, 15.13)', () => {
+describe('System_Keyboard, Commands_Tile, and speech parity (Requirements 15.12, 33.51, 33.53)', () => {
   const registry = makeRegistry('desk lamp');
   const ctx = { registry, pointed: 'id-1' };
 
-  it('typed text gives the same result as the same text heard', () => {
-    // Speech and the Hand_Keyboard share one function, so case and punctuation are the only
-    // differences a typed string can have.
+  // Feature: capri-spatial-companion, Property 18: Keyboard and speech paths are equivalent
+  // **Validates: Requirements 15.12, 33.53**
+  it('Property 18: System_Keyboard text resolves to the same action as the same text heard', () => {
+    // Speech and the System_Keyboard share `processText`, so a typed line can differ from the heard one
+    // only by case, punctuation, extra spaces, fillers, and digits for number words.
+    const spoken = buildGrammar({ devices: registry.all(), places: [] }, 'utterances').filter((p) => p !== '[unk]');
+    const typed = (text: string, upper: boolean[], punct: string, pad: string): string =>
+      `${pad}${text
+        .split(' ')
+        .map((w, i) => (upper[i % upper.length] === true ? w.toUpperCase() : w))
+        .join('  ')}${punct}`;
+    fc.assert(
+      fc.property(
+        fc.constantFrom(...spoken),
+        fc.array(fc.boolean(), { minLength: 1, maxLength: 4 }),
+        fc.constantFrom('', '.', '!', '?', ','),
+        fc.constantFrom('', ' ', 'please '),
+        (text, upper, punct, pad) => {
+          expect(processText(typed(text, upper, punct, pad), ctx)).toEqual(processText(text, ctx));
+        },
+      ),
+      { numRuns: 100 },
+    );
     expect(processText('Turn off that.', ctx)).toEqual(processText('turn off that', ctx));
+    expect(processText('set a timer for 5 minutes', ctx)).toEqual(processText('set a timer for five minutes', ctx));
   });
 
-  it('every Quick_Actions button runs through processText', () => {
-    for (const action of QUICK_ACTIONS) {
-      expect(processQuickAction(action.id, ctx)).toEqual(processText(action.text, ctx));
+  it('every tappable Commands row runs through processText like its spoken phrase', () => {
+    for (const row of buildCommandCatalog(PHRASE_TABLE, registry.all())) {
+      if (row.runText === undefined) continue;
+      expect(processText(row.runText, ctx), row.id).toEqual(processText(row.say, ctx));
     }
-    expect(QUICK_ACTIONS.map((a) => a.label)).toEqual([
-      'Turn on',
-      'Turn off',
-      'Dim',
-      'Brighten',
-      'Come here',
-      'Sit on the desk',
-      'Go away',
-      'Run my evening routine',
-    ]);
   });
 
-  it('Quick_Actions light buttons act on the pointed device and ask when nothing is pointed', () => {
-    expect(processQuickAction('dim', ctx).action).toMatchObject({ command: { command: { kind: 'brightness', pct: 30 } } });
-    expect(processQuickAction('turn_on', { registry }).action).toMatchObject({ type: 'clarify', reason: 'no_pointed' });
-    expect(processQuickAction('nope', ctx).action).toEqual({ type: 'repeat' });
+  it('deictic rows act on the pointed light and ask when nothing is pointed', () => {
+    expect(processText('dim that', ctx).action).toMatchObject({ command: { command: { kind: 'brightness', pct: 30 } } });
+    expect(processText('turn that on', { registry }).action).toMatchObject({ type: 'clarify', reason: 'no_pointed' });
   });
 
   it('typed free-form names and chat work through the same path', () => {

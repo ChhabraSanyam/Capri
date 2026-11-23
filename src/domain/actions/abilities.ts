@@ -6,13 +6,16 @@
  *   validator, and the refusal path agree on.
  * - `planNavigation` turns a navigation request (`come_here`, `go_away`, `move_to`, `sit_on`,
  *   `perch`) into either a destination to glide to or a "surface missing" outcome. It applies the
- *   visibility policy, so the Avatar never walks out of the seated user's view (Requirement 11.8).
+ *   visibility policy, so the Avatar never walks out of the seated user's view (Requirement 11.8),
+ *   and the room check, so no destination lies behind a wall or outside the room (Requirements
+ *   33.32, 33.33).
  */
 import { AWAY_PLACEMENT } from '../../config/constants.js';
 import { visibilityPolicy } from '../destination-visibility.js';
 import type { Vec3 } from '../geometry.js';
 import type { MovePurpose } from '../avatar-state.js';
-import { constrainIdlePosition, idleHome, type HeadPose } from '../placement.js';
+import { idleHome, type HeadPose } from '../placement.js';
+import { homeInRoom, pullIntoRoom, roomViewFrom, type RoomView } from '../room-bounds.js';
 import {
   mapLabel,
   moveTarget,
@@ -121,9 +124,10 @@ function missing(surface: string, reason: SurfaceMissingReason): NavigationMissi
 function visible(
   head: HeadPose,
   floorY: number | undefined,
+  room: RoomView,
   base: NavigationGo,
 ): NavigationGo {
-  const v = visibilityPolicy(head, base.destination, floorY);
+  const v = visibilityPolicy(head, base.destination, floorY, room);
   if (!v.clamped) return base;
   return {
     kind: 'go',
@@ -137,18 +141,19 @@ function visible(
 /**
  * Plan one navigation request. A missing Surface (or one she cannot stand on) gives a `missing`
  * plan, and the caller keeps her where she is (Requirement 11.7). A destination outside the seated
- * user's view is clamped and she points at the real target (Requirement 11.8).
+ * user's view, behind a wall, or outside the room is clamped and she points at the real target
+ * (Requirements 11.8, 33.33). Homes are pulled inside the room.
  */
 export function planNavigation(request: NavigationRequest, ctx: NavigationContext): NavigationPlan {
   const { head, surfaces } = ctx;
   const floorY = floorYOf(surfaces, head.position);
+  const room = roomViewFrom(surfaces);
 
   if (request.type === 'come_here') {
-    const home = constrainIdlePosition(head, idleHome(head, floorRef(floorY)));
-    return { kind: 'go', purpose: 'home', destination: home };
+    return { kind: 'go', purpose: 'home', destination: homeInRoom(head, floorRef(floorY), room) };
   }
   if (request.type === 'go_away') {
-    return { kind: 'go', purpose: 'away', destination: awayHome(head, floorY) };
+    return { kind: 'go', purpose: 'away', destination: pullIntoRoom(head.position, awayHome(head, floorY), room) };
   }
 
   const label = parseSurfaceName(request.surface);
@@ -159,15 +164,17 @@ export function planNavigation(request: NavigationRequest, ctx: NavigationContex
   if (request.type === 'move_to') {
     const target = moveTarget(surface, head.position);
     if (target === undefined) return missing(request.surface, 'unsuitable');
-    // The nearest floor point to the user is under the user, so keep a floor trip in the idle ring.
-    const destination = surface.label === 'floor' ? constrainIdlePosition(head, target) : target;
-    return visible(head, floorY, { kind: 'go', purpose: 'float', destination, surfaceId: surface.id });
+    // The nearest floor point to the user is under the user, so a floor trip goes to the idle home
+    // on that floor instead.
+    const destination =
+      surface.label === 'floor' ? homeInRoom(head, { center: target }, room) : target;
+    return visible(head, floorY, room, { kind: 'go', purpose: 'float', destination, surfaceId: surface.id });
   }
 
   const target =
     request.type === 'sit_on' ? sitTarget(surface, head.position) : perchTarget(surface, head.position);
   if (target === undefined) return missing(request.surface, 'unsuitable');
-  return visible(head, floorY, {
+  return visible(head, floorY, room, {
     kind: 'go',
     purpose: request.type === 'sit_on' ? 'sit' : 'perch',
     destination: target.position,

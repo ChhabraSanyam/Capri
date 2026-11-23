@@ -2,13 +2,18 @@
  * Voice loop (task 13.25, Requirements 13.8, 14.1 to 14.5, 14.7, 15.4 to 15.7, 15.10, 15.14, 17.3,
  * 17.5, 17.6, 17.11, 22.5, 22.7, 22.9). The orchestrator that joins the finished parts of Step 6:
  *
- *   pinch or orb  ->  PushToTalk  ->  SttEngine  ->  processText  ->  dispatch  ->  Persona  ->  speech
+ *   pinch  ->  PushToTalk  ->  SttEngine  ->  processText  ->  dispatch  ->  Persona  ->  speech
  *
- * - Push-to-talk: a non-dominant pinch holds the microphone open (400 ms trailing), and a poke on
- *   the mic orb listens until 1.2 s of silence or 8 s (`PushToTalk`). A pinch aimed at a panel or the
- *   orb is a button press and starts nothing (`TalkGesture`).
- * - Text: the final speech text, the Hand_Keyboard line, and a Quick_Actions button all go through
- *   `processText`, so the three routes cannot differ (Requirement 15.12).
+ * - Push-to-talk: a non-dominant hold-pinch holds the microphone open (400 ms trailing), the only
+ *   push-to-talk gesture (Requirement 33.23, `PushToTalk`). A pinch aimed at a panel or the
+ *   Wrist_Button is a button press and starts nothing (`TalkGesture`). The UI port shows listening, the words, and
+ *   a failure reason in the Transcript_Bubble above Capri (task 33.6).
+ * - Text: the final speech text, a System_Keyboard command, and a tapped Commands_Tile row all go
+ *   through `processText`, so the routes cannot differ (Requirements 15.12, 33.51, 33.53).
+ * - Hermes access (task 33.9): `askHermes` sends typed text to Hermes as chat (Ask Hermes), and
+ *   `startHermesTask` starts a Hermes task with it (Give Hermes a task). "ask hermes" asks
+ *   `onHermesPrompt` to open the Ask Hermes prompt. Without a connected Hermes each says the
+ *   not-connected line.
  * - Dispatch: a resolved light command goes to the `DeviceActionRunner` (`HackRunner`: the hacking
  *   sequence, then the backend call). Navigation, look, point, timers, places and
  *   "that one" run here. Clarifications, "say that again", refusals and every answer are Persona
@@ -21,7 +26,8 @@
  *   in-character "Hermes is unavailable" line and Tier 1 carries on.
  * - Grammar: rebuilt (`buildGrammar` then `stt.setGrammar`) when the devices or the places change,
  *   and when a session starts.
- * - Failure: a microphone or recogniser failure shows Quick_Actions and the Hand_Keyboard.
+ * - Failure: a microphone or recogniser failure shows in the Transcript_Bubble; the Commands_Tile and
+ *   the System_Keyboard are the fallback.
  * - Pause (task 27.2): `pause` drops a push-to-talk in progress and releases the microphone, and no
  *   push-to-talk starts until `resume`. Timers keep wall time and are announced in the first
  *   `orchestrator` stage after the resume, because the app does not run that stage while paused.
@@ -35,7 +41,7 @@ import type { LightState } from '../backends/types.js';
 import { TIER2 } from '../config/constants.js';
 import { buildSpatialContext, type SpatialWorld } from '../domain/context/spatial-context.js';
 import type { ActionWorldView } from '../domain/contract/response-contract.js';
-import { HERMES_UNAVAILABLE, TierRouter, type ChatOutcome } from '../domain/contract/tier-router.js';
+import { HERMES_NOT_CONNECTED, HERMES_UNAVAILABLE, TierRouter, type ChatOutcome } from '../domain/contract/tier-router.js';
 import type { AvatarMode } from '../domain/avatar-state.js';
 import type { Emotion } from '../domain/animation-types.js';
 import { actionKindOf } from '../domain/persona/action-memory.js';
@@ -52,15 +58,9 @@ import type { HandSide } from '../domain/pointing/pinch.js';
 import type { UiAimTargets } from '../domain/pointing/ui-aim.js';
 import { buildGrammar } from '../domain/speech-lang/grammar-builder.js';
 import type { Lexicon } from '../domain/speech-lang/lexicon.js';
-import {
-  processQuickAction,
-  processText,
-  quickActionById,
-  type ProcessContext,
-  type ProcessedText,
-} from '../domain/speech-lang/process-text.js';
+import { processText, type ProcessContext, type ProcessedText } from '../domain/speech-lang/process-text.js';
 import type { DeviceDirectory, ResolvedCommand } from '../domain/speech-lang/resolver.js';
-import type { TaskKind } from '../domain/speech-lang/phrases.js';
+import type { HermesPromptMode, TaskKind } from '../domain/speech-lang/phrases.js';
 import type {
   SpeechFailureReason,
   SpeechRecognizerPort,
@@ -70,7 +70,6 @@ import type { Surface } from '../domain/surfaces.js';
 import { aimTargetPosition } from '../domain/voice/aim-target.js';
 import { PushToTalk, type TalkCommand } from '../domain/voice/push-to-talk.js';
 import type { SttAvailability } from '../audio/stt-engine.js';
-import type { VoiceUiHandlers } from '../ui/voice-ui.js';
 import type { AppEvents, EventBus } from './events.js';
 import type { FrameContext } from './frame-context.js';
 import type { Logger } from './logger.js';
@@ -78,12 +77,14 @@ import type { Clock } from './clock.js';
 import { TalkGesture } from './talk-gesture.js';
 import type { TaskPort } from './task-flow.js';
 
-/** Where the text came from. Only the wording of an unrecognised result depends on it. */
+/**
+ * Where the text came from: speech, the System_Keyboard, or a tapped Commands_Tile row
+ * (`quick_action`). Only the wording of an unrecognised result and the Tier 2 route depend on it.
+ */
 export type TextSource = 'speech' | 'keyboard' | 'quick_action';
 
 /** The voice panels as the loop drives them. `VoiceUi` satisfies it. */
 export interface VoiceUiPort {
-  setHandlers(handlers: VoiceUiHandlers): void;
   setListening(listening: boolean): void;
   showPartial(text: string): void;
   showFinal(text: string): void;
@@ -109,7 +110,7 @@ export interface PointingPort {
 export type PersonaSink = Pick<Persona, 'say' | 'noteAction' | 'situation' | 'relay'>;
 
 /** What the loop asks of the tier router. `TierRouter` satisfies it. */
-export type TierRouterPort = Pick<TierRouter, 'route' | 'chat'>;
+export type TierRouterPort = Pick<TierRouter, 'route' | 'chat' | 'connected'>;
 
 /** The Avatar's state for the Spatial_Context. Its emotion is the one the loop last set. */
 export interface AvatarStateReading {
@@ -139,7 +140,7 @@ export interface VoiceLoopDeps {
   readonly getHead: () => HeadPose | undefined;
   /** The head forward ray, for "remember this as" when nothing is pointed at. */
   readonly getGazeRay: () => GazeRay | undefined;
-  /** Panels and the orb a pinch may be aimed at. Called on a pinch edge only. */
+  /** Panels and the Wrist_Button a pinch may be aimed at. Called on a pinch edge only. */
   readonly getUiAim: () => UiAimTargets;
   /** False while another flow owns the non-dominant pinch (a teach step that uses it). */
   readonly canTalk: () => boolean;
@@ -153,16 +154,21 @@ export interface VoiceLoopDeps {
   readonly tasks?: TaskPort;
   /**
    * Picks the tier and runs Tier 2 chat (task 21.12). Defaults to a router with no agent, so chat and
-   * task requests get the "Hermes is unavailable" line.
+   * task requests get the "Hermes isn't connected" line.
    */
   readonly router?: TierRouterPort;
   /** Current light state by entity id, for the Spatial_Context. */
   readonly getLightState?: (entityId: string) => Pick<LightState, 'on' | 'brightnessPct'> | undefined;
   /** The Avatar's position and mode, for the Spatial_Context. */
   readonly getAvatarState?: () => AvatarStateReading | undefined;
+  /**
+   * "ask hermes" was said or tapped while Hermes is connected: open the Ask Hermes prompt on the
+   * System_Keyboard (task 33.9, Requirement 33.57). Absent, the command only logs.
+   */
+  readonly onHermesPrompt?: (mode: HermesPromptMode) => void;
 }
 
-/** Failures that send the user to Quick_Actions and the Hand_Keyboard. The model state covers the rest. */
+/** Failures that show in the Transcript_Bubble (mic not allowed, missing). The model state covers the rest. */
 function isMicFailure(reason: SpeechFailureReason): boolean {
   return reason !== 'model-loading' && reason !== 'model-failed' && reason !== 'stopped';
 }
@@ -181,7 +187,6 @@ export class VoiceLoop {
   /** Bumped by every new listening session, so a late answer for an old one cannot touch the panels. */
   private session = 0;
   private wasInSession = false;
-  private nowS = 0;
   private lastPartial = '';
   /** The device pointed at while the user talked: the finger may drift before the words are final. */
   private latchedDeictic: string | undefined;
@@ -209,13 +214,6 @@ export class VoiceLoop {
       deps.stt.onPartial((text) => this.onPartial(text)),
       deps.stt.onFailure((reason, message) => this.onSttFailure(reason, message)),
     );
-    deps.ui.setHandlers({
-      onMicOrb: () => {
-        if (!this.paused) this.apply(this.ptt.orbPress(this.nowS));
-      },
-      onQuickAction: (id) => void this.quickAction(id),
-      onKeyboardSubmit: (text) => void this.submitText(text, 'keyboard'),
-    });
     this.rebuildGrammar();
   }
 
@@ -235,16 +233,50 @@ export class VoiceLoop {
 
   // ---- Text in -----------------------------------------------------------------------------------
 
-  /** Typed text (Hand_Keyboard) or any caller with text. Resolves when the command has finished. */
+  /** Typed text (System_Keyboard) or any caller with text. Resolves when the command has finished. */
   submitText(text: string, source: TextSource = 'keyboard'): Promise<void> {
     return this.run(processText(text, this.processContext(source)), source);
   }
 
-  /** A Quick_Actions button. It shows its words as the transcript, then takes the same path. */
-  quickAction(actionId: string): Promise<void> {
-    const action = quickActionById(actionId);
-    if (action !== undefined) this.deps.ui.showFinal(action.text);
-    return this.run(processQuickAction(actionId, this.processContext('quick_action')), 'quick_action');
+  /**
+   * A tapped Commands_Tile row (task 33.9, Requirement 33.51): its phrase shows as the transcript,
+   * then takes the same `processText` path as speech.
+   */
+  runCommand(text: string): Promise<void> {
+    this.deps.ui.showFinal(text);
+    return this.submitText(text, 'quick_action');
+  }
+
+  /**
+   * Ask Hermes (task 33.9, Requirement 33.55): the typed text goes to Hermes as Tier 2 chat, with the
+   * thinking line while it answers and the reply in the Speech_Bubble. Not connected: the
+   * not-connected line, and nothing is sent.
+   */
+  async askHermes(text: string): Promise<void> {
+    const line = text.trim();
+    if (line === '') return;
+    if (!this.router.connected) {
+      this.deps.persona.say(HERMES_NOT_CONNECTED);
+      return;
+    }
+    await this.chat(line);
+  }
+
+  /**
+   * Give Hermes a task (task 33.9, Requirement 33.56): the typed text starts a Hermes task through the
+   * task flow (Task_Panel with steps and approvals). A task phrase keeps its kind; any other text is a
+   * `custom` task. Not connected: the not-connected line, and no task starts.
+   */
+  async startHermesTask(text: string): Promise<void> {
+    const line = text.trim();
+    if (line === '') return;
+    if (!this.router.connected) {
+      this.deps.persona.noteAction({ kind: 'task' });
+      this.deps.persona.say(HERMES_NOT_CONNECTED);
+      return;
+    }
+    const { intent } = processText(line, this.processContext('keyboard'));
+    await this.startTask(intent.type === 'task' ? intent.kind : 'custom', line);
   }
 
   /** The final recognised text of a push-to-talk. Also the seam for a fake microphone. */
@@ -257,14 +289,14 @@ export class VoiceLoop {
 
   /** The `voice` stage: push-to-talk edges and timing. */
   update(frame: FrameContext): void {
-    this.nowS = frame.time;
     if (frame.inSession && !this.wasInSession) this.onSessionStart();
     if (!frame.inSession && this.wasInSession) this.onSessionEnd();
     this.wasInSession = frame.inSession;
 
     const dominant = this.deps.getDominant();
     const edge = this.gesture.update(frame, dominant === 'right' ? 'left' : 'right', this.deps.canTalk(), this.deps.getUiAim);
-    if (edge === 'start') this.apply(this.ptt.pinchStart(frame.time));
+    // While paused no push-to-talk starts, and the machine is not moved, so the resume starts clean.
+    if (edge === 'start' && !this.paused) this.apply(this.ptt.pinchStart(frame.time));
     else if (edge === 'end') this.apply(this.ptt.pinchEnd(frame.time));
 
     if (this.ptt.active) {
@@ -350,10 +382,12 @@ export class VoiceLoop {
     if (session !== this.session) return;
     const reason = reasonOf(error);
     this.ptt.reset();
+    if (reason !== 'stopped') {
+      this.deps.logger.warn(`voice: could not start listening (${reason})`);
+      // The reason goes first, while Push_To_Talk is still on, so the Transcript_Bubble shows it.
+      if (isMicFailure(reason)) this.deps.ui.setFailure(reason);
+    }
     this.deps.ui.setListening(false);
-    if (reason === 'stopped') return;
-    this.deps.logger.warn(`voice: could not start listening (${reason})`);
-    if (isMicFailure(reason)) this.deps.ui.setFailure(reason);
   }
 
   private async endListening(): Promise<void> {
@@ -370,9 +404,8 @@ export class VoiceLoop {
   }
 
   private onPartial(text: string): void {
-    if (!this.ptt.active) return;
+    if (!this.ptt.active || text === this.lastPartial) return;
     this.deps.ui.showPartial(text);
-    if (text.trim() !== '' && text !== this.lastPartial) this.ptt.heardWords(this.nowS);
     this.lastPartial = text;
   }
 
@@ -443,7 +476,8 @@ export class VoiceLoop {
     const { action } = processed;
     this.deps.events.emit('intent:resolved', { intent: processed.intent.type });
     // Tier routing (Requirements 17.11, 20.1, 20.8, 20.9): deterministic intents stay Tier 1. Chat and
-    // tasks go to the agent only while it is connected, and otherwise get the "unavailable" line.
+    // tasks go to the agent only while it is connected, and otherwise get the "not connected" line
+    // (Requirement 33.18; Mock Mode has no agent).
     const route = this.router.route(action, source);
     if (route.tier === 2) {
       if (route.kind === 'chat') await this.chat(route.text);
@@ -528,7 +562,7 @@ export class VoiceLoop {
     const { persona } = this.deps;
     persona.noteAction({ kind: 'task' });
     if (this.deps.tasks === undefined) {
-      // No task flow: say so. The scripted task is never substituted for a missing Hermes.
+      // No task flow: say so. No stand-in task is ever substituted for a missing Hermes.
       persona.say(HERMES_UNAVAILABLE);
       return;
     }
@@ -607,6 +641,15 @@ export class VoiceLoop {
         persona.noteAction({ kind: 'ability' });
         return;
       }
+      case 'look_user':
+        abilities.lookAtUser();
+        persona.noteAction({ kind: 'ability' });
+        return;
+      case 'hermes_prompt':
+        // `run` routes it here only while Hermes is connected (otherwise the not-connected line).
+        if (this.deps.onHermesPrompt === undefined) logger.info('voice: "ask hermes" with no prompt to open');
+        else this.deps.onHermesPrompt(command.mode);
+        return;
       case 'remember_place': {
         const pointedId = this.deps.pointing.deictic;
         const pointed = pointedId === undefined ? undefined : this.deps.registry.byId(pointedId)?.position;
@@ -629,7 +672,7 @@ export class VoiceLoop {
       }
       case 'chat':
         // `run` routes chat through the tier router, so this is reached only without an agent.
-        persona.say(HERMES_UNAVAILABLE);
+        persona.say(HERMES_NOT_CONNECTED);
         return;
       case 'task':
         await this.startTask(command.taskKind, command.text);

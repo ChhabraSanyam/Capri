@@ -21,10 +21,10 @@ Capri is a static WebXR app (TypeScript, Vite, IWSDK, Three.js, `@pixiv/three-vr
 | Framework | IWSDK (ECS over Three.js), one `CapriSystem` as the frame entry point | IWSDK provides session handling, scene understanding components, UIKit panels, and the IWER emulator. Our logic stays in plain classes so it is not tied to ECS. |
 | Hosting | Static site on Vercel (Git integration or CLI) served from the user's own custom subdomain. Vite `base` = `/`. Security headers in `vercel.json`. | Requirement 30. No backend or bridge. A dedicated custom-subdomain origin isolates `localStorage` (credentials, saved light positions) to this app, so no other site shares the origin. The app is served from the root, so no repo-name base path is needed. Vercel issues HTTPS automatically, which WebXR requires. |
 | Home Assistant | REST (`POST /api/services/light/<service>`, `GET /api/states`) from the browser. WebSocket optional later. | REST is stateless and enough for MVD. The WebSocket handshake (`auth_required`, `auth`, `auth_ok`) is documented if state push is added. |
-| Hermes | `AgentBackend` interface. `MockAgentBackend` ships first. `LiveHermesAdapter` is written only after the investigate-then-ask gate. | Requirement 19. Transport (SSE, WebSocket, polling) is TBD. |
+| Hermes | `AgentBackend` interface. `MockAgentBackend` ships first. `LiveHermesAdapter` is written only after the investigate-then-ask gate. **Revised by Requirement 33.17:** `MockAgentBackend` is retired and Mock Mode runs with no agent. | Requirement 19. Transport (SSE, WebSocket, polling) is TBD. |
 | STT | `vosk-browser@0.0.8`, small English model, restricted dynamic grammar with the `fragments` strategy. Grammar changes recreate the recognizer (median 4 ms, max 157 ms on the Quest). The model and the microphone permission are both prepared on the 2D Entry_Page before Enter AR. | Requirement 15. The published typings expose `new model.KaldiRecognizer(sampleRate, grammar?: string)`. No `setGrammar` exists in the browser API. The spike showed a 26 s cold model load with a 75 ms frame gap, and that the first microphone prompt inside AR ended the session. |
 | Speech out | Pre-generated voice library (tier 1) for canned lines, speech bubble plus chirp (tier 3) for dynamic text such as Hermes replies. `speechSynthesis` (tier 2) stays in the code as a flag-guarded no-op that is off on Quest Browser. | Requirement 16. The spike found `speechSynthesis` missing on Quest Browser (`ttsUsable = false`). |
-| Free-form chat | Via Hand_Keyboard text to Tier 2 | Vosk with a restricted grammar cannot transcribe arbitrary speech (Requirement 15.1 forbids other STT). This is an inherent limit, not a bug. |
+| Free-form chat | Via Hand_Keyboard text to Tier 2. **Superseded by Requirements 33.52 to 33.56:** via System_Keyboard text from the Ask Hermes and Give Hermes a task tiles. | Vosk with a restricted grammar cannot transcribe arbitrary speech (Requirement 15.1 forbids other STT). This is an inherent limit, not a bug. |
 | Avatar locomotion | Glide or float with bob and lean. Procedural sit and perch poses. | Requirement 11.1 allows "walk or float". No walk-cycle clips are needed. |
 | Avatar scale | Normalised to a desk-companion height (default 0.6 m, tunable constant) from measured VRM height | Keeps swap-by-one-path (Requirement 10.3) working with any model, and makes sitting on a table plausible. |
 
@@ -80,6 +80,8 @@ Each assumption is validated at the stated point. On failure, the developer tell
 | A18 | The official `vosk-model-small-en-us-0.15` archive needs repackaging into the layout vosk-browser expects (including `conf/model.conf`). | M0 item (d) | Use a pre-packaged tarball from the vosk-browser demo, copied into our own assets (model license is Apache-2.0). |
 | A19 | The CSP in `vercel.json` (`script-src 'self' 'wasm-unsafe-eval'`, `worker-src 'self' blob:`, `connect-src 'self' https: wss: blob:`) is enough for IWSDK, three-vrm, and vosk-browser (inline blob worker plus WASM compile) to run on the deployed site. | First hosted deploy (task 19.6), checked on the Quest Browser and in desktop Chrome DevTools | Ship the policy as `Content-Security-Policy-Report-Only` first if a violation is found, then relax only the single offending directive (for example add `'unsafe-eval'` to `script-src` if the worker needs it) and record why. |
 | A20 | Vercel verifies the user's custom subdomain through a `CNAME` record at the user's DNS provider and then issues HTTPS automatically. | Task 19.6, after the user adds the record | Use the project's default `*.vercel.app` URL for testing and tell the user which record is missing. Do not hard-code any origin. |
+| A21 | Quest Browser grants the `unbounded` reference space in an `immersive-ar` session and then shows no room-scale boundary in passthrough. IWSDK 1.1.0 accepts `'unbounded'` as `ProjectReferenceSpaceType` in `iwsdk.config.json` (`@iwsdk/core/dist/project/types.d.ts`). | Task 33.1, from Meta Quest Browser WebXR documentation and a headset check | `local-floor` with the existing fallback order. Record the result in `docs/spike-report.md`. |
+| A22 | During an immersive session, focusing a DOM text input shows the Meta Quest system keyboard when `XRSession.isSystemKeyboardSupported` is true (the property exists in `@types/webxr`). | Task 33.9, from Meta Quest Browser documentation and a headset check | Hide the text-entry tiles and say so in the HUD_Menu (Requirement 33.54). |
 
 ## Architecture
 
@@ -174,6 +176,8 @@ const world = await World.create(container, {
 world.registerSystem(CapriSystem);
 enterButton.onclick = async () => { await audio.unlock(); world.launchXR(); };   // never calls getUserMedia, see Mic_Setup_Step
 ```
+
+**Revision (Requirements 33.1 to 33.5):** the reference space becomes `unbounded` (the Boundaryless_Space, A21) with `local-floor`, `local`, `viewer` as the fallback order, and a reference space `reset` handler re-resolves positions (see Headset feedback revisions).
 
 `iwsdk.config.json` holds the serializable parts. Executable behaviour stays in code, per IWSDK guidance. `handTracking` is required because the product is hands-only (Requirement 8.1). If the session request fails, the Setup_Page shows the failure reason and keeps the page usable.
 
@@ -450,7 +454,7 @@ interface GestureDef {
 **Follow and distance rules** (`domain/placement.ts`, pure):
 
 - `idleHome(head, floor?)`: point at 1.25 m from the head along the head's horizontal forward, rotated 25° to the user's side. Floor-anchored at `floor.y` when a `floor` Surface exists, otherwise floating at `head.y − 0.7` (Requirement 10.1).
-- `constrainIdlePosition(head, pos)`: projects the position onto the annulus [1.0 m, 1.5 m] from the head (Requirement 10.11). Idempotent.
+- `constrainIdlePosition(head, pos)`: projects the position onto the annulus [1.0 m, 1.5 m] from the head (Requirement 10.11). Idempotent. **Superseded by `personalSpace` (Requirements 33.29, 33.30) (see Headset feedback revisions).** The outward push is removed.
 - `visibilityPolicy`: a move destination must be within 3.0 m of the head horizontally and between floor and `head.y + 1.0`. A target outside is clamped to the nearest valid point and Capri points at the real target instead (Requirement 11.8).
 - Gentle follow: if the user turns more than 60° away for more than 3 s, Capri glides back to `idleHome`. In `away` mode (after "go away") the annulus rule is suspended and she idles at about 2.5 m, still visible.
 
@@ -520,7 +524,7 @@ interface DeviceStore {
 
 Known limit (A5): without anchors, localStorage positions are in the session's reference space, whose origin can differ between sessions. The UI therefore always shows a "Re-teach lights" action, and the README states the limit. Mock Mode places its three bulbs relative to the head at session start, so it never depends on persistence.
 
-**Teach flow** (`xr/hit-capture.ts`, `ui/panels/device-list`): state machine `Idle → AwaitPoint → Captured(pos) → PickEntity → Stored`. `capturePoint(ray, surfaces, hitTest?)` is pure geometry: nearest intersection of the pointing ray with plane quads and mesh boxes, else the environment-raycast hit, else a point 2.0 m along the ray with a Nearer/Farther adjuster. The user pinches with the dominant hand to capture, then picks a light entity from a floating list built from `SmartHomeBackend.listLights()`.
+**Teach flow** (`xr/hit-capture.ts`, `ui/panels/device-list`): state machine `Idle → AwaitPoint → Captured(pos) → PickEntity → Stored`. `capturePoint(ray, surfaces, hitTest?)` is pure geometry: nearest intersection of the pointing ray with plane quads and mesh boxes, else the environment-raycast hit, else a point 2.0 m along the ray with a Nearer/Farther adjuster. The user pinches with the dominant hand to capture, then picks a light entity from a floating list built from `SmartHomeBackend.listLights()`. **Revised by Requirements 33.11 to 33.16:** the environment hit-test comes first, the global mesh and boxes containing the head are excluded, a hit at the ray origin is never returned, and a visible ray and Teach_Reticle show the capture point (see Headset feedback revisions).
 
 **DeviceMarker** (`ui/device-marker.ts`): a hex ring and soft pulse (MeshBasicMaterial, additive), plus an invisible sphere hit volume. Highlight (brighter ring and a name label billboard) when it is the Pointed_Device (Requirement 13.4). Mock bulbs also get an emissive sphere plus a halo sprite that follows the simulated state, with no real-time lights.
 
@@ -576,7 +580,7 @@ interface SpeechRecognizerPort {
 - `setGrammar` debounces 150 ms, then `recognizer.remove()` and `new model.KaldiRecognizer(sampleRate, JSON.stringify(phrases))`. If push-to-talk is active, the swap is queued until it ends. The total from registry change to a live recognizer must stay under 1 s (Requirements 15.4, 15.5), checked by a fake-clock property test and measured on device (A11).
 - `setWords(false)`. Partial results feed the Transcript_Panel. `[unk]` results are handled in the resolver.
 
-**Push-to-talk** (`ui/panels/mic-orb`, `domain/speech-lang`): non-dominant pinch is hold-to-talk with 400 ms trailing capture. Poking the floating mic orb is tap-to-start, ending after 1.2 s of no partial-result change or at an 8 s cap. The orb is placed in the poke zone (see UI placement). The pinch is ignored while the non-dominant ray is busy on a panel (multipointer `getRayBusy()`).
+**Push-to-talk** (`ui/panels/mic-orb`, `domain/speech-lang`): non-dominant pinch is hold-to-talk with 400 ms trailing capture. Poking the floating mic orb is tap-to-start, ending after 1.2 s of no partial-result change or at an 8 s cap. The orb is placed in the poke zone (see UI placement). The pinch is ignored while the non-dominant ray is busy on a panel (multipointer `getRayBusy()`). **Superseded in part by Requirement 33.23:** the mic orb is removed and the hold-pinch is the only push-to-talk gesture. The Transcript_Panel is replaced by the Transcript_Bubble (Requirements 33.24 to 33.28).
 
 **Grammar_Builder** (`domain/speech-lang/grammar-builder.ts`, pure). All phrase groups come from one declarative table in `phrases.ts`, shared with the Intent_Parser so the two cannot drift.
 
@@ -628,9 +632,9 @@ type Intent =
 - `repeat` returns `repeat` (Requirement 15.14).
 - Anything that is not a supported ability or a light returns `unsupported` (Requirement 22.10).
 
-Hand_Keyboard text and Quick_Actions go through the same `parse → resolve` path as speech (Requirements 15.12, 15.13). Quick_Actions are a table of preset intents. The buttons are `Turn on`, `Turn off`, `Dim`, `Brighten` (each acts on the Pointed_Device, so a missing pointer yields the "which device?" question), `Come here`, `Sit on the desk`, `Go away`, and `Run my evening routine`.
+Hand_Keyboard text and Quick_Actions go through the same `parse → resolve` path as speech (Requirements 15.12, 15.13). Quick_Actions are a table of preset intents. The buttons are `Turn on`, `Turn off`, `Dim`, `Brighten` (each acts on the Pointed_Device, so a missing pointer yields the "which device?" question), `Come here`, `Sit on the desk`, `Go away`, and `Run my evening routine`. **Superseded by the Commands_Tile (Requirements 33.19, 33.49 to 33.51):** rows are generated from `phrases.ts` and there is no one-tap routine.
 
-**Hand_Keyboard** (`ui/hand-keyboard.ts`): a UIKit key grid (QWERTY, digits, space, backspace, submit) placed in the poke zone. It is an explicit control opened by pinch (Requirement 15.11). Submitting text passes it through the same `parse` function. Free-form text that parses to `unknown` goes to Tier 2 when Hermes is connected.
+**Hand_Keyboard** (`ui/hand-keyboard.ts`): a UIKit key grid (QWERTY, digits, space, backspace, submit) placed in the poke zone. It is an explicit control opened by pinch (Requirement 15.11). Submitting text passes it through the same `parse` function. Free-form text that parses to `unknown` goes to Tier 2 when Hermes is connected. **Superseded by the System_Keyboard (Requirements 33.52 to 33.54)** (see Headset feedback revisions).
 
 ### Speech output
 
@@ -795,7 +799,7 @@ All requests send `Authorization: Bearer <token>` and `Content-Type: application
 
 **MockHome** (`backends/mock/mock-home.ts`): in-memory reducer over three virtual bulbs (`mock.bulb_1..3`), state `{on, brightnessPct, rgb}`. It supports `on/off/brightness/color`, resolves after a short simulated latency, makes no network call, and exposes `state$` so the rendered bulbs update (Requirements 23.3, 23.4, 23.6). Default positions are head-relative at session start (yaw −35°, +5°, +40°, distance 1.8 to 2.2 m, varied heights) so every bulb is visible and reachable by pointing.
 
-**MockAgent** (`backends/mock/mock-agent.ts`): a scripted task "evening routine" with fake progress events at fixed offsets (for example 0%, 25%, 60%, 100%) that completes and reports, and a canned Tier 2 stand-in for `chat` (Requirements 23.5, 23.10).
+**MockAgent** (`backends/mock/mock-agent.ts`): a scripted task "evening routine" with fake progress events at fixed offsets (for example 0%, 25%, 60%, 100%) that completes and reports, and a canned Tier 2 stand-in for `chat` (Requirements 23.5, 23.10). **Retired by Requirements 33.17 and 33.18:** the module and its tests are removed and Mock Mode has no AgentBackend.
 
 **Hermes adapter** (`backends/hermes/`). The only fixed things are our own interface and its slots:
 
@@ -879,7 +883,7 @@ function resolveMode(creds: Partial<Credentials>, liveRequested: boolean): ModeS
 
 No stored credentials gives Mock Mode with zero configuration (Requirements 23.1, 23.2). In Mock Mode the Entry_Page shows only the mode notice, the Enable microphone step, the voice model progress, and `Enter AR`. The two steps are offered but never block `Enter AR` (Requirement 23.11). With Live requested and Home Assistant credentials incomplete, the result stays Mock and reports which credential is missing (Requirement 27.4). In Live mode with Hermes incomplete, `agent` is `absent`, so Tier 2 is unavailable and the scripted mock task is not substituted (it would misrepresent reality).
 
-**Status indicators** (`status.ts`, `ui/status-chips.ts`): three chips (Home Assistant, Hermes, mode) fed by `connection:changed`. States map one to one to distinct visuals (connected, connecting, failed, not configured). The chip updates on the same frame the event arrives (well within 0.5 s, Requirement 27.2). `Test connections` runs `testConnection()` on each configured backend only and reports one line per configured integration (Requirement 27.6). Each failure also gets an in-character Persona line (Requirement 27.5).
+**Status indicators** (`status.ts`, `ui/status-chips.ts`): three chips (Home Assistant, Hermes, mode) fed by `connection:changed`. States map one to one to distinct visuals (connected, connecting, failed, not configured). The chip updates on the same frame the event arrives (well within 0.5 s, Requirement 27.2). `Test connections` runs `testConnection()` on each configured backend only and reports one line per configured integration (Requirement 27.6). Each failure also gets an in-character Persona line (Requirement 27.5). **Revised by Requirements 33.35 and 33.45:** the chips are no longer always visible and render inside the HUD_Menu Status tile, with a voice chip added.
 
 ### UI panels and placement
 
@@ -894,6 +898,8 @@ No stored credentials gives Mock Mode with zero configuration (Requirements 23.1
 | Device list, Task_Panel | Ray pinch | 0.9 to 1.2 m | 0 m | |
 | Status chips | Look | 1.2 m | +0.25 m | Follows with threshold |
 | Speech_Bubble | Look | beside the Avatar's head | | Billboard |
+
+**Revised by Requirements 33.23 and 33.35 to 33.43:** the mic orb, the always-visible Quick_Actions, the Hand_Keyboard, the always-visible status chips, and the always-open device list are removed. A Wrist_Button and a world-fixed HUD_Menu (poke zone, placed once on open) take their place (see Headset feedback revisions).
 
 All distances stay within 0.35 to 0.8 m for poke panels and below 1.6 m for ray panels. Nothing requires standing or walking (Requirements 8.4, 8.5). The other panels are `Loading` (in-scene while the VRM loads), `Pause` (pause and resume, which also reacts to the session `visibilitychange`), and the dev-only frame-time overlay (`?perf=1`).
 
@@ -910,6 +916,70 @@ Target 72 fps (13.9 ms). Order of levers if over budget, measured with the overl
 5. Halve VFX caps through `QualityGovernor`.
 
 Hot paths (`pointing`, `hands`, `animator`, `vfx`) reuse vectors and typed arrays and allocate nothing per frame. **Depth occlusion (bonus).** Depth occlusion works on Quest (spike: 2411 of 2412 frames had depth data, and a stand-in hid behind the user's hand). It is kept as a bonus behind `featureFlags.depthOcclusion`. When the flag is on, `xr.features.depthSensing` is requested and the Avatar materials use the depth occlusion path. When off (the default until the frame time is measured with it on), depth sensing is not requested. Depth never gates any other feature (Requirement 29.11). Physics (Havok) is excluded from the bundle by `features.physics: false`.
+
+### Headset feedback revisions (Requirement 33)
+
+Headset testing produced the changes below (task 33). Each row replaces earlier behaviour. The earlier criteria stay in `requirements.md` marked as superseded.
+
+| Earlier behaviour | New behaviour | Requirements | Main modules |
+|---|---|---|---|
+| `local-floor` reference space, boundary shown | Boundaryless_Space (`unbounded`) with `local-floor` fallback, `reset` handling | 33.1 to 33.5 | `iwsdk.config.json`, `xr/session.ts`, `persistence/anchor-store.ts`, `domain/devices/restore.ts`, `domain/devices/mock-bulb-layout.ts`, `xr/floor-tracker.ts` |
+| Hand joint dots always on, dev and hand test panels on in DEV builds | Shown only with `?hands=1`, `?dev=1`, `?handtest=1` | 33.6 to 33.10 | new `domain/dev-query.ts`, `xr/hand-skeleton.ts`, `ui/dev-panel.ts`, `ui/hand-test-panel.ts`, `main.ts` |
+| Teach capture with no pointer, hits land at the hand | Teach ray and Teach_Reticle, hit-test first, safe box rules | 33.11 to 33.16 | `domain/pointing/capture.ts`, `xr/hit-capture.ts`, new `ui/teach-pointer.ts`, `ui/teach-controller.ts` |
+| MockAgent scripted routine and canned chat | No AgentBackend in Mock Mode, "Not configured", not-connected line | 33.17 to 33.20 | `backends/select-backend.ts`, `backends/agent-slot.ts`, `app/agent-wiring.ts`, `domain/contract/tier-router.ts`, `backends/mock/mock-agent.ts` (deleted) |
+| Hair floats | Spring bones fixed, or frozen in rest pose as fallback | 33.21, 33.22 | `avatar/avatar-loader.ts`, `avatar/avatar-fit.ts`, `avatar/procedural-animator.ts`, `config/constants.ts` |
+| Mic orb, large Transcript_Panel | Hold-pinch only, Transcript_Bubble above Capri | 33.23 to 33.28 | `ui/panels/mic-orb.ts` and `ui/panels/transcript.ts` (removed), new `ui/transcript-bubble.ts`, `domain/voice-ui-model.ts`, new `domain/bubble-stack.ts`, `ui/speech-bubble.ts` |
+| Idle annulus 1.0 to 1.5 m pushes Capri away | Comfort_Radius 0.5 m step-aside, room containment | 33.29 to 33.34 | `domain/placement.ts`, `domain/follow.ts`, `domain/destination-visibility.ts`, new `domain/room-bounds.ts`, `avatar/locomotion.ts` |
+| Always-visible chips, Quick_Actions, keyboard button, teach orb, device list | Wrist_Button and HUD_Menu | 33.35 to 33.48 | new `domain/hud/hud-model.ts`, `domain/hud/palm-facing.ts`, `ui/hud/wrist-button.ts`, `ui/hud/hud-menu.ts`; removed `ui/teach-orb.ts`, `domain/devices/teach-orb.ts`, `ui/panels/quick-actions.ts`, always-on `ui/panels/status-chips-panel.ts` |
+| Quick_Actions table, custom Hand_Keyboard | Commands_Tile generated from `phrases.ts`, System_Keyboard, Ask Hermes and Give Hermes a task | 33.49 to 33.59 | new `domain/commands/command-catalog.ts`, new `ui/system-keyboard.ts`, `domain/speech-lang/phrases.ts`, `domain/speech-lang/process-text.ts`, `app/task-flow.ts`; removed `ui/hand-keyboard.ts`, `domain/keyboard-model.ts` |
+
+**Boundaryless session.** `iwsdk.config.json` sets `referenceSpace.type` to `unbounded` and `fallbackOrder` to `['local-floor', 'local', 'viewer']`, after task 33.1 confirms from Meta's Quest Browser WebXR documentation that `unbounded` is boundaryless in passthrough (A21). `xr/session.ts` logs the granted type and subscribes to the reference space `reset` event, which it forwards as a `space:reset` event on `AppEvents`. Handlers run within 0.5 s: anchored devices re-read their anchor poses, records without an anchor get `approximate: true` and appear under "Re-teach lights" in the Lights tile, the Mock bulbs are laid out again from the current head pose, and the idle home is recomputed. Standing height still comes from the floor-labelled plane (`xr/floor-tracker.ts`, Requirement 11.11).
+
+**Dev queries.** `parseDevQuery(search: string): DevFlags` in `domain/dev-query.ts` is pure and returns `{ hands, dev, handtest }`. Each flag is true only when its parameter equals `1`. The result no longer depends on `import.meta.env.DEV`, so the dev server looks like production by default. Existing flags (`?fakehands`, `?perf=1`) keep their behaviour.
+
+**Teach pointer and capture.** The revised capture keeps one pure function:
+
+```ts
+function capturePoint(
+  ray: Ray, surfaces: readonly Surface[], head: Vec3,
+  hitTest?: Vec3, fallbackDistanceM?: number,
+): CapturedPoint;   // source: 'hit-test' | 'surface' | 'fallback'
+```
+
+Order: (1) the environment hit-test against the real room mesh when it is finite and more than `POINT_CAPTURE.minAlongRayM` (0.05 m) ahead of the fingertip; (2) the nearest box of a labelled plane, skipping surfaces labelled `global mesh` or `other` from a mesh, every box that contains `head`, and any intersection with `t <= 0.05 m` (a ray that starts inside a box is not a hit); (3) the 2.0 m fallback with the Nearer/Farther adjuster. `ui/teach-pointer.ts` draws a two-vertex line from `indexTipSpaces` and a ring reticle with `MeshBasicMaterial`, updates both in place every frame while the teach flow is in `AwaitPoint`, and allocates nothing per frame. A dominant pinch captures the reticle position.
+
+**Mock Mode without an agent.** `selectAgentBackend` returns no backend in Mock Mode, `AgentSlot` reports `not_configured`, and the Hermes chip reads "Not configured". `TierRouter` returns a `hermes_not_connected` situation for task intents, Ask Hermes prompts, and typed chat when no agent is connected, and Persona speaks one in-character line pointing at the Setup_Page. `MockAgentBackend` and its tests are deleted. The `AgentBackend` interface, `TaskFlow`, and the Task_Panel stay for live Hermes.
+
+**Hair.** Task 33.5 checks the likely causes in this order: spring bones initialised before the 0.6 m scale is applied (fix: apply the scale, then call the spring bone manager's `setInitState()` and `reset()`), joints reset in the wrong order, gravity and stiffness tuned for the unscaled root, `VRMUtils.combineSkeletons` or `removeUnnecessaryJoints` removing spring joints, the spring update running before the pose write or outside `vrm.update(dt)`, and frame-time spikes (fix: clamp the spring `dt`). If no fix lands quickly, `AVATAR_HAIR.freezeSpringBones` in `config/constants.ts` skips the spring update and holds the rest pose (Requirement 33.22).
+
+**Transcript_Bubble.** `domain/voice-ui-model.ts` gains the bubble states `hidden`, `listening(level)`, `partial(text)`, `final(text)`, and `notice(reason)`. `final` hides 3 s after the result is handled and `notice` hides after 2.5 s. `domain/bubble-stack.ts` is pure: given the Speech_Bubble rectangle (or none) and the Transcript_Bubble size, it returns an offset above the speech bubble, or replaces the transcript when both cannot fit. Both bubbles billboard toward the head.
+
+**Personal space and room containment.** `personalSpace(head, pos)` in `domain/placement.ts` returns `pos` unchanged when the horizontal head distance is greater than `COMFORT_RADIUS_M` (0.5 m), and otherwise steps sideways, perpendicular to the head-to-Avatar direction on the user's side away from the gaze line, to just outside the radius. `domain/room-bounds.ts` is pure:
+
+```ts
+interface RoomView { walls: readonly WallQuad[]; bounds?: { min: Vec3; max: Vec3 } }   // wall planes and the room mesh box
+function insideRoom(head: Vec3, candidate: Vec3, room: RoomView): boolean;
+function pullIntoRoom(head: Vec3, candidate: Vec3, room: RoomView, out?: MutableVec3): Vec3;
+```
+
+`insideRoom` is true when the head-to-candidate segment crosses no wall quad (with a 0.15 m inset) and the candidate lies inside `bounds`. `pullIntoRoom` moves the candidate along the segment toward the head until `insideRoom` holds. The idle home, every move, sit, and perch destination, and `visibilityPolicy` pass through it. The re-home rule stays (more than 60° away for more than 3 s), and the 0.9 m/s glide cap is unchanged. The room mesh box is used here even though capture skips it.
+
+**Wrist_Button and HUD_Menu.** `domain/hud/palm-facing.ts` computes the palm normal from the wrist and metacarpal joints and reports `facing` when the angle to the head direction is at most 45°. `ui/hud/wrist-button.ts` shows a small glowing disc on the non-dominant wrist while `facing`, and a dominant index-tip poke (existing `panel-press.ts` rules) toggles the HUD. No palm-up pinch is used, because Quest reserves it for the system menu. `domain/hud/hud-model.ts` is a pure state machine: `closed`, `open(tile, placedPose, lastInteractionAt)`. Opening computes the pose once with `ui-placement.ts` kind `hud` (poke zone, about 0.5 m forward, 0.2 m below the eyes) and keeps it fixed in the world. Any tile interaction refreshes `lastInteractionAt`. The model closes after 30 s without interaction, when a tile starts a flow (teach, keyboard prompt, a command), or on Close. `ui/hud/hud-menu.ts` registers its rectangle with `domain/pointing/ui-aim.ts` so ray-pinch works, and accepts poke. Tiles: Status (mode, Home Assistant, Hermes, voice chips), Lights (Teach a light, Re-teach lights, registered lights list), Commands, Ask Hermes, Give Hermes a task, Close. The live Task_Panel with approvals, the loading card, and the hand-lost panel are independent of the HUD.
+
+**Commands_Tile.** `buildCommandCatalog(table: PhraseTable, registry: readonly DeviceRecord[]): CommandRow[]` in `domain/commands/command-catalog.ts` is pure:
+
+```ts
+interface CommandRow {
+  group: 'lights' | 'capri' | 'hermes';
+  label: string;            // "Turn off"
+  say: string;              // exact phrase, e.g. "turn that off" or "turn off <light name>"
+  runText?: string;         // present only when the command needs no parameter
+}
+```
+
+Rows cover every command type in `phrases.ts`: lights (turn on, turn off, dim, brighten, set to a colour, with deictic and named forms), Capri (come here, go away, sit on the desk, table, or couch, perch, look at me, point at that, remember this as a name, set a timer for N minutes), and Hermes (ask hermes, task phrases). Tapping a row with `runText` calls `processText(runText)` (the same path as speech) or `processQuickAction`. Task phrases have no `runText`, so there is no one-tap routine. `phrases.ts` gains `ask hermes`, which parses to `{ type: 'hermes_prompt', mode: 'ask' }`.
+
+**System_Keyboard.** `ui/system-keyboard.ts` keeps one off-screen DOM `<input>`. When a text-entry tile opens, it checks `session.isSystemKeyboardSupported` (A22), focuses the input to show the Quest system keyboard, and on Enter passes the text to one of three targets: `processText` (typed commands, same path as speech), `AgentBackend.chat` (Ask Hermes, reply in the Speech_Bubble), or `TaskFlow.start` (Give Hermes a task, Task_Panel with steps and approvals). When the keyboard is unsupported, the text-entry tiles are hidden and the HUD says text entry is unavailable. While Hermes is not connected the two Hermes tiles read "Set up Hermes on the 2D page" and Persona says so in character. The Setup_Page Hermes section gains one plain sentence on what Hermes does in Capri.
 
 ## Data Models
 
@@ -1089,6 +1159,8 @@ The prework produced about 75 testable criteria. Consolidations applied: the thr
 
 **Validates: Requirements 10.11**
 
+Superseded by Property 47 (Requirement 33). The test for this property is retired with `constrainIdlePosition`.
+
 ### Property 5: Look direction is clamped
 
 *For any* target direction in the torso frame, the clamped head yaw is within ±70° and the clamped pitch within ±40°, and a direction already inside the limits is returned unchanged.
@@ -1143,6 +1215,8 @@ The prework produced about 75 testable criteria. Consolidations applied: the thr
 
 **Validates: Requirements 12.2**
 
+Revised by Property 48 (Requirement 33): the hit-test now comes first and some boxes are excluded.
+
 ### Property 14: Grammar completeness
 
 *For any* device registry and place list, the built grammar contains `"[unk]"`, every fixed phrase of every group, and every registered device name and alias in its spoken form (after lexicon filtering), has no duplicates, and serialises to a JSON array of strings.
@@ -1172,6 +1246,8 @@ The prework produced about 75 testable criteria. Consolidations applied: the thr
 *For any* text, the resolved action from the Hand_Keyboard path equals the resolved action from the speech path for the same text.
 
 **Validates: Requirements 15.12**
+
+After Requirement 33 the same property applies to System_Keyboard text (Requirement 33.53).
 
 ### Property 19: Pointing selection geometry
 
@@ -1317,6 +1393,8 @@ The prework produced about 75 testable criteria. Consolidations applied: the thr
 
 **Validates: Requirements 17.11, 20.1, 20.8, 20.9**
 
+After Requirement 33, the not-connected case (including Mock Mode, which has no agent) yields the `hermes_not_connected` line for task intents, Ask Hermes prompts, and typed chat (Requirement 33.18).
+
 ### Property 43: Task model monotonicity and transport conformance
 
 *For any* sequence of task events, progress never decreases, terminal states are final, and the same event sequence delivered by the SSE, WebSocket, and polling fake transports produces identical task states.
@@ -1340,6 +1418,48 @@ The prework produced about 75 testable criteria. Consolidations applied: the thr
 *For any* head pose, every placed panel is within its zone distance (poke panels 0.35 m to 0.8 m, ray panels up to 1.6 m) and inside the forward view cone, so no interaction requires walking.
 
 **Validates: Requirements 8.4, 8.5**
+
+### Property 47: Personal space holds position and steps aside
+
+*For any* head position and any Avatar position, `personalSpace` returns the position unchanged when the horizontal head distance is greater than 0.5 m; otherwise it returns a position whose horizontal head distance is at least 0.5 m and whose displacement is perpendicular to the head-to-Avatar direction within 15°; and applying it again changes nothing.
+
+**Validates: Requirements 33.29, 33.30**
+
+### Property 48: Point capture never lands at the hand
+
+*For any* pointing ray, head position, surface set (including a global mesh box and boxes that contain the ray origin or the head), and optional hit-test point, the captured point lies more than 0.05 m along the ray from its origin; it equals the hit-test point whenever that point is finite and more than 0.05 m ahead; it never comes from a global or unlabelled mesh or from a box containing the head; and with no valid hit it lies 2.0 m along the ray, or at the adjusted fallback distance.
+
+**Validates: Requirements 12.2, 33.12, 33.13, 33.14, 33.15, 33.16**
+
+### Property 49: Destinations stay inside the room
+
+*For any* head position, set of wall quads, room bounds, and candidate position, `pullIntoRoom` returns a point on the segment from the head to the candidate for which `insideRoom` is true, and returns the candidate unchanged when `insideRoom` is already true for it.
+
+**Validates: Requirements 33.32, 33.33**
+
+### Property 50: Commands catalog matches the grammar
+
+*For any* device registry, `buildCommandCatalog` contains at least one row for every command type in the phrase table, each row belongs to exactly one of the Lights, Capri, and Hermes groups, every row with `runText` resolves through `processText` to the same action as the spoken phrase, and no task row has `runText`.
+
+**Validates: Requirements 33.19, 33.49, 33.50, 33.51**
+
+### Property 51: HUD toggling, fixed placement, and auto-hide
+
+*For any* timeline of Wrist_Button pokes, tile interactions, flow starts, head poses, and clock ticks, the HUD_Menu is open exactly when the last toggle opened it and no inactivity of 30 s, flow start, or Close has happened since; and while it stays open its pose equals the pose computed at the moment it opened.
+
+**Validates: Requirements 33.38, 33.40, 33.42, 33.43**
+
+### Property 52: Dev query flags are explicit
+
+*For any* URL query string, `parseDevQuery` sets `hands`, `dev`, and `handtest` to true exactly when the matching parameter is present with the value `1`, independent of parameter order, other parameters, and the build mode.
+
+**Validates: Requirements 33.6, 33.7, 33.8, 33.9, 33.10**
+
+### Property 53: Transcript_Bubble states and stacking
+
+*For any* timeline of push-to-talk starts and ends, microphone levels, partial and final results, failure reasons, and clock ticks, the Transcript_Bubble shows `listening` while push-to-talk is active and no text has arrived, shows the latest result text after a partial or final result, is hidden no later than 3 s after a final result is handled, and shows a failure reason for 2.5 s; and *for any* Speech_Bubble rectangle, the stacked Transcript_Bubble rectangle does not overlap it.
+
+**Validates: Requirements 33.24, 33.25, 33.26, 33.27, 33.28**
 
 ## Open Items
 

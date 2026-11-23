@@ -59,7 +59,7 @@ describe('Mic_Setup_Step', () => {
     const step = createMicStep({ elements: page.elements, mediaDevices, storage });
     expect(page.status.textContent).toContain('not requested');
     expect(page.hint.hidden).toBe(false);
-    expect(page.hint.textContent).toContain('quick buttons');
+    expect(page.hint.textContent).toContain('Commands list');
 
     expect(await step.request()).toBe('granted');
     expect(calls).toEqual([{ audio: true }]);
@@ -80,7 +80,7 @@ describe('Mic_Setup_Step', () => {
     expect(await step.request()).toBe('denied');
     expect(storage.data.get(MIC_STORAGE_KEY)).toBe('denied');
     expect(page.hint.textContent).toContain('blocked');
-    expect(page.hint.textContent).toContain('hand keyboard');
+    expect(page.hint.textContent).toContain('Quest keyboard');
     expect(page.button.disabled).toBe(false);
   });
 

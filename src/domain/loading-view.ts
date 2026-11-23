@@ -130,14 +130,14 @@ function voiceModelLine(model: VoiceModelSnapshot): LoadingLine {
     case 'ready':
       return { text: 'Voice commands: ready', state: 'done' };
     case 'failed':
-      return { text: 'Voice commands: off, use the quick buttons', state: 'failed' };
+      return { text: 'Voice commands: off, use the Commands list', state: 'failed' };
   }
 }
 
-/** While the voice model is still on its way, the quick buttons are the way to talk to her. */
+/** While the voice model is still on its way, the Commands list is the way to talk to her. */
 function voiceHint(model: VoiceModelSnapshot | undefined): string | undefined {
   if (model === undefined || model.status === 'ready' || model.status === 'failed') return undefined;
-  return 'The quick buttons work while voice loads.';
+  return 'The Commands list in the wrist menu works while voice loads.';
 }
 
 /** The title, detail, and status lines for the current load state. */

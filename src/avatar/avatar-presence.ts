@@ -5,10 +5,14 @@
  *  - loads the VRM once at startup (hidden), so she is ready when the session starts;
  *  - on session start, spawns her at `idleHome` (on the floor-labelled plane when there is one,
  *    otherwise floating at `head.y - 0.7`), waves, and looks at the user's head;
- *  - each frame keeps her inside the 1.0 to 1.5 m idle annulus (`constrainIdlePosition`), turns her
- *    body toward the user, and lowers her to the floor if a floor plane appears after she spawned;
+ *  - each frame holds her spot when the user comes closer, and only inside the 0.5 m Comfort_Radius
+ *    glides her sideways out of the way (`stepAsideInRoom`, task 33.7); turns her body toward the
+ *    user, and lowers her to the floor if a floor plane appears after she spawned;
+ *  - keeps her inside the room: every home and step-aside spot passes the wall and room-box check
+ *    (`room-bounds.ts`), and a spot that fails later (a wall detected after she got there, or the
+ *    user moving so a wall is between them) glides her back inside;
  *  - when the user stays turned more than 60 degrees away for more than 3 s, glides her to a fresh
- *    `idleHome`;
+ *    idle home inside the room (`homeInRoom`);
  *  - if the VRM fails to load, shows a speech bubble that names the failure and keeps the session
  *    running (unless `failureBubble` is false because the loading panel shows it, task 27.1);
  *  - reports the VRM download progress, the ready model, and a failure to `loadObserver`.
@@ -35,21 +39,26 @@ import type { AvatarLoadObserver } from '../app/loading-status.js';
 import type { Logger } from '../app/logger.js';
 import type { Rng } from '../app/rng.js';
 import { AVATAR_PRESENCE, IDLE_PLACEMENT, LOCOMOTION } from '../config/constants.js';
+import {
+  createRoomView,
+  homeInRoom,
+  insideRoom,
+  pullIntoRoom,
+  roomViewFrom,
+  stepAsideInRoom,
+  type RoomView,
+} from '../domain/room-bounds.js';
+import type { Surface } from '../domain/surfaces.js';
 import { awayAngleDeg, FollowMonitor } from '../domain/follow.js';
 import type { Vec3 } from '../domain/geometry.js';
 import { capPlanarSpeed } from '../domain/glide.js';
-import {
-  constrainIdlePosition,
-  idleHome,
-  type HeadPose,
-  type MutableVec3,
-} from '../domain/placement.js';
+import { idleHome, type HeadPose, type MutableVec3 } from '../domain/placement.js';
 import { createSpring, springStep } from '../domain/spring.js';
 import type { AvatarMode } from '../domain/avatar-state.js';
 import { idleBaseAllowedInMode } from '../domain/idle-base-gate.js';
 import { SpeechBubble } from '../ui/speech-bubble.js';
 import { makeAvatarLoadError, type AvatarLoadError } from './avatar-fit.js';
-import { loadAvatar, type Avatar, type AvatarLoadResult } from './avatar-loader.js';
+import { loadAvatar, settleSpringBones, type Avatar, type AvatarLoadResult } from './avatar-loader.js';
 import type { BodyPoseSource } from './avatar-controller.js';
 import { GestureRouter, type ClipModule } from './gesture-router.js';
 import { ProceduralAnimator } from './procedural-animator.js';
@@ -62,6 +71,8 @@ export interface AvatarPresenceDeps {
   readonly depthOcclusion: boolean;
   /** World Y of the floor-labelled plane, or undefined while none is known. */
   readonly getFloorY: () => number | undefined;
+  /** The detected Surfaces, for the room check (walls and the room mesh box). None when omitted. */
+  readonly getSurfaces?: () => readonly Surface[];
   /** Test seam. Defaults to `loadAvatar`. */
   readonly load?: () => Promise<AvatarLoadResult>;
   /**
@@ -95,6 +106,9 @@ export interface AvatarPresenceDeps {
 type Phase = 'loading' | 'ready' | 'failed';
 
 const TWO_PI = Math.PI * 2;
+const NO_SURFACES: readonly Surface[] = [];
+/** A step-aside glide ends this close to its spot and snaps to it, so she does not step again at once. */
+const STEP_ARRIVE_WITHIN_M = 0.005;
 
 /** Smallest signed angle that turns `from` into `to`, in (-PI, PI]. */
 function angleDelta(from: number, to: number): number {
@@ -120,6 +134,7 @@ export class AvatarPresence {
   private following = false;
   private disposed = false;
   private headKnown = false;
+  private rehomePending = false;
 
   // Reused every frame.
   private readonly headPos: MutableVec3 = { x: 0, y: 0, z: 0 };
@@ -128,6 +143,11 @@ export class AvatarPresence {
   private readonly pos: MutableVec3 = { x: 0, y: 0, z: 0 };
   private goalX = 0;
   private goalZ = 0;
+  /** Smoothing time and arrival distance of the glide in progress (re-home or step aside). */
+  private glideSmoothS: number = AVATAR_PRESENCE.follow.glideSmoothTimeS;
+  private arriveWithinM: number = AVATAR_PRESENCE.follow.arriveWithinM;
+  private readonly room = createRoomView();
+  private readonly spot: MutableVec3 = { x: 0, y: 0, z: 0 };
   /** Float height used while there is no floor plane. */
   private floatY = 0;
   private readonly xSpring = createSpring();
@@ -202,7 +222,21 @@ export class AvatarPresence {
       this.spawn();
       return;
     }
+    if (this.rehomePending) {
+      this.rehomePending = false;
+      this.rehome();
+      return;
+    }
     this.move(frame.dt);
+  }
+
+  /**
+   * Recompute the idle home from the next head pose (task 33.1, Requirement 33.3). After a reference
+   * space reset her position is in the old origin, so she is put back at her idle home in front of
+   * the user, without a new wave. Ignored while she is not in the room.
+   */
+  recomputeHome(): void {
+    if (this.spawned) this.rehomePending = true;
   }
 
   /** The `animator` stage: bones, expressions, and `vrm.update`. */
@@ -323,8 +357,7 @@ export class AvatarPresence {
     const avatar = this.avatar;
     const animator = this.router;
     if (avatar === undefined || animator === undefined) return;
-    const home = idleHome(this.head, this.floorRef());
-    const placed = constrainIdlePosition(this.head, home);
+    const placed = homeInRoom(this.head, this.floorRef(), this.roomView());
     this.pos.x = placed.x;
     this.pos.y = placed.y;
     this.pos.z = placed.z;
@@ -343,6 +376,7 @@ export class AvatarPresence {
     this.follow.reset();
     this.deps.body?.reset();
     this.applyTransform();
+    settleSpringBones(avatar.vrm); // hair at rest at the new spot, no whip from the old one (task 33.5)
     this.pivot.visible = true;
     avatar.root.visible = true;
     animator.setLookTarget('user');
@@ -352,7 +386,33 @@ export class AvatarPresence {
     this.spawned = true;
   }
 
+  /** Put her at the idle home for the current head pose, as on spawn but with no wave (task 33.1). */
+  private rehome(): void {
+    const placed = homeInRoom(this.head, this.floorRef(), this.roomView());
+    this.pos.x = placed.x;
+    this.pos.y = placed.y;
+    this.pos.z = placed.z;
+    this.goalX = placed.x;
+    this.goalZ = placed.z;
+    this.floatY = this.headPos.y - IDLE_PLACEMENT.floatDropM;
+    this.xSpring.value = placed.x;
+    this.xSpring.velocity = 0;
+    this.zSpring.value = placed.z;
+    this.zSpring.velocity = 0;
+    this.ySpring.value = placed.y;
+    this.ySpring.velocity = 0;
+    this.yawSpring.value = this.yawToHead();
+    this.yawSpring.velocity = 0;
+    this.following = false;
+    this.follow.reset();
+    // A trip or perch in progress targets old-origin positions, so the abilities let go of her.
+    this.deps.body?.reset();
+    this.applyTransform();
+    if (this.avatar !== undefined) settleSpringBones(this.avatar.vrm); // task 33.5
+  }
+
   private endSession(): void {
+    this.rehomePending = false;
     this.bubble.hide();
     this.follow.reset();
     this.following = false;
@@ -383,41 +443,71 @@ export class AvatarPresence {
     }
 
     if (!this.following && this.follow.update(step, awayAngleDeg(this.head, this.pos))) {
-      const home = idleHome(this.head, this.floorRef());
-      this.goalX = home.x;
-      this.goalZ = home.z;
+      // Out of view for the follow timeout (33.31): the only time she re-homes. Allocates once.
+      const home = homeInRoom(this.head, this.floorRef(), this.roomView());
+      this.startGlide(home.x, home.z, cfg.follow.glideSmoothTimeS, cfg.follow.arriveWithinM);
       this.floatY = home.y;
-      this.following = true;
+    } else if (!this.following) {
+      this.keepSpace();
     }
 
     if (this.following) {
       const fromX = this.xSpring.value;
       const fromZ = this.zSpring.value;
-      springStep(this.xSpring, this.goalX, cfg.follow.glideSmoothTimeS, step);
-      springStep(this.zSpring, this.goalZ, cfg.follow.glideSmoothTimeS, step);
+      springStep(this.xSpring, this.goalX, this.glideSmoothS, step);
+      springStep(this.zSpring, this.goalZ, this.glideSmoothS, step);
       // Same 0.9 m/s cap as the ability glide: an uncapped spring peaks near 1.7 m/s on a long follow.
       capPlanarSpeed(this.xSpring, this.zSpring, fromX, fromZ, LOCOMOTION.maxSpeedMps, step);
       this.pos.x = this.xSpring.value;
       this.pos.z = this.zSpring.value;
-      if (Math.hypot(this.goalX - this.pos.x, this.goalZ - this.pos.z) < cfg.follow.arriveWithinM) {
+      if (Math.hypot(this.goalX - this.pos.x, this.goalZ - this.pos.z) < this.arriveWithinM) {
         this.following = false;
+        if (this.arriveWithinM === STEP_ARRIVE_WITHIN_M) {
+          // A step aside ends exactly on its spot (at most 5 mm away), outside the Comfort_Radius.
+          this.pos.x = this.xSpring.value = this.goalX;
+          this.pos.z = this.zSpring.value = this.goalZ;
+          this.xSpring.velocity = 0;
+          this.zSpring.velocity = 0;
+        }
       }
     }
 
     const floorY = this.deps.getFloorY();
     this.pos.y = springStep(this.ySpring, floorY ?? this.floatY, cfg.heightSmoothTimeS, step);
 
-    // Keep the idle distance (10.11). The spring state follows the constrained position, so the
-    // two never fight.
-    constrainIdlePosition(this.head, this.pos, this.pos);
-    this.xSpring.value = this.pos.x;
-    this.zSpring.value = this.pos.z;
-
     const goalYaw = this.yawToHead();
     const yawGoal = this.yawSpring.value + angleDelta(this.yawSpring.value, goalYaw);
     springStep(this.yawSpring, yawGoal, cfg.bodyTurnSmoothTimeS, step);
     this.applyTransform();
     body?.syncIdle(this.pos.x, this.pos.y, this.pos.z, this.yawSpring.value);
+  }
+
+  /**
+   * Personal space and room containment while she idles (33.29, 33.30, 33.32, 33.33). She holds her
+   * spot unless it fails the room check (glide back inside) or the user's head is within the
+   * Comfort_Radius (glide sideways out of the way). Allocates nothing.
+   */
+  private keepSpace(): void {
+    const room = this.roomView();
+    const head = this.head;
+    const target: Vec3 = insideRoom(head.position, this.pos, room)
+      ? stepAsideInRoom(head, this.pos, room, this.spot)
+      : pullIntoRoom(head.position, this.pos, room, this.spot);
+    if (target === this.pos) return;
+    this.startGlide(target.x, target.z, LOCOMOTION.glideSmoothTimeS, STEP_ARRIVE_WITHIN_M);
+  }
+
+  private startGlide(x: number, z: number, smoothS: number, arriveWithinM: number): void {
+    this.goalX = x;
+    this.goalZ = z;
+    this.glideSmoothS = smoothS;
+    this.arriveWithinM = arriveWithinM;
+    this.following = true;
+  }
+
+  /** The room as the Surfaces describe it now, refilled into a reused buffer. */
+  private roomView(): RoomView {
+    return roomViewFrom(this.deps.getSurfaces?.() ?? NO_SURFACES, this.room);
   }
 
   /**

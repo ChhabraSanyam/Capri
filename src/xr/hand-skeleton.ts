@@ -3,7 +3,8 @@
  * hand. Parented to the player rig, because the joint positions are in reference-space coordinates.
  *
  * IWSDK's own hand visual is a faint outline, which is easy to miss in passthrough. This overlay
- * is the plain, always-visible skeleton from Requirement 9.5.
+ * is a debugging aid: `capri-system.ts` creates it only when the page is opened with `?hands=1`
+ * (task 33.2, Requirements 33.6, 33.7). Without the query no joint markers exist at all.
  *
  * Allocation: every object is created in the constructor. `sync` only writes into reused buffers.
  */

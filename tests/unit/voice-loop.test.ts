@@ -47,37 +47,15 @@ describe('PushToTalk', () => {
     expect(ptt.tick(5.4)).toBe('stop');
   });
 
-  it('ends an orb session 1.2 s after the last words, but never before words were heard', () => {
+  it('keeps listening for as long as the pinch is held, with no time cap (33.23)', () => {
     const ptt = new PushToTalk();
-    expect(ptt.orbPress(0)).toBe('start');
-    expect(ptt.tick(3)).toBeUndefined();
-    ptt.heardWords(3);
-    expect(ptt.tick(4.1)).toBeUndefined();
-    ptt.heardWords(4);
-    expect(ptt.tick(5.1)).toBeUndefined();
-    expect(ptt.tick(5.25)).toBe('stop');
-  });
-
-  it('caps an orb session at 8 s, and a second poke ends it at once', () => {
-    const capped = new PushToTalk();
-    capped.orbPress(10);
-    capped.heardWords(17.9);
-    expect(capped.tick(17.99)).toBeUndefined();
-    expect(capped.tick(18)).toBe('stop');
-    const toggled = new PushToTalk();
-    toggled.orbPress(0);
-    expect(toggled.orbPress(1)).toBe('stop');
-  });
-
-  it('ignores the other way in while one is active', () => {
-    const ptt = new PushToTalk();
-    ptt.orbPress(0);
-    expect(ptt.pinchStart(1)).toBeUndefined();
-    expect(ptt.pinchEnd(2)).toBeUndefined();
+    ptt.pinchStart(0);
+    expect(ptt.tick(60)).toBeUndefined();
     expect(ptt.phase).toBe('listening');
-    const held = new PushToTalk();
-    held.pinchStart(0);
-    expect(held.orbPress(1)).toBeUndefined();
+    expect(ptt.pinchStart(61)).toBeUndefined();
+    ptt.reset();
+    expect(ptt.active).toBe(false);
+    expect(ptt.tick(100)).toBeUndefined();
   });
 });
 
@@ -174,7 +152,7 @@ function parsedManifest() {
   return parsed.manifest;
 }
 
-function loopRig() {
+function loopRig(options: { startFailure?: SpeechFailureReason } = {}) {
   const clock = createManualClock(0);
   const events = createEventBus<import('../../src/app/events.js').AppEvents>(createLogger('test'));
   const home = createMockHome({ latencyMs: 0 });
@@ -197,6 +175,9 @@ function loopRig() {
     state: 'ready',
     start: () => {
       starts += 1;
+      if (options.startFailure !== undefined) {
+        return Promise.reject(Object.assign(new Error('start failed'), { reason: options.startFailure }));
+      }
       return Promise.resolve();
     },
     stop: () => {
@@ -214,24 +195,31 @@ function loopRig() {
     setGrammar: (phrases) => void grammars.push(phrases),
   };
   const ui = {
-    handlers: undefined as Parameters<VoiceUiPort['setHandlers']>[0] | undefined,
     listening: [] as boolean[],
     finals: [] as string[],
     partials: [] as string[],
     failures: [] as (SpeechFailureReason | undefined)[],
+    /** Listening and failure calls in the order they came. */
+    order: [] as string[],
   };
   const uiPort: VoiceUiPort = {
-    setHandlers: (h) => void (ui.handlers = h),
-    setListening: (l) => void ui.listening.push(l),
+    setListening: (l) => {
+      ui.listening.push(l);
+      ui.order.push(`listening:${String(l)}`);
+    },
     showPartial: (t) => void ui.partials.push(t),
     showFinal: (t) => void ui.finals.push(t),
-    setFailure: (r) => void ui.failures.push(r),
+    setFailure: (r) => {
+      ui.failures.push(r);
+      ui.order.push(`failure:${String(r)}`);
+    },
   };
   const moves: string[] = [];
   const abilities: VoiceAbilities = {
     navigate: (r) => (moves.push(r.type), { status: 'started' }),
     lookAt: () => ({ status: 'done' }),
     pointAt: () => ({ status: 'done' }),
+    lookAtUser: () => (moves.push('look_user'), { status: 'done' }),
   };
   const pointing = { pointed: undefined as string | undefined, selected: undefined as string | undefined, deictic: undefined as string | undefined, confirmPointed: () => undefined as string | undefined };
   const runner = new HackRunner({
@@ -259,7 +247,7 @@ function loopRig() {
     getSurfaces: () => [],
     getHead: () => undefined,
     getGazeRay: () => ({ origin: { x: 0, y: 1.2, z: 0 }, direction: { x: 0, y: 0, z: -1 } }),
-    getUiAim: () => ({ panels: [], orbCenter: undefined }),
+    getUiAim: () => ({ panels: [], buttonCenter: undefined }),
     canTalk: () => true,
     getDominant: () => 'right',
   });
@@ -282,12 +270,18 @@ function loopRig() {
     },
     partial: (text: string) => partialListener(text),
     failure: (reason: SpeechFailureReason) => failureListener(reason, 'test'),
-    frame(time: number, inSession = true): FrameContext {
+    frame(time: number, inSession = true, leftPinching = false): FrameContext {
       const f = createFrameContext();
       f.time = time;
       f.dt = 1 / 60;
       f.inSession = inSession;
+      f.hands.left.pinching = leftPinching;
       return f;
+    },
+    /** Hold the non-dominant (left) pinch at `time`: the hold-to-talk start edge. */
+    pinch(time: number): void {
+      loop.update(this.frame(time, true, false));
+      loop.update(this.frame(time + 0.01, true, true));
     },
   };
 }
@@ -334,12 +328,13 @@ describe('VoiceLoop', () => {
     expect(rig.loop.grammar).toEqual(last(rig.grammars));
   });
 
-  it('sends typed free-form chat to the in-character Hermes-unavailable line', async () => {
+  it('answers typed free-form chat with no agent with the in-character not-connected line', async () => {
     const rig = loopRig();
     await rig.loop.submitText('what is the capital of france', 'keyboard');
     expect(rig.said).toHaveLength(1);
     expect(rig.said[0]?.claims).toBe('neutral');
-    expect(rig.said[0]?.text).toMatch(/smart friend|hermes|agent|cloud brain/i);
+    expect(rig.said[0]?.text).toMatch(/hermes/i);
+    expect(rig.said[0]?.text).toMatch(/setup page/i);
   });
 
   it('dispatches navigation, timers and places', async () => {
@@ -356,22 +351,47 @@ describe('VoiceLoop', () => {
     expect(last(rig.said)?.text).toMatch(/5 minutes/);
   });
 
-  it('runs push-to-talk from the orb: partial words, silence, final text through the same path', async () => {
+  it('runs a tapped Commands row through the same path, with its words as the transcript (task 33.9)', async () => {
     const rig = loopRig();
-    rig.ui.handlers?.onMicOrb?.();
+    await rig.loop.runCommand('perch on the table');
+    await rig.loop.runCommand('look at me');
+    expect(rig.moves).toEqual(['perch', 'look_user']);
+    expect(rig.ui.finals).toEqual(['perch on the table', 'look at me']);
+    expect(rig.loop.lastProcessed?.intent).toEqual({ type: 'avatar', ability: 'look_at_me' });
+  });
+
+  it('says the not-connected line for "ask hermes", Ask Hermes, and a typed task without Hermes (task 33.9)', async () => {
+    const rig = loopRig();
+    await rig.loop.submitText('ask hermes', 'speech');
+    await rig.loop.askHermes('what is the weather');
+    await rig.loop.startHermesTask('clean up my notes');
+    expect(rig.said).toHaveLength(3);
+    for (const line of rig.said) expect(line.text).toMatch(/hermes/i);
+  });
+
+  it('runs push-to-talk from the hold-pinch: partial words, release, final text through the same path', async () => {
+    const rig = loopRig();
+    rig.pinch(1);
     expect(rig.counts().starts).toBe(1);
     expect(rig.ui.listening).toEqual([true]);
-    rig.loop.update(rig.frame(1));
-    rig.loop.update(rig.frame(1.5));
+    rig.loop.update(rig.frame(1.5, true, true));
     rig.partial('turn off');
     expect(rig.ui.partials).toEqual(['turn off']);
-    rig.loop.update(rig.frame(2.4));
+    rig.loop.update(rig.frame(2, true, false));
+    rig.loop.update(rig.frame(2.3, true, false));
     expect(rig.counts().stops).toBe(0);
-    rig.loop.update(rig.frame(2.75));
+    rig.loop.update(rig.frame(2.45, true, false));
     await Promise.resolve();
     await Promise.resolve();
     expect(rig.counts().stops).toBe(1);
     expect(rig.ui.finals).toEqual(['turn off that']);
+  });
+
+  it('reports a start failure while Push_To_Talk is still on, so the bubble can show it (33.28)', async () => {
+    const rig = loopRig({ startFailure: 'permission-not-granted' });
+    rig.pinch(1);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(rig.ui.order).toEqual(['listening:true', 'failure:permission-not-granted', 'listening:false']);
   });
 
   it('shows the fallback when starting fails for a microphone reason', async () => {
@@ -390,7 +410,7 @@ describe('TalkGesture', () => {
     const hands = new FakeHandSource();
     const tracker = new PinchTracker();
     const gesture = new TalkGesture();
-    const ui = { panels: [] as PanelRect[], orbCenter: undefined as { x: number; y: number; z: number } | undefined };
+    const ui = { panels: [] as PanelRect[], buttonCenter: undefined as { x: number; y: number; z: number } | undefined };
     const edges: string[] = [];
     return {
       ui,
@@ -437,7 +457,7 @@ describe('TalkGesture', () => {
 describe('VoiceLoop pause and resume (task 27.2)', () => {
   it('drops a push-to-talk in progress without acting on it, and starts none while paused', async () => {
     const rig = loopRig();
-    rig.ui.handlers?.onMicOrb?.();
+    rig.pinch(1);
     expect(rig.counts().starts).toBe(1);
     rig.loop.pause();
     expect(rig.loop.isPaused).toBe(true);
@@ -449,11 +469,11 @@ describe('VoiceLoop pause and resume (task 27.2)', () => {
     expect(rig.loop.lastProcessed).toBeUndefined();
     expect(rig.said).toEqual([]);
 
-    rig.ui.handlers?.onMicOrb?.();
+    rig.pinch(2);
     expect(rig.counts().starts).toBe(1);
 
     rig.loop.resume();
-    rig.ui.handlers?.onMicOrb?.();
+    rig.pinch(3);
     expect(rig.counts().starts).toBe(2);
   });
 

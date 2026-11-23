@@ -13,10 +13,11 @@ export const JOINT_FLOATS = 3;
 /**
  * Joints copied into a `HandState` each frame: wrist, index metacarpal, index proximal, index tip,
  * middle tip, ring tip, pinky tip, thumb tip (task 3.5), and the index intermediate and distal
- * joints (task 11.2, for the point-pose extension test). New joints are appended, so the earlier
- * slots keep their numbers.
+ * joints (task 11.2, for the point-pose extension test), and the pinky knuckle (task 33.8, with the
+ * wrist and the index knuckle it spans the palm for the palm normal). New joints are appended, so the
+ * earlier slots keep their numbers.
  */
-export const TRACKED_JOINT_COUNT = 10;
+export const TRACKED_JOINT_COUNT = 11;
 
 /**
  * Slot of each core joint inside a `HandState.joints` buffer (multiply by `JOINT_FLOATS` for the
@@ -33,6 +34,7 @@ export const CORE_JOINT = {
   thumbTip: 7,
   indexIntermediate: 8,
   indexDistal: 9,
+  pinkyProximal: 10,
 } as const;
 
 /**
@@ -78,17 +80,37 @@ export const BLINK_INTERVAL_S = {
 } as const;
 
 /**
- * Idle placement of the Avatar relative to the user's head (Requirements 10.1, 10.11). `idleHome`
- * sits `homeDistanceM` ahead, rotated `sideAngleDeg` toward the user's right. While idle, the
- * horizontal distance from the head stays inside [`minDistanceM`, `maxDistanceM`]. With no floor
- * Surface the Avatar floats `floatDropM` below the head.
+ * Idle placement of the Avatar relative to the user's head (Requirements 10.1, 33.29). `idleHome`
+ * sits `homeDistanceM` ahead, rotated `sideAngleDeg` toward the user's right. With no floor Surface
+ * the Avatar floats `floatDropM` below the head. The old 1.0 to 1.5 m idle annulus is gone (task
+ * 33.7): she holds her spot and only steps aside inside `COMFORT_RADIUS_M`.
  */
 export const IDLE_PLACEMENT = {
   homeDistanceM: 1.25,
   sideAngleDeg: 25,
-  minDistanceM: 1.0,
-  maxDistanceM: 1.5,
   floatDropM: 0.7,
+} as const;
+
+/**
+ * Comfort_Radius (task 33.7, Requirements 33.29, 33.30): when the user's head comes within this
+ * horizontal distance of the idle Avatar, she steps sideways to just outside it. Farther away she
+ * keeps her position when the user moves closer.
+ */
+export const COMFORT_RADIUS_M = 0.5;
+
+/**
+ * Room containment (task 33.7, Requirements 33.32, 33.33).
+ * - `wallMarginM`: a destination stays at least this far in front of a detected wall plane, seen from
+ *   the head, and the wall's width is grown by the same amount so corners between planes stay closed.
+ *   The room mesh box is shrunk by it too.
+ * - `homeSideAnglesDeg`: the idle home tries these angles from the head forward (positive toward the
+ *   user's right) in order and takes the first that passes the room check, so a user facing a wall
+ *   gets a home beside them instead of one squashed against the wall. All stay inside the 60 degree
+ *   follow limit.
+ */
+export const ROOM_BOUNDS = {
+  wallMarginM: 0.15,
+  homeSideAnglesDeg: [25, -25, 50, -50],
 } as const;
 
 /**
@@ -304,6 +326,11 @@ export const PLAIN_PERSONA_BUBBLE = {
  * - `surfaceMarginM`: every Surface box is grown by this much on each side, so a thin plane (a
  *   zero-thickness footprint) can still be hit by a ray.
  * - `hitTestMaxDistanceM`: the environment raycast ignores hits farther than this from the hand.
+ * - `minAlongRayM` (task 33.3, Requirement 33.15): a capture point is always more than this far
+ *   along the ray from the fingertip, so a capture never lands at the hand.
+ * - `hitTestMaxOffAxisDeg` (task 33.3): the environment hit-test runs along IWSDK's hand target ray,
+ *   not the finger ray. A hit is used only when it lies within this angle of the finger ray seen
+ *   from the fingertip, so the teach pointer always follows the finger. Tune on the headset.
  */
 export const POINT_CAPTURE = {
   fallbackDistanceM: 2.0,
@@ -312,6 +339,27 @@ export const POINT_CAPTURE = {
   stepM: 0.25,
   surfaceMarginM: 0.02,
   hitTestMaxDistanceM: 6,
+  minAlongRayM: 0.05,
+  hitTestMaxOffAxisDeg: 15,
+} as const;
+
+/**
+ * Teach pointer (task 33.3, Requirements 33.11, 33.16): the thin ray from the dominant index
+ * fingertip and the Teach_Reticle at the capture point, drawn while the teach flow waits for a point.
+ *
+ * - `rayRadiusM`: radius of the ray cylinder. `rayOpacity`: its opacity.
+ * - `reticleInnerM`, `reticleOuterM`: ring radii at 1 m. The ring grows with distance beyond 1 m
+ *   (`reticleScalePerM`) so it keeps about the same apparent size.
+ * - Colours: `hitColor` on a real hit, `fallbackColor` at the 2.0 m fallback (nothing was hit).
+ */
+export const TEACH_POINTER = {
+  rayRadiusM: 0.0015,
+  rayOpacity: 0.7,
+  reticleInnerM: 0.018,
+  reticleOuterM: 0.028,
+  reticleScalePerM: 1,
+  hitColor: 0x35d0ff,
+  fallbackColor: 0xffb347,
 } as const;
 
 /**
@@ -387,37 +435,72 @@ export const DEV_PANEL_RECT = {
 } as const;
 
 /**
- * The "Teach me your lights" orb (task 9.8, Requirements 12.1, 12.13, 23.12). A small glowing sphere
- * that floats beside the Avatar while the teach flow is idle, in Live Mode only (Mock Mode hides it,
- * task 32.2). A fingertip poke, or a ray-pinch that dwells on it, starts the flow, so the flow can be
- * opened by hand without any UIKit button.
+ * Wrist_Button (task 33.8, Requirements 33.37 to 33.39): the small glowing disc on the non-dominant
+ * wrist that opens and closes the HUD_Menu. Metres, seconds, degrees.
  *
- * - `visualRadiusM`: drawn size. `hitRadiusM`: the sphere that makes a pinch count as aimed at UI
- *   (so it starts no talking and confirms no device). The mic orb shares it for its ray pinch.
- * - `rayPressRadiusM`: the orb's own hit volume for opening the flow by ray (about the halo). A ray
- *   that only passes near the orb, outside this sphere, opens nothing.
- * - `rayDwellS`: the ray must stay inside `rayPressRadiusM` this long, before or during the pinch,
- *   for a ray-pinch to open the flow. `rayGraceS`: a gap in the hits up to this long does not break
- *   the dwell (closing the fingers bends the index finger and drops the ray for a moment; the same
- *   200 ms lookback the pointing confirm uses).
- * - `pokeRadiusM`: a fingertip this close to the centre counts as a poke. It must leave the radius
- *   `pokeReleaseM` before it can poke again.
- * - `sideM`, `riseM`: where it floats relative to the Avatar's feet. Sideways it sits toward the
- *   user's right as seen from the user. `labelRiseM`: label height above the orb centre.
+ * - `facingEnterDeg`: the palm faces the user when its normal is within this angle of the direction
+ *   from the palm to the head (Requirement 33.37). `facingExitDeg`: once shown, the button stays
+ *   until the angle passes this larger value (hysteresis, so it does not flicker at the edge).
+ * - `showDwellS`: the palm must face the user this long before the button appears. `hideGraceS`: a
+ *   short loss of facing (or of tracking) up to this long keeps it shown.
+ * - `liftM`: the disc floats this far off the wrist along the palm normal, toward the user.
+ *   `towardHandM`: and this far from the wrist toward the knuckles (the heel of the palm).
+ * - `visualRadiusM`: drawn size. `pokeRadiusM`: the dominant index tip this close to the centre is a
+ *   poke; it must leave `pokeReleaseM` before it can poke again. `hitRadiusM`: a pinch whose ray
+ *   passes through this sphere, or whose fingertip is within `pokeRadiusM`, is aimed at UI (it starts
+ *   no talking and confirms no device).
  */
-export const TEACH_ORB = {
-  visualRadiusM: 0.045,
-  hitRadiusM: 0.12,
-  rayPressRadiusM: 0.08,
-  rayDwellS: 0.35,
-  rayGraceS: 0.2,
-  pokeRadiusM: 0.07,
-  pokeReleaseM: 0.12,
-  sideM: 0.3,
-  riseM: 0.7,
-  labelRiseM: 0.1,
-  labelWidthM: 0.3,
-  labelHeightM: 0.075,
+export const WRIST_BUTTON = {
+  facingEnterDeg: 45,
+  facingExitDeg: 55,
+  showDwellS: 0.25,
+  hideGraceS: 0.15,
+  liftM: 0.03,
+  towardHandM: 0.03,
+  visualRadiusM: 0.016,
+  pokeRadiusM: 0.03,
+  pokeReleaseM: 0.06,
+  hitRadiusM: 0.05,
+} as const;
+
+/**
+ * HUD_Menu (task 33.8, Requirements 33.40 to 33.46). The panel is placed once, when it opens, in the
+ * `hud` seated zone (`UI_ZONES.hud`), and stays fixed in the world until it closes.
+ *
+ * - `autoHideS`: it closes after this long without an interaction (Requirement 33.42).
+ * - `aimGraceS`: after it closes, its rectangle still counts as UI for this long, so the pinch that
+ *   pressed a tile (and closed the menu) never confirms a device or starts push-to-talk.
+ * - Layout sizes are UIKit units (1 mm at `VOICE_UI.panelScale`), and must match
+ *   `public/ui/hud-menu.uikitml` (`tests/unit/hud-view.test.ts` checks it). Tiles are three columns
+ *   of two rows below a title row. The content area below holds two columns of four rows.
+ * - `lightRows`: how many registered lights the Lights tile lists by name.
+ */
+export const HUD_MENU = {
+  autoHideS: 30,
+  aimGraceS: 0.5,
+  paddingUnits: 12,
+  gapUnits: 8,
+  titleHeightUnits: 32,
+  tileColumns: 3,
+  tileWidthUnits: 150,
+  tileHeightUnits: 52,
+  contentColumns: 2,
+  contentRows: 4,
+  contentButtonHeightUnits: 52,
+  lightRows: 5,
+  /**
+   * Commands tile (task 33.9): a bar (three group tabs, previous and next page, Type a command) above
+   * `commandRowsPerPage` command rows. Bar 40 + gap 4 + 4 rows of 44 with 4 between = the 232 unit
+   * content height. Bar: 3 tabs of 86, two page buttons of 44 and Type of 80, with 8 between = 466.
+   */
+  commandBarHeightUnits: 40,
+  commandBarGapUnits: 4,
+  commandTabWidthUnits: 86,
+  commandPageWidthUnits: 44,
+  commandTypeWidthUnits: 80,
+  commandRowHeightUnits: 44,
+  commandRowGapUnits: 4,
+  commandRowsPerPage: 4,
 } as const;
 
 /**
@@ -572,16 +655,13 @@ export const BANTER = {
 } as const;
 
 /**
- * Push-to-talk timing (task 13.25, Requirements 15.6, 15.7).
+ * Push-to-talk timing (task 13.25, Requirements 15.6, 33.23). The non-dominant hold-pinch is the only
+ * push-to-talk gesture (task 33.6 removed the mic orb).
  * - `trailingS`: after the non-dominant pinch is released, the microphone stays open this long, so
  *   the end of the last word is not cut off.
- * - `orbSilenceS`: a mic-orb poke ends listening this long after the last new word.
- * - `orbMaxS`: a mic-orb poke ends listening after this long however much was said.
  */
 export const PUSH_TO_TALK = {
   trailingS: 0.4,
-  orbSilenceS: 1.2,
-  orbMaxS: 8,
 } as const;
 
 /**
@@ -596,18 +676,16 @@ export const PUSH_TO_TALK = {
  * - `interaction`: `poke` panels are reached with a fingertip, `ray` panels with a ray pinch, `look`
  *   panels are only read.
  *
- * The mic orb sits on the non-dominant side as in the design. Quick_Actions and the Hand_Keyboard
- * lean toward the dominant hand, so the orb stays clear of both, and the keyboard hides
- * Quick_Actions while it is open.
+ * The HUD_Menu (task 33.8) is a poke panel straight ahead, a little below the eyes and leaning up,
+ * placed once each time it opens. Text entry uses the Meta Quest system keyboard (task 33.9), which
+ * the system places, so it has no zone here. The always-visible Quick_Actions and status chips are
+ * gone (Requirement 33.35): their content is in the HUD_Menu. The transcript is a bubble above Capri
+ * (`TRANSCRIPT_BUBBLE`), not a placed panel.
  */
 export const UI_ZONES = {
-  'mic-orb': { interaction: 'poke', distanceM: 0.45, heightM: -0.3, sideDeg: -25, tiltDeg: 0 },
-  'quick-actions': { interaction: 'poke', distanceM: 0.5, heightM: -0.28, sideDeg: 15, tiltDeg: 0 },
-  'hand-keyboard': { interaction: 'poke', distanceM: 0.45, heightM: -0.32, sideDeg: 20, tiltDeg: 25 },
-  transcript: { interaction: 'look', distanceM: 0.9, heightM: -0.1, sideDeg: 0, tiltDeg: 0 },
+  hud: { interaction: 'poke', distanceM: 0.5, heightM: -0.2, sideDeg: 0, tiltDeg: 15 },
   'device-list': { interaction: 'ray', distanceM: 1.0, heightM: 0, sideDeg: -20, tiltDeg: 0 },
   'task-panel': { interaction: 'ray', distanceM: 1.2, heightM: 0, sideDeg: 30, tiltDeg: 0 },
-  'status-chips': { interaction: 'look', distanceM: 1.2, heightM: 0.25, sideDeg: 0, tiltDeg: 0 },
 } as const;
 /** Limits every placed panel stays inside (Property 46): straight-line distance from the head. */
 export const UI_LIMITS = {
@@ -617,13 +695,12 @@ export const UI_LIMITS = {
   /** Half-angle of the forward view cone, in degrees, around the head's horizontal forward. */
   viewConeHalfDeg: 60,
 } as const;
-/** The transcript panel turns toward the head by at most this many radians a second, and only past the dead zone. */
+/** A look panel turns toward the head by at most this many radians a second, and only past the dead zone. */
 export const UI_BILLBOARD = { rateRadPerS: 0.5, deadZoneDeg: 12 } as const;
 /**
- * Voice UI panels (task 13.23). Sizes are UIKit units: one unit is 1 mm at the panel scale 0.1, so
- * 0.001 m. The numbers must match `public/ui/quick-actions.uikitml` and `hand-keyboard.uikitml`
- * (`tests/unit/panel-layout.test.ts` checks it), because a pinch or poke is turned into a button
- * from these sizes and does not depend on UIKit delivering clicks (A6).
+ * Pressable panels (task 13.23). Sizes are UIKit units: one unit is 1 mm at the panel scale 0.1, so
+ * 0.001 m. Each panel's layout must match its UIKitML file (a unit test checks it), because a pinch
+ * or poke is turned into a button from these sizes and does not depend on UIKit delivering clicks (A6).
  *
  * - `pressDedupeS`: a second press of the same button inside this time is dropped, so a click from
  *   UIKit and the own hand path for one touch run the action once.
@@ -631,7 +708,14 @@ export const UI_BILLBOARD = { rateRadPerS: 0.5, deadZoneDeg: 12 } as const;
  *   echo while an own-path press is still held, and for this long after it is released.
  * - Touch depths are in metres from the panel plane: a fingertip within `touchFrontM` in front or
  *   `touchBehindM` behind it, inside a button, is a poke. It must move out to `releaseM` to poke again.
- * - `transcriptHoldS`: how long a final transcript stays after the last word.
+ * - `tap` (task 33.9, the HUD_Menu): a stricter poke so a finger passing through the menu presses
+ *   nothing. The tip must come in through the front face (its position `lookbackS` earlier was in
+ *   front of the touch depth), moving into the face at `minApproachMps` or faster and no more than
+ *   `maxLateralRatio` times as far sideways as inward. The press fires when the tip comes back out
+ *   through the front on the same button within `maxContactS`; a tip that goes out the back, slides to
+ *   another button, or stays longer presses nothing.
+ * - `pinchDwellS` (task 33.9, the HUD_Menu): the aim ray must have rested on a button this long
+ *   before a ray pinch presses it.
  */
 export const VOICE_UI = {
   panelScale: 0.1,
@@ -642,31 +726,50 @@ export const VOICE_UI = {
   touchBehindM: 0.05,
   releaseM: 0.06,
   cellMarginM: 0.006,
-  transcriptHoldS: 6,
-  micOrb: { visualRadiusM: 0.05, labelRiseM: 0.105, labelWidthM: 0.2, labelHeightM: 0.05 },
-  transcript: { widthUnits: 340, heightUnits: 150 },
-  quickActions: {
-    paddingUnits: 12,
-    gapUnits: 8,
-    buttonWidthUnits: 156,
-    buttonHeightUnits: 52,
-    columns: 2,
+  tap: {
+    lookbackS: 0.12,
+    minApproachMps: 0.05,
+    maxLateralRatio: 1.5,
+    maxContactS: 1.0,
   },
-  keyboard: {
-    paddingUnits: 12,
-    gapUnits: 4,
-    keyWidthUnits: 36,
-    keyHeightUnits: 40,
-    textRowHeightUnits: 44,
-    textGapUnits: 8,
-    deleteWidthUnits: 116,
-    closeWidthUnits: 100,
-    sendWidthUnits: 116,
-    maxChars: 60,
-  },
+  pinchDwellS: 0.25,
 } as const;
+/**
+ * System_Keyboard (task 33.9): the longest text kept from one prompt. Longer text is cut, so a chat
+ * line or a task description stays a reasonable request size.
+ */
+export const SYSTEM_KEYBOARD = { maxChars: 500 } as const;
 /** The full Speech_Bubble (task 13.23): pop-in and fade-out times, and how fast it turns to the head. */
 export const SPEECH_BUBBLE = { fadeInS: 0.12, fadeOutS: 0.25, turnRadPerS: 3 } as const;
+
+/**
+ * Transcript_Bubble (task 33.6, Requirements 33.24 to 33.28): the small dark bubble above Capri that
+ * shows listening, then the partial and final words. Metres and seconds.
+ *
+ * - `widthM`: quad width (the height follows the canvas aspect). Smaller than her 0.4 m Speech_Bubble.
+ * - `heightAboveFeetM`: its own spot above Capri's feet, just over her head. `fallbackDistanceM` and
+ *   `fallbackBelowEyesM`: where it goes in front of the head while Capri is not in the room yet.
+ * - `stackGapM`: clear space above the Speech_Bubble when both are up. `maxAboveHeadM`: a stacked
+ *   bubble higher than this above the eyes is replaced by her Speech_Bubble (hidden while she speaks).
+ * - `finalHoldS`: the final words stay this long (at most 3 s, Requirement 33.26). `noticeS`: a
+ *   failure reason stays this long (Requirement 33.28).
+ * - `followRatePerS`: how fast it slides to a new spot (exponential, per second).
+ * - `level`: microphone level from block RMS (`micLevelFromRms`): noise floor and gain.
+ * - `bars`: the listening waveform: bar count, size, spacing, and the idle pulse so it moves in silence.
+ */
+export const TRANSCRIPT_BUBBLE = {
+  widthM: 0.28,
+  heightAboveFeetM: 0.8,
+  fallbackDistanceM: 0.9,
+  fallbackBelowEyesM: 0.1,
+  stackGapM: 0.02,
+  maxAboveHeadM: 0.8,
+  finalHoldS: 2.5,
+  noticeS: 2.5,
+  followRatePerS: 10,
+  level: { noiseFloor: 0.008, gain: 9, attackPerS: 18, releasePerS: 6 },
+  bars: { count: 5, widthM: 0.008, maxHeightM: 0.046, spacingM: 0.015, centerXM: 0.07, idleAmount: 0.18 },
+} as const;
 
 /**
  * Hacking VFX budgets (task 15.3, Requirements 18.9, 29.2). Hard caps keep the effect inside the

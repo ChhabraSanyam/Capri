@@ -35,6 +35,11 @@ export class FloorTracker {
     return this.currentFloorY;
   }
 
+  /** Rescan on the next `update`, for example after a reference space reset (task 33.1). */
+  requestScan(): void {
+    this.sinceScanS = this.scanIntervalS;
+  }
+
   /** Call once per frame. Rescans the planes when the interval has passed. */
   update(dtS: number): void {
     this.sinceScanS += dtS;

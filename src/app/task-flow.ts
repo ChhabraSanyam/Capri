@@ -1,6 +1,7 @@
 /**
- * Task flow (task 19.3, Requirements 19.5, 19.6, 19.8, 19.9, 19.10, 23.5, 23.10). One long-running
- * agent task from the user's words to Capri's report:
+ * Task flow (task 19.3, Requirements 19.5, 19.6, 19.8, 19.9, 19.10, 33.20). One long-running agent
+ * task from the user's words to Capri's report, for live Hermes only (Mock Mode has no agent, so a
+ * task phrase there gets the "Hermes isn't connected" line and never reaches this flow):
  *
  *   "run my evening routine"  ->  ack (pending line)  ->  agent.startTask  ->  panel + progress
  *     ->  playful idles while it runs  ->  `notify` + the real outcome line

@@ -80,6 +80,11 @@ export interface DeviceListPanelOptions {
   readonly dominant?: 'left' | 'right';
   /** Open the panel when a session starts. Defaults to true. */
   readonly autoShow?: boolean;
+  /**
+   * Nearer and Farther while the flow waits for a point and the Teach_Reticle sits at the fallback
+   * distance (task 33.3): they move the reticle, not a captured point. Without it they do nothing then.
+   */
+  readonly adjustPointer?: (direction: 'nearer' | 'farther') => void;
 }
 
 export class DeviceListPanel {
@@ -92,6 +97,8 @@ export class DeviceListPanel {
   private view: TeachView;
   private wanted = false;
   private stopPlacement: (() => void) | undefined;
+  private pointerFallbackM: number | undefined;
+  private readonly adjustPointer: ((direction: 'nearer' | 'farther') => void) | undefined;
 
   constructor(
     private readonly world: World,
@@ -101,6 +108,7 @@ export class DeviceListPanel {
     options: DeviceListPanelOptions = {},
   ) {
     this.dominant = options.dominant ?? 'right';
+    this.adjustPointer = options.adjustPointer;
     this.view = buildTeachView(flow.state, registry.all());
     this.entity = world.createTransformEntity();
     this.entity.addComponent(PanelUI, { config: DEVICE_LIST_PANEL_URL });
@@ -132,6 +140,16 @@ export class DeviceListPanel {
       halfWidthM: TEACH_FLOW.panelHalfWidthM,
       halfHeightM: TEACH_FLOW.panelHalfHeightM,
     };
+  }
+
+  /**
+   * The fallback distance while the Teach_Reticle sits at the fallback, else `undefined` (task
+   * 33.3). Called every frame; redraws only when the value changes.
+   */
+  setPointerFallback(distanceM: number | undefined): void {
+    if (distanceM === this.pointerFallbackM) return;
+    this.pointerFallbackM = distanceM;
+    this.render();
   }
 
   /** The last view drawn, for tests and logs. */
@@ -187,6 +205,13 @@ export class DeviceListPanel {
   press(id: PanelButtonId): boolean {
     const action = id === 'btn-primary' ? this.view.primaryAction : BUTTON_ACTION[id];
     if (action === undefined) return false;
+    if ((action === 'nearer' || action === 'farther') && this.flow.state.kind === 'awaitPoint') {
+      const adjust = this.adjustPointer;
+      if (adjust === undefined || this.pointerFallbackM === undefined) return false;
+      adjust(action);
+      this.logger.info(`device list: ${id} -> ${action} (teach pointer)`);
+      return true;
+    }
     const applied = this.flow.perform(action);
     this.logger.info(`device list: ${id} -> ${action}${applied ? '' : ' (not applicable)'}`);
     return applied;
@@ -214,7 +239,11 @@ export class DeviceListPanel {
   }
 
   private render(): void {
-    this.view = buildTeachView(this.flow.state, this.registry.all());
+    this.view = buildTeachView(
+      this.flow.state,
+      this.registry.all(),
+      this.flow.state.kind === 'awaitPoint' ? this.pointerFallbackM : undefined,
+    );
     const document = this.document;
     if (document === undefined) return;
     const view = this.view;
@@ -254,7 +283,7 @@ export class DeviceListPanel {
   /**
    * Put the panel in the `device-list` zone (`place()`, task 13.23): about 1 m ahead at eye level, a
    * little to the non-dominant side, facing the user. It is a ray-pinch panel, so it stays clear of
-   * the poke zone where the mic orb and Quick_Actions sit.
+   * the poke zone where Quick_Actions sits.
    */
   private placeBesideHead(): void {
     const object = this.requireObject();

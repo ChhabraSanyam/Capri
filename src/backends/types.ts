@@ -150,7 +150,7 @@ export type TaskStatus = 'running' | 'completed' | 'failed';
  * One step in a task's life. `fraction` is 0..1. A stream ends after one `completed` or `failed`
  * event, and a cancelled task ends with `failed`.
  *
- * - `progress`: a percentage-style update (the scripted MockAgent).
+ * - `progress`: a percentage-style update, for agents that report a fraction.
  * - `step`: the current step as text, for agents that report steps instead of a percentage (live
  *   Hermes, task 21.10).
  * - `approval_requested` / `approval_resolved`: the agent waits for the user to approve or deny one
@@ -175,7 +175,7 @@ export interface TaskHandle {
   events: AsyncIterable<TaskEvent>;
   cancel(): void;
   /**
-   * Answer a pending approval (live agents only; the scripted MockAgent never asks). The stream
+   * Answer a pending approval (agents that ask for approvals, such as live Hermes). The stream
    * then carries `approval_resolved`, so the Task_Panel can hide its buttons.
    */
   respondToApproval?(requestId: string, decision: ApprovalDecision): Promise<Result<ApprovalOutcome>>;

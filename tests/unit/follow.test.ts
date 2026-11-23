@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { awayAngleDeg, FollowMonitor } from '../../src/domain/follow.js';
 import { vec3 } from '../../src/domain/geometry.js';
-import { constrainIdlePosition, type HeadPose, type MutableVec3 } from '../../src/domain/placement.js';
+import type { HeadPose } from '../../src/domain/placement.js';
 import { sessionOverridesFor } from '../../src/xr/session.js';
 
 const head: HeadPose = { position: vec3(0, 1.2, 0), forward: vec3(0, 0, -1) };
@@ -57,22 +57,6 @@ describe('FollowMonitor', () => {
     expect(m.update(Number.NaN, 90)).toBe(false);
     expect(m.update(-1, 90)).toBe(false);
     expect(m.awaySeconds).toBe(0);
-  });
-});
-
-describe('constrainIdlePosition with an output object', () => {
-  it('writes into out (even when out is the input) and returns it', () => {
-    const pos: MutableVec3 = { x: 6, y: 0.1, z: 0 };
-    const result = constrainIdlePosition(head, pos, pos);
-    expect(result).toBe(pos);
-    expect(Math.hypot(pos.x, pos.z)).toBeCloseTo(1.5, 5);
-    expect(pos.y).toBe(0.1);
-  });
-
-  it('leaves an inside position untouched', () => {
-    const pos: MutableVec3 = { x: 1.1, y: 0, z: 0 };
-    expect(constrainIdlePosition(head, pos, pos)).toBe(pos);
-    expect(pos.x).toBe(1.1);
   });
 });
 

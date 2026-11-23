@@ -25,6 +25,8 @@ export interface VoiceAbilities {
   navigate(request: NavigationRequest): DispatchResult;
   lookAt(target: Vec3): DispatchResult;
   pointAt(target: Vec3): DispatchResult;
+  /** "look at me" (task 33.9): head and eyes back to the user. */
+  lookAtUser(): DispatchResult;
 }
 
 export interface AbilityDispatcherDeps {
@@ -51,6 +53,12 @@ export class AbilityDispatcher implements VoiceAbilities {
   /** Extend her arm and index finger at a world position. */
   pointAt(target: Vec3): DispatchResult {
     this.deps.controller.pointAt(target);
+    return { status: 'done' };
+  }
+
+  /** Turn her head and eyes back to the user ("look at me"). */
+  lookAtUser(): DispatchResult {
+    this.deps.controller.lookAt('user');
     return { status: 'done' };
   }
 

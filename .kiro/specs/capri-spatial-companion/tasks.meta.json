@@ -3,6 +3,10 @@
     "31.4 Write property test for gesture fallback": {
       "status": "passed",
       "lastRunTimestamp": 1795015683415
+    },
+    "33.7 Give Capri personal space and keep her inside the walls": {
+      "status": "passed",
+      "lastRunTimestamp": 1795030584882
     }
   },
   "executionHistory": {
@@ -1859,6 +1863,133 @@
         "executionId": "28317032-6ab9-470f-a344-a613768e8163",
         "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
         "timestamp": 1795015751510
+      }
+    ],
+    "33.1 Run the MR session without the Quest boundary": [
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795027975366
+      },
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795029917433
+      }
+    ],
+    "33.2 Hide the hand joint dots and gate the dev panels behind explicit queries": [
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795027976100
+      },
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795029918000
+      }
+    ],
+    "33.3 Add a visible teach pointer and fix point capture landing at the hand": [
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795027977291
+      },
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795029919151
+      }
+    ],
+    "33.4 Remove the scripted Hermes workflow from Mock Mode": [
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795027978477
+      },
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795029919954
+      }
+    ],
+    "33.5 Fix Capri's floating hair": [
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795027978988
+      },
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795029920773
+      }
+    ],
+    "33.6 Combine the listening indicator and transcript into one bubble on Capri": [
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795029928184
+      },
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795032075184
+      }
+    ],
+    "33.7 Give Capri personal space and keep her inside the walls": [
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795029928305
+      },
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795032075847
+      }
+    ],
+    "33.8 Add the wrist-summoned HUD menu and declutter the view": [
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795032081462
+      },
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795034312201
+      }
+    ],
+    "33.9 Build the Commands tile, switch to the system keyboard, and add Hermes access": [
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795034317737
+      },
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795037090587
+      }
+    ],
+    "33.10 Update the docs for the new behaviour": [
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795037096229
+      },
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795038362635
+      }
+    ],
+    "33. Headset feedback fixes and HUD declutter [POST-MVD]": [
+      {
+        "executionId": "3a46c9b0-7ee2-48bd-a759-75826caf8a0d",
+        "chatSessionId": "sess_c3a60672-658c-421d-aee6-50ba63c02394",
+        "timestamp": 1795038362861
       }
     ]
   }

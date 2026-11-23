@@ -38,6 +38,15 @@ describe('Connect your own home', () => {
     local = createMemoryStorage();
   });
 
+  it('says in one plain sentence what Hermes does in Capri (Requirement 33.59)', () => {
+    mount(local);
+    const about = $<HTMLParagraphElement>('hermes-about').textContent?.trim() ?? '';
+    expect(about).toMatch(/^Hermes /);
+    expect(about.match(/[.!?]/g)).toHaveLength(1);
+    expect(about).toMatch(/Ask Hermes/);
+    expect(about).toMatch(/Give Hermes a task/);
+  });
+
   it('starts closed, empty, in Mock Mode, with masked secret fields and no length limits', () => {
     mount(local);
     expect($<HTMLDetailsElement>('connect-home').open).toBe(false);

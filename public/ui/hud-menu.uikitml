@@ -1,0 +1,310 @@
+<!--
+  HUD_Menu (tasks 33.8 and 33.9, Requirements 33.40 to 33.46, 33.49 to 33.58): the menu summoned from
+  the Wrist_Button. Loaded through PanelUI by src/ui/hud/hud-menu.ts. A title row, two rows of three
+  tiles (Status, Lights, Commands; Ask Hermes, Give Hermes a task, Close), then one content area whose
+  block depends on the tile: #hud-status (the four status chips), #hud-lights (Teach a light, Re-teach
+  lights, and the list of registered lights), or #hud-commands (group tabs, Prev, Next, Type, and four
+  command rows from src/domain/commands/command-catalog.ts). Without the system keyboard the two
+  Hermes tiles (#hud-text-tiles) hide and #hud-text-note shows in their place.
+  Every pressable element has an explicit size (tiles 150 x 52, content buttons 229 x 52, command bar
+  40 high, command rows 466 x 44, 8 gap, 12 padding, 490 x 416 panel) because a poke or pinch is
+  turned into a button from src/domain/hud/hud-view.ts, which must agree with this file
+  (tests/unit/hud-view.test.ts checks it). Element ids addressed at run time: hud-hint,
+  hud-tile-<id>(-label), hud-text-tiles, hud-text-note, hud-teach, hud-reteach,
+  hud-chip-<chip>(-symbol, -title, -label), hud-lights-heading, hud-light-0 to hud-light-4,
+  hud-cmd-group-<group>, hud-cmd-prev, hud-cmd-next, hud-cmd-type, hud-cmd-row-<n>(-say, -detail),
+  hud-status, hud-lights, hud-commands. Elements whose text is set at run time start with
+  placeholder text. Plain ASCII text only.
+-->
+<style>
+  .root {
+    flex-direction: column;
+    width: 490px;
+    height: 416px;
+    padding: 12px;
+    gap: 8px;
+  }
+  .titlerow {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 466px;
+    height: 32px;
+  }
+  .title {
+    color: #1c1d20;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .title:dark {
+    color: #fafaf7;
+  }
+  .hint {
+    color: #3a3b40;
+    font-size: 14px;
+  }
+  .hint:dark {
+    color: #c9ccd3;
+  }
+  .trow {
+    flex-direction: row;
+    gap: 8px;
+    height: 52px;
+  }
+  .tile {
+    width: 150px;
+    height: 52px;
+  }
+  .tlabel {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .content {
+    flex-direction: column;
+    width: 466px;
+    height: 232px;
+  }
+  .block {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .crow {
+    flex-direction: row;
+    gap: 8px;
+    height: 52px;
+  }
+  .cbtn {
+    width: 229px;
+    height: 52px;
+  }
+  .clabel {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .chip {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    width: 229px;
+    height: 52px;
+    padding-left: 10px;
+    padding-right: 8px;
+    border-radius: 14px;
+    background-color: #c9ccd3;
+  }
+  .badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
+    background-color: #1c1d20;
+    align-items: center;
+    justify-content: center;
+  }
+  .symbol {
+    color: #c9ccd3;
+    font-size: 20px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .texts {
+    flex-direction: column;
+    gap: 1px;
+  }
+  .ctitle {
+    color: #23252b;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .clabeltext {
+    color: #1c1d20;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .list {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .lheading {
+    color: #1c1d20;
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .lheading:dark {
+    color: #fafaf7;
+  }
+  .lrow {
+    color: #3a3b40;
+    font-size: 16px;
+  }
+  .lrow:dark {
+    color: #dddfe3;
+  }
+  .textgroup {
+    flex-direction: row;
+    gap: 8px;
+    width: 308px;
+    height: 52px;
+  }
+  .textnote {
+    display: none;
+    width: 308px;
+    height: 52px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background-color: #c9ccd3;
+  }
+  .notetext {
+    color: #1c1d20;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .cblock {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .cbar {
+    flex-direction: row;
+    gap: 8px;
+    height: 40px;
+  }
+  .ctab {
+    width: 86px;
+    height: 40px;
+  }
+  .cpage {
+    width: 44px;
+    height: 40px;
+  }
+  .ctype {
+    width: 80px;
+    height: 40px;
+  }
+  .cbarlabel {
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .crows {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .cmdrow {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    width: 466px;
+    height: 44px;
+    padding-left: 12px;
+    padding-right: 12px;
+    border-radius: 10px;
+    background-color: #c9ccd3;
+  }
+  .csay {
+    color: #1c1d20;
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .cdetail {
+    color: #2b2d33;
+    font-size: 12px;
+  }
+</style>
+<Panel class="root">
+  <div class="titlerow">
+    <div id="hud-title" class="title">Capri menu</div>
+    <div id="hud-hint" class="hint">Closes after 30 s untouched</div>
+  </div>
+  <div class="trow">
+    <Button id="hud-tile-status" class="tile"><ButtonLabel id="hud-tile-status-label" class="tlabel">Status</ButtonLabel></Button>
+    <Button id="hud-tile-lights" class="tile"><ButtonLabel id="hud-tile-lights-label" class="tlabel">Lights</ButtonLabel></Button>
+    <Button id="hud-tile-commands" class="tile"><ButtonLabel id="hud-tile-commands-label" class="tlabel">Commands</ButtonLabel></Button>
+  </div>
+  <div class="trow">
+    <div id="hud-text-tiles" class="textgroup">
+      <Button id="hud-tile-ask" class="tile"><ButtonLabel id="hud-tile-ask-label" class="tlabel">Ask Hermes</ButtonLabel></Button>
+      <Button id="hud-tile-task" class="tile"><ButtonLabel id="hud-tile-task-label" class="tlabel">Give Hermes a task</ButtonLabel></Button>
+    </div>
+    <div id="hud-text-note" class="textnote">
+      <div id="hud-text-note-label" class="notetext">Text entry is not available here</div>
+    </div>
+    <Button id="hud-tile-close" class="tile"><ButtonLabel id="hud-tile-close-label" class="tlabel">Close</ButtonLabel></Button>
+  </div>
+  <div class="content">
+    <div id="hud-status" class="block">
+      <div class="crow">
+        <div id="hud-chip-mode" class="chip">
+          <div class="badge"><div id="hud-chip-mode-symbol" class="symbol">M</div></div>
+          <div class="texts">
+            <div id="hud-chip-mode-title" class="ctitle">Mode</div>
+            <div id="hud-chip-mode-label" class="clabeltext">Mock Mode</div>
+          </div>
+        </div>
+        <div id="hud-chip-voice" class="chip">
+          <div class="badge"><div id="hud-chip-voice-symbol" class="symbol">~</div></div>
+          <div class="texts">
+            <div id="hud-chip-voice-title" class="ctitle">Voice</div>
+            <div id="hud-chip-voice-label" class="clabeltext">Voice loading</div>
+          </div>
+        </div>
+      </div>
+      <div class="crow">
+        <div id="hud-chip-homeAssistant" class="chip">
+          <div class="badge"><div id="hud-chip-homeAssistant-symbol" class="symbol">-</div></div>
+          <div class="texts">
+            <div id="hud-chip-homeAssistant-title" class="ctitle">Home Assistant</div>
+            <div id="hud-chip-homeAssistant-label" class="clabeltext">Not configured</div>
+          </div>
+        </div>
+        <div id="hud-chip-hermes" class="chip">
+          <div class="badge"><div id="hud-chip-hermes-symbol" class="symbol">-</div></div>
+          <div class="texts">
+            <div id="hud-chip-hermes-title" class="ctitle">Hermes</div>
+            <div id="hud-chip-hermes-label" class="clabeltext">Not configured</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="hud-lights" class="block">
+      <div class="crow">
+        <Button id="hud-teach" class="cbtn"><ButtonLabel id="hud-teach-label" class="clabel">Teach a light</ButtonLabel></Button>
+        <Button id="hud-reteach" class="cbtn"><ButtonLabel id="hud-reteach-label" class="clabel">Re-teach lights</ButtonLabel></Button>
+      </div>
+      <div class="list">
+        <div id="hud-lights-heading" class="lheading">My lights</div>
+        <div id="hud-light-0" class="lrow">-</div>
+        <div id="hud-light-1" class="lrow">-</div>
+        <div id="hud-light-2" class="lrow">-</div>
+        <div id="hud-light-3" class="lrow">-</div>
+        <div id="hud-light-4" class="lrow">-</div>
+      </div>
+    </div>
+    <div id="hud-commands" class="cblock">
+      <div class="cbar">
+        <Button id="hud-cmd-group-lights" class="ctab"><ButtonLabel id="hud-cmd-group-lights-label" class="cbarlabel">Lights</ButtonLabel></Button>
+        <Button id="hud-cmd-group-capri" class="ctab"><ButtonLabel id="hud-cmd-group-capri-label" class="cbarlabel">Capri</ButtonLabel></Button>
+        <Button id="hud-cmd-group-hermes" class="ctab"><ButtonLabel id="hud-cmd-group-hermes-label" class="cbarlabel">Hermes</ButtonLabel></Button>
+        <Button id="hud-cmd-prev" class="cpage"><ButtonLabel id="hud-cmd-prev-label" class="cbarlabel">Prev</ButtonLabel></Button>
+        <Button id="hud-cmd-next" class="cpage"><ButtonLabel id="hud-cmd-next-label" class="cbarlabel">Next</ButtonLabel></Button>
+        <Button id="hud-cmd-type" class="ctype"><ButtonLabel id="hud-cmd-type-label" class="cbarlabel">Type</ButtonLabel></Button>
+      </div>
+      <div class="crows">
+        <div id="hud-cmd-row-0" class="cmdrow">
+          <div id="hud-cmd-row-0-say" class="csay">-</div>
+          <div id="hud-cmd-row-0-detail" class="cdetail">-</div>
+        </div>
+        <div id="hud-cmd-row-1" class="cmdrow">
+          <div id="hud-cmd-row-1-say" class="csay">-</div>
+          <div id="hud-cmd-row-1-detail" class="cdetail">-</div>
+        </div>
+        <div id="hud-cmd-row-2" class="cmdrow">
+          <div id="hud-cmd-row-2-say" class="csay">-</div>
+          <div id="hud-cmd-row-2-detail" class="cdetail">-</div>
+        </div>
+        <div id="hud-cmd-row-3" class="cmdrow">
+          <div id="hud-cmd-row-3-say" class="csay">-</div>
+          <div id="hud-cmd-row-3-detail" class="cdetail">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Panel>

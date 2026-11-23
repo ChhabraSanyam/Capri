@@ -6,7 +6,7 @@
  * Approve and Deny buttons. The panel shows the real state only: "Done" appears when the task
  * completed, "Failed" with the reason when it failed, never before.
  *
- * - Percent or step: a task that reports progress labels (the scripted MockAgent) shows the bar and
+ * - Percent or step: a task that reports progress fractions (`progress` events) shows the bar and
  *   a percentage. A task that reports no fraction (live Hermes runs, which send steps only) shows
  *   its current step instead, with no bar and no percentage, because a made-up number would lie.
  * - Approval: while the task waits for one, the status reads "Needs OK", the detail line shows the
@@ -55,6 +55,7 @@ export const TASK_TITLES: Readonly<Record<TaskKind, string>> = {
   routine: 'Evening routine',
   watch: 'Door watch',
   research: 'Research',
+  custom: 'Hermes task',
 };
 
 const STATUS_TEXT: Readonly<Record<TaskPanelStatus, string>> = {

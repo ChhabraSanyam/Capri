@@ -62,3 +62,36 @@ export function mergeRestoredPositions(
   });
   return changed ? merged : undefined;
 }
+
+/** The result of `flagUnanchoredApproximate`. */
+export interface ApproximateFlags {
+  /** The list with every unanchored record flagged. The same array when nothing new was flagged. */
+  readonly records: readonly DeviceRecord[];
+  /** True when at least one record was newly flagged. */
+  readonly changed: boolean;
+  /** Spoken names of every flagged record, in registry order. */
+  readonly names: readonly string[];
+}
+
+/**
+ * After a reference space reset (task 33.1, Requirement 33.4): a record with an anchor is
+ * re-resolved from it, but a record without one only has a position in the old origin, which may now
+ * point elsewhere in the room. Flag those as approximate so they are offered for "Re-teach lights"
+ * instead of drifting silently. `skipEntityIds` are lights that are placed again anyway (the Mock
+ * Mode bulbs).
+ */
+export function flagUnanchoredApproximate(
+  records: readonly DeviceRecord[],
+  skipEntityIds: readonly string[] = [],
+): ApproximateFlags {
+  let changed = false;
+  const names: string[] = [];
+  const flagged = records.map((record) => {
+    if (record.anchorHandle !== undefined || skipEntityIds.includes(record.entityId)) return record;
+    names.push(record.name);
+    if (record.approximate === true) return record;
+    changed = true;
+    return { ...record, approximate: true };
+  });
+  return { records: changed ? flagged : records, changed, names };
+}

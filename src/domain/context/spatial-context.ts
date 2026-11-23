@@ -172,7 +172,8 @@ export function findGazeTarget(
   }
   if (best !== undefined) return { kind: 'device', device: best };
   const usable = surfaces.filter((s) => usableId(s.id) && isFiniteVec3(s.center));
-  const hit = capturePoint(gaze, usable);
+  // The gaze ray starts at the head, so it is also the head position for the box exclusions.
+  const hit = capturePoint(gaze, usable, gaze.origin);
   if (hit.source === 'surface' && hit.surfaceId !== undefined) {
     const surface = usable.find((s) => s.id === hit.surfaceId);
     if (surface !== undefined) return { kind: 'surface', surface };

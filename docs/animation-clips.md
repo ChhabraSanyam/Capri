@@ -44,13 +44,18 @@ the frame-time overlay, for example `https://<LAN-IP>:<port>/?perf=1`.
 | --- | --- | --- |
 | Idle clip visible when idle | Enter AR, let the arrival wave finish, then watch her for 15 s without input | A slow weight shift from one leg to the other and visible breathing in the torso and shoulders, looping about every 10 s. Her eyes and head still follow you. The console shows `idle clip ready in … ms (… bones)` |
 | Wave crossfade | Exit AR with the Meta button and tap **Enter AR** again without reloading. She waves on each later spawn, now with the clip already loaded | The body eases from the clip pose into the wave and back over about a quarter second. No snap or one-frame jump of the arms, spine, or hips at the start or end |
-| Celebrate crossfade | Point at a bulb and say **"turn that on"** (or poke **Turn on** on Quick actions) | The flick, then the celebrate, each start and end without a pop. Between them she settles back into the idle clip |
-| Sit and perch stay procedural | Say **"sit on the desk"**, or poke **Sit on table** or **Perch on table** on the dev panel (shown in dev builds, or with `?dev=1`). Needs a desk or table in Space Setup | The glide and the seated pose look the same as with `?clipidle=0`. The idle clip does not play while she moves, sits, or perches, and fades back in after **Come here** |
+| Celebrate crossfade | Point at a bulb and say **"turn that on"** (or open the wrist menu, **Commands**, and poke the **"turn that on"** row with the other hand) | The flick, then the celebrate, each start and end without a pop. Between them she settles back into the idle clip |
+| Sit and perch stay procedural | Say **"sit on the desk"**, or poke **Sit on table** or **Perch on table** on the dev panel (shown only with `?dev=1`, in dev and production builds alike). Needs a desk or table in Space Setup | The glide and the seated pose look the same as with `?clipidle=0`. The idle clip does not play while she moves, sits, or perches, and fades back in after **Come here**. Saying **"perch on the table"** works too |
 | Compare with the clip off | Reload the dev URL with `?clipidle=0` (or `?clipidle=0&perf=1`) and repeat the checks | The procedural idle: breathing and small sways, no leg weight shift. Every gesture looks identical to the clip-on run apart from the start and end blend |
 | Frame time | Keep `?perf=1` on for both runs, about a minute each, idle and during a hacking effect | The overlay stays within the 13.9 ms budget (72 fps) with the clip on, close to the `?clipidle=0` reading. Note both values in [`performance-note.md`](performance-note.md) if they differ |
 
 Gestures you may also notice: idle stretches, fidgets, and the 60 s ignored reaction also fade the clip out
 while they play. A `glance` keeps the clip on, because it only turns the head and eyes.
+
+Since task 33 there is no floating mic orb, no "Teach me your lights" orb, no Quick actions panel, and no
+scripted Mock Mode routine to trigger gestures from. Use voice or the wrist menu's **Commands** rows instead.
+Capri's spring-bone hair is scaled with the Avatar (task 33.5), so it should hang and settle with the clip on
+and off.
 
 ## How to add another clip
 

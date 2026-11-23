@@ -15,7 +15,7 @@ export interface PreloadView {
 }
 
 const MEGABYTE = 1024 * 1024;
-const FALLBACK_NOTE = 'You can still enter AR: the quick buttons and the hand keyboard work without voice.';
+const FALLBACK_NOTE = 'You can still enter AR: the Commands list and the Quest keyboard in the wrist menu work without voice.';
 
 function megabytes(bytes: number): string {
   return (bytes / MEGABYTE).toFixed(1);

@@ -66,6 +66,7 @@ const CORE_JOINT_NAMES: readonly XRHandJoint[] = (() => {
   names[CORE_JOINT.thumbTip] = 'thumb-tip';
   names[CORE_JOINT.indexIntermediate] = 'index-finger-phalanx-intermediate';
   names[CORE_JOINT.indexDistal] = 'index-finger-phalanx-distal';
+  names[CORE_JOINT.pinkyProximal] = 'pinky-finger-phalanx-proximal';
   return names;
 })();
 

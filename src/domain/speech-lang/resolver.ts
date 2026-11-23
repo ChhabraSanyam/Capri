@@ -15,7 +15,7 @@ import { SPEECH_COMMANDS } from '../../config/constants.js';
 import type { NavigationRequest } from '../actions/abilities.js';
 import type { DeviceRecord } from '../devices/registry.js';
 import type { AvatarTargetRef, DeviceRef, DeviceNameLookup, Intent } from './intent-parser.js';
-import { COLOR_RGB, VERB_BRIGHTNESS_PCT, type TaskKind } from './phrases.js';
+import { COLOR_RGB, VERB_BRIGHTNESS_PCT, type HermesPromptMode, type TaskKind } from './phrases.js';
 
 /** The registry slice the resolver reads: spoken-name lookup and lookup by id. */
 export interface DeviceDirectory extends DeviceNameLookup {
@@ -40,6 +40,10 @@ export type ResolvedCommand =
   | { readonly kind: 'light'; readonly device: DeviceRecord; readonly command: DeviceCommand }
   | { readonly kind: 'navigate'; readonly request: NavigationRequest }
   | { readonly kind: 'look_at' | 'point_at'; readonly target: AvatarTarget }
+  /** "look at me": head and eyes back to the user (task 33.9). */
+  | { readonly kind: 'look_user' }
+  /** "ask hermes": open the Ask Hermes prompt on the System_Keyboard (task 33.9, Requirement 33.57). */
+  | { readonly kind: 'hermes_prompt'; readonly mode: HermesPromptMode }
   | { readonly kind: 'remember_place'; readonly name: string }
   | { readonly kind: 'set_timer'; readonly minutes: number }
   | { readonly kind: 'confirm_pointed'; readonly device: DeviceRecord }
@@ -137,6 +141,8 @@ export function resolve(intent: Intent, ctx: ResolveContext): ResolvedAction {
       return resolved({ kind: 'chat', phrase: intent.phrase });
     case 'task':
       return resolved({ kind: 'task', taskKind: intent.kind, text: intent.text });
+    case 'hermes_prompt':
+      return resolved({ kind: 'hermes_prompt', mode: intent.mode });
     case 'confirm_pointed': {
       // "That one" confirms what is pointed at now, so only the pointed device counts.
       const device = ctx.pointed === undefined ? undefined : ctx.registry.byId(ctx.pointed);
@@ -157,8 +163,12 @@ export function resolve(intent: Intent, ctx: ResolveContext): ResolvedAction {
         case 'come_here':
         case 'go_away':
           return resolved({ kind: 'navigate', request: { type: intent.ability } });
+        case 'look_at_me':
+          return resolved({ kind: 'look_user' });
         case 'sit_on':
           return resolved({ kind: 'navigate', request: { type: 'sit_on', surface: intent.surface } });
+        case 'perch_on':
+          return resolved({ kind: 'navigate', request: { type: 'perch', surface: intent.surface } });
         case 'look_at':
         case 'point_at': {
           const aim = resolveAvatarTarget(intent.target, intent, ctx);

@@ -6,16 +6,20 @@
  * Routing (`routeTier`):
  * - Every deterministic intent (lights, abilities, timers, places, clarifications, repeats) is
  *   Tier 1, with or without an agent (Requirement 17.11).
- * - Free-form text typed on the Hand_Keyboard that matched no phrase, and the grammar's chat
+ * - Free-form text typed on the System_Keyboard that matched no phrase, and the grammar's chat
  *   phrases, go to the agent's `chat` when it is `connected` (Requirement 20.1).
  * - Task phrases go to the agent's task flow when it is `connected`.
- * - With the agent absent or not connected, chat and task requests fall back to Tier 1 and the
- *   Persona says the in-character `hermes_unavailable` line (Requirements 20.8, 20.9). Unrecognised
- *   speech is never sent to the agent: it can only be garble, so Tier 1 asks to repeat.
+ * - "ask hermes" (task 33.9) stays Tier 1 (it opens the Ask Hermes prompt on the System_Keyboard)
+ *   while the agent is `connected`, and gets the not-connected line otherwise.
+ * - With the agent absent or not connected (Mock Mode has no agent), chat and task requests stay on
+ *   Tier 1 and the Persona says the in-character `hermes_not_connected` line, which points at the
+ *   setup page (Requirements 20.8, 33.18). Unrecognised speech is never sent to the agent: it can
+ *   only be garble, so Tier 1 asks to repeat.
  *
- * Chat (`TierRouter.chat`): any failure (no agent, not connected, an error result, a thrown call,
- * a timeout, an invalid reply) gives a Tier 1 outcome with the `hermes_unavailable` request. A valid
- * reply is gated (`gateAction`) and checked against the truth rules (`interpretReply`).
+ * Chat (`TierRouter.chat`): no agent or an agent that is not connected gives a Tier 1 outcome with
+ * the `hermes_not_connected` request. A failed call (an error result, a thrown call, a timeout, an
+ * invalid reply) gives a Tier 1 outcome with the `hermes_unavailable` request (Requirement 20.9). A
+ * valid reply is gated (`gateAction`) and checked against the truth rules (`interpretReply`).
  */
 import type {
   ActionRejection,
@@ -38,6 +42,9 @@ export type RouteSource = 'speech' | 'keyboard' | 'quick_action';
 /** The Persona request for every Tier 2 fallback. */
 export const HERMES_UNAVAILABLE: PersonaRequest = Object.freeze({ kind: 'hermes_unavailable' });
 
+/** The Persona request for a Tier 2 request while no Hermes is connected (Requirement 33.18). */
+export const HERMES_NOT_CONNECTED: PersonaRequest = Object.freeze({ kind: 'hermes_not_connected' });
+
 /** The Persona request when a reply's action cannot run (Requirement 20.7). */
 export const ACTION_NOT_POSSIBLE: PersonaRequest = Object.freeze({ kind: 'unsupported', reason: 'unrecognised' });
 
@@ -47,13 +54,13 @@ export const TIER2_ACK_TEXT = 'Working on it.';
 export type TierRoute =
   /** Run the Tier 1 path as usual. */
   | { readonly tier: 1; readonly reason: 'deterministic' }
-  /** The request needs the agent, which is absent or not connected: say `say`, nothing else runs. */
+  /** The request needs the agent, which is absent or not connected: say `say` (not connected), nothing else runs. */
   | { readonly tier: 1; readonly reason: 'agent_unavailable'; readonly say: PersonaRequest }
   | { readonly tier: 2; readonly kind: 'chat'; readonly text: string }
   | { readonly tier: 2; readonly kind: 'task'; readonly taskKind: TaskKind; readonly text: string };
 
 const DETERMINISTIC: TierRoute = Object.freeze({ tier: 1, reason: 'deterministic' });
-const UNAVAILABLE: TierRoute = Object.freeze({ tier: 1, reason: 'agent_unavailable', say: HERMES_UNAVAILABLE });
+const UNAVAILABLE: TierRoute = Object.freeze({ tier: 1, reason: 'agent_unavailable', say: HERMES_NOT_CONNECTED });
 
 /** Pick the tier for a resolved line of text. Total and deterministic. */
 export function routeTier(action: ResolvedAction, source: RouteSource, agent: ConnectionState | undefined): TierRoute {
@@ -70,6 +77,8 @@ export function routeTier(action: ResolvedAction, source: RouteSource, agent: Co
   if (command.kind === 'task') {
     return connected ? { tier: 2, kind: 'task', taskKind: command.taskKind, text: command.text } : UNAVAILABLE;
   }
+  // "ask hermes" opens a prompt on this device (Tier 1), but only while Hermes can answer it.
+  if (command.kind === 'hermes_prompt') return connected ? DETERMINISTIC : UNAVAILABLE;
   return DETERMINISTIC;
 }
 
@@ -104,7 +113,8 @@ export interface Tier1Fallback {
 export type ChatOutcome = Tier2Reply | Tier1Fallback;
 
 function fallback(reason: Tier1Reason, errorKind?: BackendErrorKind): Tier1Fallback {
-  return { tier: 1, reason, ...(errorKind === undefined ? {} : { errorKind }), say: HERMES_UNAVAILABLE };
+  const say = reason === 'not_connected' ? HERMES_NOT_CONNECTED : HERMES_UNAVAILABLE;
+  return { tier: 1, reason, ...(errorKind === undefined ? {} : { errorKind }), say };
 }
 
 /**

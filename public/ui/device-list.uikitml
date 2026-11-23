@@ -62,7 +62,7 @@
   <div class="content">
     <div id="heading" class="heading">My lights</div>
     <div id="instruction" class="instruction">Tap Teach me your lights.</div>
-    <div id="talk-hint" class="hint">To talk now, poke the mic orb.</div>
+    <div id="talk-hint" class="hint">To talk, finish this step first.</div>
     <div class="stack">
       <Button id="row-0" class="big"><ButtonLabel id="row-label-0" class="label">-</ButtonLabel></Button>
       <Button id="row-1" class="big"><ButtonLabel id="row-label-1" class="label">-</ButtonLabel></Button>

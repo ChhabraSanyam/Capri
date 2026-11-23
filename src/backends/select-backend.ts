@@ -15,7 +15,6 @@ import type { ModeState } from '../domain/settings/mode-resolver.js';
 import { HaClient, type HaCredentials, type HaLog } from './ha/ha-client.js';
 import { HomeSwitch } from './home-switch.js';
 import { createLiveHermesAdapter, type HermesCredentials, type LiveHermesOptions } from './hermes/live-hermes-adapter.js';
-import { createMockAgent } from './mock/mock-agent.js';
 import { createMockHome, type MockHome } from './mock/mock-home.js';
 import { pinnedFetchFor, type PinnableFetch } from './pinned-fetch.js';
 import type { AgentBackend, LightState, Observable, SmartHomeBackend } from './types.js';
@@ -65,19 +64,16 @@ export interface AgentBackendInputs {
 }
 
 /**
- * The agent (Hermes) backend for a mode (tasks 19.3, 21.10, Requirements 19.3, 23.5, 23.10).
+ * The agent (Hermes) backend for a mode (tasks 19.3, 21.10, 33.4, Requirements 19.3, 33.17).
  *
- * - `mock`: the scripted `MockAgent`, which needs no setup and makes no network call.
- * - `absent`: `undefined`. The scripted agent is never substituted for a missing Hermes, because it
- *   would pretend a task ran. Callers keep the in-character "Hermes is unavailable" line.
+ * - `mock` (Mock Mode) and `absent`: `undefined`. Mock Mode runs with no agent, and no stand-in
+ *   agent is substituted for a missing Hermes, because it would pretend a task ran. The Hermes chip
+ *   reads "Not configured" and Capri says the in-character "Hermes isn't connected" line.
  * - `live`: the `LiveHermesAdapter` on the stored Hermes URL and key. Its connection starts as
  *   `connecting` (or `not_configured`/`failed` when a setting is missing or refused); call
  *   `testConnection()` once to settle it before routing chat to it.
  */
 export function selectAgentBackend(mode: ModeState, inputs: AgentBackendInputs = {}): AgentBackend | undefined {
-  if (mode.agent === 'absent') return undefined;
-  if (mode.agent === 'live') {
-    return createLiveHermesAdapter({ ...inputs.live, credentials: inputs.hermes ?? {} });
-  }
-  return createMockAgent();
+  if (mode.agent !== 'live') return undefined;
+  return createLiveHermesAdapter({ ...inputs.live, credentials: inputs.hermes ?? {} });
 }

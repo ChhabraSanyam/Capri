@@ -5,6 +5,12 @@
  * point, and combines the latest hit with the pure `capturePoint`. The spike showed the hit-test
  * works on Quest (2 hits, 0 empty).
  *
+ * Which ray (task 33.3): the hit-test source is fixed to the hand's `targetRaySpace` when it is
+ * created, so it cannot follow the finger ray. The teach pointer, the Surface boxes, and the fallback
+ * all use the finger ray (index tip, proximal to tip). A hit-test hit is used only when it lies
+ * within `POINT_CAPTURE.hitTestMaxOffAxisDeg` of the finger ray (`readHitNear`), so the reticle and
+ * the captured point are always the same point and the drawn ray always leaves along the finger.
+ *
  * - The target entity exists only while `setActive(true)`, so no hit-test source runs outside the
  *   teach flow. Removing the component cancels the source (the IWSDK system cleans up on disqualify).
  * - `EnvironmentRaycastSystem` moves the entity's object to the hit point in world space and sets
@@ -28,8 +34,12 @@ import {
 import { POINT_CAPTURE } from '../config/constants.js';
 import {
   adjustFallbackDistance,
-  capturePoint,
+  capturePointInto,
+  copyCapture,
+  createCaptureResult,
+  hitWithinAngle,
   type CapturedPoint,
+  type CaptureResult,
 } from '../domain/pointing/capture.js';
 import type { Ray, Vec3 } from '../domain/geometry.js';
 import type { Surface } from '../domain/surfaces.js';
@@ -129,13 +139,30 @@ export class HitCapture {
   }
 
   /**
-   * Capture the pointed-at position: nearest Surface hit, else the environment-raycast hit, else
-   * the fallback distance along the ray.
+   * The latest hit when it can be used with the finger ray `ray`: it must lie within
+   * `POINT_CAPTURE.hitTestMaxOffAxisDeg` of that ray seen from the fingertip. The hit-test runs
+   * along IWSDK's hand target ray, which is not the finger ray, and the teach pointer is drawn
+   * from the fingertip to the capture point, so an off-axis hit would make the pointer leave the
+   * finger. Allocation-free; the returned object is reused.
    */
-  capture(ray: Ray, surfaces: readonly Surface[]): CapturedPoint {
+  readHitNear(ray: Ray): Vec3 | undefined {
     const hit = this.readHit();
-    const hitCopy = hit === undefined ? undefined : { x: hit.x, y: hit.y, z: hit.z };
-    return capturePoint(ray, surfaces, hitCopy, this.fallbackM);
+    if (hit === undefined) return undefined;
+    return hitWithinAngle(ray, hit, POINT_CAPTURE.hitTestMaxOffAxisDeg) ? hit : undefined;
+  }
+
+  /**
+   * Capture the pointed-at position into `out` (allocation-free, for the per-frame teach pointer):
+   * the environment hit-test hit near the finger ray, else the nearest labelled Surface, else the
+   * fallback distance along the ray (task 33.3, `capturePointInto`).
+   */
+  captureInto(out: CaptureResult, ray: Ray, surfaces: readonly Surface[], head: Vec3): CaptureResult {
+    return capturePointInto(out, ray, surfaces, head, this.readHitNear(ray), this.fallbackM);
+  }
+
+  /** Same as `captureInto` with a fresh result. Allocates, so call it on an event. */
+  capture(ray: Ray, surfaces: readonly Surface[], head: Vec3): CapturedPoint {
+    return copyCapture(this.captureInto(createCaptureResult(), ray, surfaces, head));
   }
 
   /** Remove the raycast target. */

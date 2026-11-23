@@ -4,13 +4,14 @@
  *
  * Rules:
  * - `liveRequested` false (including no stored credentials at all): Mock Mode with the mock home and
- *   the mock agent. Zero configuration works.
+ *   `agent: 'mock'`, which means no agent at all (Requirement 33.17: `selectAgentBackend` returns
+ *   none, and the Hermes chip reads "Not configured"). Zero configuration works.
  * - `liveRequested` true and Home Assistant credentials incomplete: stays Mock, and `missing` names
  *   each absent Home Assistant setting (`ha_url`, `ha_token`).
  * - `liveRequested` true and Home Assistant complete: Live. The home backend is live.
  *   - Hermes complete: `agent` is `live`.
- *   - Hermes incomplete: `agent` is `absent`, so Tier 2 is unavailable. The scripted mock task is
- *     not substituted, because it would misrepresent reality. `missing` names the absent Hermes
+ *   - Hermes incomplete: `agent` is `absent`, so Tier 2 is unavailable. No stand-in agent is
+ *     substituted, because it would misrepresent reality. `missing` names the absent Hermes
  *     settings only when the user filled in one of the two (a half-entered pair is an error worth
  *     reporting, an empty pair just means Hermes is not configured).
  *

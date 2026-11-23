@@ -115,19 +115,26 @@ export const AVATAR_HEADS = {
   come_here: 'come here',
   go_away: 'go away',
   sit_on: 'sit on',
+  perch_on: 'perch on',
   look_at: 'look at',
   point_at: 'point at',
   remember_place: 'remember this as',
   set_timer: 'set a timer for',
 } as const;
 
+/** "look at me" (task 33.9): she turns her head and eyes back to the user. A whole phrase. */
+export const LOOK_AT_ME_PHRASE = 'look at me';
+
 /** Surfaces the grammar offers after "sit on the". Typed text may name others. */
 export const SIT_SURFACES: readonly string[] = ['desk', 'table', 'couch'];
+
+/** Surfaces the grammar offers after "perch on the" (task 33.9). She perches on a table edge. */
+export const PERCH_SURFACES: readonly string[] = ['table'];
 
 /**
  * Place names the recogniser can hear for "remember this as" and "look at". A restricted grammar
  * cannot transcribe a new name, so spoken names come from this list plus the places already
- * remembered. Any other name is typed on the Hand_Keyboard.
+ * remembered. Any other name is typed on the System_Keyboard.
  */
 export const BUILTIN_PLACE_NAMES: readonly string[] = ['desk', 'shelf', 'window', 'door', 'bed', 'tv', 'kitchen'];
 
@@ -169,33 +176,93 @@ export const CHAT_PHRASES: readonly string[] = [
   'tell me a joke',
 ];
 
-export type TaskKind = 'routine' | 'watch' | 'research';
+/**
+ * Task kinds. The three phrase kinds come from `TASK_PHRASES`; `custom` is a task typed on the
+ * System_Keyboard from the "Give Hermes a task" tile (task 33.9), which Hermes reads as free text.
+ */
+export type TaskKind = 'routine' | 'watch' | 'research' | 'custom';
 
-export const TASK_PHRASES: readonly { readonly kind: TaskKind; readonly phrase: string }[] = [
+export const TASK_PHRASES: readonly { readonly kind: Exclude<TaskKind, 'custom'>; readonly phrase: string }[] = [
   { kind: 'routine', phrase: 'run my evening routine' },
   { kind: 'watch', phrase: 'watch the door' },
   { kind: 'research', phrase: 'research it and tell me when done' },
 ];
 
+/**
+ * Spoken phrases that open a Hermes prompt on the System_Keyboard (task 33.9, Requirement 33.57).
+ * "ask hermes" opens the Ask Hermes prompt; the typed question then goes to Hermes as chat.
+ */
+export type HermesPromptMode = 'ask';
+export const HERMES_PROMPT_PHRASES: readonly { readonly mode: HermesPromptMode; readonly phrase: string }[] = [
+  { mode: 'ask', phrase: 'ask hermes' },
+];
+
 // ---------------------------------------------------------------------------------------------
-// Quick_Actions
+// The phrase table as one value (task 33.9)
 // ---------------------------------------------------------------------------------------------
 
-export interface QuickAction {
-  readonly id: string;
-  readonly label: string;
-  /** Text handed to `processText`, the same path speech and the Hand_Keyboard take (Requirement 15.13). */
-  readonly text: string;
+/**
+ * Every phrase group above, as one value. `buildCommandCatalog` (`domain/commands/command-catalog.ts`)
+ * reads it, so the Commands_Tile lists exactly what the grammar and the parser know (Requirement
+ * 33.50). The constants above stay the source; this only collects them.
+ */
+export interface PhraseTable {
+  readonly deviceVerbs: readonly DeviceVerbEntry[];
+  readonly splitVerbWords: readonly string[];
+  readonly splitParticles: typeof SPLIT_PARTICLES;
+  readonly colorNames: readonly string[];
+  readonly deicticPhrases: readonly string[];
+  readonly confirmPhrases: readonly string[];
+  readonly avatarHeads: typeof AVATAR_HEADS;
+  readonly lookAtMe: string;
+  readonly sitSurfaces: readonly string[];
+  readonly perchSurfaces: readonly string[];
+  readonly builtinPlaceNames: readonly string[];
+  readonly timerMinutes: { readonly min: number; readonly max: number };
+  readonly chatPhrases: readonly string[];
+  readonly taskPhrases: typeof TASK_PHRASES;
+  readonly hermesPromptPhrases: typeof HERMES_PROMPT_PHRASES;
 }
 
-/** The Quick_Actions buttons, in panel order (design: Quick_Actions are a table of preset intents). */
-export const QUICK_ACTIONS: readonly QuickAction[] = [
-  { id: 'turn_on', label: 'Turn on', text: 'turn on' },
-  { id: 'turn_off', label: 'Turn off', text: 'turn off' },
-  { id: 'dim', label: 'Dim', text: 'dim' },
-  { id: 'brighten', label: 'Brighten', text: 'brighten' },
-  { id: 'come_here', label: 'Come here', text: 'come here' },
-  { id: 'sit_desk', label: 'Sit on the desk', text: 'sit on the desk' },
-  { id: 'go_away', label: 'Go away', text: 'go away' },
-  { id: 'routine', label: 'Run my evening routine', text: 'run my evening routine' },
-];
+export const PHRASE_TABLE: PhraseTable = {
+  deviceVerbs: DEVICE_VERBS,
+  splitVerbWords: SPLIT_VERB_WORDS,
+  splitParticles: SPLIT_PARTICLES,
+  colorNames: COLOR_NAMES,
+  deicticPhrases: DEICTIC_PHRASES,
+  confirmPhrases: CONFIRM_PHRASES,
+  avatarHeads: AVATAR_HEADS,
+  lookAtMe: LOOK_AT_ME_PHRASE,
+  sitSurfaces: SIT_SURFACES,
+  perchSurfaces: PERCH_SURFACES,
+  builtinPlaceNames: BUILTIN_PLACE_NAMES,
+  timerMinutes: { min: SPEECH_COMMANDS.timerMinutesMin, max: SPEECH_COMMANDS.timerMinutesMax },
+  chatPhrases: CHAT_PHRASES,
+  taskPhrases: TASK_PHRASES,
+  hermesPromptPhrases: HERMES_PROMPT_PHRASES,
+};
+
+/**
+ * The command types the phrase table defines, one id per kind of command. Property 50 checks that
+ * the Commands_Tile has a row for each.
+ */
+export type CommandType =
+  | `device:${DeviceVerb}`
+  | 'confirm_pointed'
+  | `avatar:${keyof typeof AVATAR_HEADS}`
+  | 'avatar:look_at_me'
+  | 'chat'
+  | `task:${Exclude<TaskKind, 'custom'>}`
+  | `hermes_prompt:${HermesPromptMode}`;
+
+export function commandTypesOf(table: PhraseTable): CommandType[] {
+  return [
+    ...table.deviceVerbs.map((e) => `device:${e.verb}` as const),
+    ...(table.confirmPhrases.length > 0 ? (['confirm_pointed'] as const) : []),
+    ...(Object.keys(table.avatarHeads) as (keyof typeof AVATAR_HEADS)[]).map((k) => `avatar:${k}` as const),
+    'avatar:look_at_me',
+    ...(table.chatPhrases.length > 0 ? (['chat'] as const) : []),
+    ...table.taskPhrases.map((t) => `task:${t.kind}` as const),
+    ...table.hermesPromptPhrases.map((p) => `hermes_prompt:${p.mode}` as const),
+  ];
+}

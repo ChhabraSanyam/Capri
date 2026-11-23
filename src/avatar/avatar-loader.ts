@@ -11,7 +11,15 @@
  * (`three` is aliased to super-three in package.json), so no second instance is created.
  */
 import { Box3, Object3D, Vector3 } from '@iwsdk/core';
-import { VRMLoaderPlugin, VRMUtils, type VRM, type VRMHumanBoneName } from '@pixiv/three-vrm';
+import {
+  VRMLoaderPlugin,
+  VRMSpringBoneColliderShapeCapsule,
+  VRMSpringBoneColliderShapeSphere,
+  VRMUtils,
+  type VRM,
+  type VRMHumanBoneName,
+  type VRMSpringBoneManager,
+} from '@pixiv/three-vrm';
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { AVATAR_TARGET_HEIGHT_M, AVATAR_VRM_URL } from '../config/avatar-config.js';
 import {
@@ -150,9 +158,49 @@ export async function loadAvatar(url: string = AVATAR_VRM_URL, deps: AvatarLoade
 
   vrm.scene.scale.multiplyScalar(scale);
   vrm.scene.updateMatrixWorld(true);
+  if (vrm.springBoneManager) {
+    scaleSpringBones(vrm.springBoneManager, scale);
+    vrm.springBoneManager.reset();
+  }
 
   return {
     ok: true,
     value: { vrm, root: vrm.scene, metrics: scaleMetrics(measured, scale), scale, loadMs: now() - start },
   };
+}
+
+/**
+ * Make the spring bones (hair, cloth) behave at the fitted size exactly as they do at the authored
+ * size (task 33.5, Requirement 33.21). three-vrm reads collider radii, joint hit radii, stiffness,
+ * and gravity power as world-space metres and never applies the scene's scale to them. Bone
+ * lengths and collider centres do shrink with the scene. Without this, a model fitted down to
+ * 0.37x keeps a head collider 2.7 times too big and pushes the hair up and away from the head.
+ * Multiplying those four values by the fit scale keeps the whole simulation geometrically
+ * similar. `dragForce` is a ratio and stays as it is. Call once, after the scale is applied.
+ */
+export function scaleSpringBones(manager: VRMSpringBoneManager, scale: number): void {
+  if (!Number.isFinite(scale) || scale <= 0 || scale === 1) return;
+  for (const collider of manager.colliders) {
+    const shape = collider.shape;
+    if (shape instanceof VRMSpringBoneColliderShapeSphere || shape instanceof VRMSpringBoneColliderShapeCapsule) {
+      shape.radius *= scale;
+    }
+  }
+  for (const joint of manager.joints) {
+    joint.settings.hitRadius *= scale;
+    joint.settings.stiffness *= scale;
+    joint.settings.gravityPower *= scale;
+  }
+}
+
+/**
+ * Put every spring bone back at its rest pose under the Avatar's current transform. The spring
+ * tails live in world space, so call this after the Avatar jumps to a new place (spawn), or the
+ * hair whips from where it was before. Updates the world matrices first. No allocation.
+ */
+export function settleSpringBones(vrm: VRM): void {
+  const manager = vrm.springBoneManager;
+  if (!manager) return;
+  vrm.scene.updateWorldMatrix(true, true);
+  manager.reset();
 }

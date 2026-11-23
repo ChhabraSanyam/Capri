@@ -1,7 +1,7 @@
 /**
  * Agent slot (task 21.12). One stable `AgentBackend` the app wires once (tier router, task flow,
- * Hermes chip), forwarding to whichever agent is current: the scripted `MockAgent` in Mock Mode, the
- * `LiveHermesAdapter` in Live Mode, or none (`agent: 'absent'`).
+ * Hermes chip), forwarding to whichever agent is current: the `LiveHermesAdapter` in Live Mode, or
+ * none (Mock Mode and `agent: 'absent'`, Requirement 33.17).
  *
  * - `connection` mirrors the current agent's state and follows its changes. With no agent it is
  *   `not_configured`, so the chip shows the truth and the tier router never routes to it.

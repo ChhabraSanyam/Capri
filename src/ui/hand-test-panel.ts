@@ -4,7 +4,9 @@
  * headset proves that panel interaction by hand works (assumption A6). If neither rises, the
  * fallback is the own-pinch detector in `domain/pointing/pinch.ts` (a later task).
  *
- * The panel is shown during a session in dev builds, or in any build opened with `?handtest=1`.
+ * The panel is shown during a session only when the page is opened with `?handtest=1`, in dev and
+ * production builds alike (task 33.2). Without the query no panel entity and no pinch-aim
+ * rectangle exist.
  * It reads no controller input: IWSDK turns hand pokes and pinch rays into the same click events.
  */
 import {
@@ -23,6 +25,7 @@ import type { Logger } from '../app/logger.js';
 import { assetUrl } from '../config/asset-url.js';
 import { DEV_PANEL_RECT } from '../config/constants.js';
 import type { PanelRect } from '../domain/devices/teach-input.js';
+import { parseDevQuery } from '../domain/dev-query.js';
 
 export const HAND_TEST_PANEL_URL = assetUrl('ui/hand-test.uikitml');
 
@@ -31,8 +34,9 @@ const PANEL_SCALE = 0.1;
 const PANEL_DISTANCE_M = 0.45;
 const PANEL_DROP_M = 0.2;
 
+/** Only with `?handtest=1`, in dev and production builds alike (Requirements 33.9, 33.10). */
 export function shouldShowHandTestPanel(search: string): boolean {
-  return import.meta.env.DEV || new URLSearchParams(search).get('handtest') === '1';
+  return parseDevQuery(search).handtest;
 }
 
 export class HandTestPanel {

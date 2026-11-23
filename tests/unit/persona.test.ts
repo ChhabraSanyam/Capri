@@ -187,6 +187,7 @@ describe('Persona situations', () => {
     { kind: 'ask_pointed' },
     { kind: 'ask_repeat' },
     { kind: 'hermes_unavailable' },
+    { kind: 'hermes_not_connected' },
     { kind: 'ask_which', candidates: ['desk lamp', 'floor lamp', 'a', 'b', 'c'] },
     { kind: 'surface_missing', surface: 'table', reason: 'not_found' },
     { kind: 'surface_missing', surface: '', reason: 'unsuitable' },

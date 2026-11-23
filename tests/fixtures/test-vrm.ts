@@ -3,9 +3,13 @@
  * a hand-made skeleton, so animator tests exercise the real normalized-bone and expression code
  * without loading a file. T-pose, facing +Z, so the left arm points along +X.
  */
-import { Group, Object3D } from '@iwsdk/core';
+import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Object3D, Vector3 } from '@iwsdk/core';
 import {
   VRM,
+  VRMSpringBoneCollider,
+  VRMSpringBoneColliderShapeSphere,
+  VRMSpringBoneJoint,
+  VRMSpringBoneManager,
   VRMExpression,
   VRMExpressionManager,
   VRMHumanoid,
@@ -21,6 +25,8 @@ export const TEST_EXPRESSIONS = ['blink', 'happy', 'relaxed', 'surprised', 'angr
 export interface TestVrm {
   readonly vrm: VRM;
   readonly root: Object3D;
+  /** Present with `withHair`. */
+  readonly hair?: TestHair;
 }
 
 function bone(name: string, parent: Object3D, x: number, y: number, z: number): Object3D {
@@ -34,6 +40,55 @@ function bone(name: string, parent: Object3D, x: number, y: number, z: number): 
 export interface TestVrmOptions {
   /** Leave the neck bone out, like a model whose VRM has none. */
   readonly withoutNeck?: boolean;
+  /**
+   * Add a spring-bone hair strand hanging behind the head, a head sphere collider, and a 1.6 m body
+   * mesh so `loadAvatar` can measure the model (task 33.5). Settings are authored in model metres.
+   */
+  readonly withHair?: boolean;
+}
+
+/** Hair strand of the `withHair` fixture: three bones, the last is the tail end. */
+export const TEST_HAIR = {
+  /** Head-local position of the strand root: behind the head, level with the collider centre. */
+  root: [0, 0.08, -0.13],
+  segmentM: 0.1,
+  colliderOffset: [0, 0.08, 0],
+  colliderRadiusM: 0.1,
+  hitRadiusM: 0.02,
+  stiffness: 0.5,
+  gravityPower: 0.1,
+  dragForce: 0.4,
+  /** Body mesh height, the model height `loadAvatar` measures. */
+  bodyHeightM: 1.6,
+} as const;
+
+/** Bones of the `withHair` strand, root first, tail end last. */
+export interface TestHair {
+  readonly bones: readonly Object3D[];
+  readonly head: Object3D;
+}
+
+function addHair(head: Object3D): { manager: VRMSpringBoneManager; hair: TestHair } {
+  const h = TEST_HAIR;
+  const collider = new VRMSpringBoneCollider(
+    new VRMSpringBoneColliderShapeSphere({ offset: new Vector3(...h.colliderOffset), radius: h.colliderRadiusM }),
+  );
+  head.add(collider);
+  const group = { colliders: [collider], name: 'Head' };
+  const b0 = bone('hair0', head, h.root[0], h.root[1], h.root[2]);
+  const b1 = bone('hair1', b0, 0, -h.segmentM, 0);
+  const end = bone('hair1_end', b1, 0, -h.segmentM, 0);
+  const manager = new VRMSpringBoneManager();
+  const settings = {
+    hitRadius: h.hitRadiusM,
+    stiffness: h.stiffness,
+    gravityPower: h.gravityPower,
+    gravityDir: new Vector3(0, -1, 0),
+    dragForce: h.dragForce,
+  };
+  manager.addJoint(new VRMSpringBoneJoint(b0, b1, settings, [group]));
+  manager.addJoint(new VRMSpringBoneJoint(b1, end, settings, [group]));
+  return { manager, hair: { bones: [b0, b1, end], head } };
 }
 
 export function createTestVrm(options: TestVrmOptions = {}): TestVrm {
@@ -95,12 +150,24 @@ export function createTestVrm(options: TestVrmOptions = {}): TestVrm {
   );
   const lookAt = new VRMLookAt(humanoid, applier);
 
+  let springBoneManager: VRMSpringBoneManager | undefined;
+  let hair: TestHair | undefined;
+  if (options.withHair) {
+    const body = new Mesh(new BoxGeometry(0.3, TEST_HAIR.bodyHeightM, 0.2), new MeshBasicMaterial());
+    body.position.y = TEST_HAIR.bodyHeightM / 2;
+    root.add(body);
+    ({ manager: springBoneManager, hair } = addHair(head));
+    root.updateMatrixWorld(true);
+    springBoneManager.setInitState(); // what the VRM loader plugin does at load
+  }
+
   const vrm = new VRM({
     scene: root,
     meta: { metaVersion: '1' } as unknown as VRM['meta'],
     humanoid,
     expressionManager,
     lookAt,
+    ...(springBoneManager ? { springBoneManager } : {}),
   });
-  return { vrm, root };
+  return hair ? { vrm, root, hair } : { vrm, root };
 }

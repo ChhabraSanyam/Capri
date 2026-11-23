@@ -22,6 +22,12 @@ export interface DeviceRecord {
   readonly position: Vec3;
   /** Persistent anchor handle when the runtime supports it. */
   readonly anchorHandle?: string;
+  /**
+   * True after a reference space reset moved the origin while this record had no anchor (task 33.1,
+   * Requirement 33.4): its position may now point elsewhere in the room, so it is listed for
+   * "Re-teach lights". Never stored. Re-teaching the light (`add`) clears it.
+   */
+  readonly approximate?: boolean;
 }
 
 /** What a caller provides to register a device. */

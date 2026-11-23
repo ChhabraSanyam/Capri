@@ -14,6 +14,7 @@ Build order is strict: Milestone 0 (feasibility spike), then Steps 1 to 7, then 
 | MVD | 3 to 20 | Steps 1 to 7 (tasks 3, 5, 7, 9, 11, 13, 15), Mock Mode (17), one scripted Hermes task, `vercel.json`, and first Vercel deploy with the custom subdomain (19), MVD cut-line marker (20) |
 | Post-MVD | 21 to 30 | Live Hermes and Tier 2 (21), personality (23), setup and live Home Assistant and CORS docs (25), polish and smoke checks (27), submission deliverables (29). `vercel.json` and the `build:vercel` script are built in task 19.5 (MVD), the deploy and custom subdomain in 19.6 (MVD), and the smoke checks are only added to the build in 27.5 |
 | OPTIONAL | 31 | Retargeted animation clips. Cut first. No core task depends on it. |
+| Post-MVD fixes | 32, 33 | Demo fixes (32). Headset feedback fixes and HUD declutter (33), run after every other group |
 
 Working rules for the developer agent (Requirements 1, 7, 29, 30):
 
@@ -905,11 +906,99 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
     - **Open on Quest:** `npm run dev`, then `https://<LAN-IP>:<port>/` in Quest Browser, or `adb reverse tcp:<port> tcp:<port>` and `https://localhost:<port>/`
     - _Requirements: 32.4, 32.6_
 
+- [x] 33. Headset feedback fixes and HUD declutter [POST-MVD]
+  - [x] 33.1 Run the MR session without the Quest boundary
+    - The user reports that anchors and positions jump when stepping in and out of the Quest room-scale boundary. Passthrough MR does not need the boundary
+    - Research from primary sources how to run `immersive-ar` without the boundary: Meta Quest Browser WebXR documentation for the reference space it documents as boundaryless in passthrough (expected `unbounded`, verify), and the IWSDK 1.1.0 typings for the reference-space option (`ProjectReferenceSpaceType` in `@iwsdk/core/dist/project/types.d.ts` already lists `'unbounded'`; confirm how `fallbackOrder` is applied by `World.create`). Cite the sources in the follow-up note
+    - Set `iwsdk.config.json` `world.xr.referenceSpace` to `{ "type": "unbounded", "fallbackOrder": ["local-floor", "local", "viewer"] }` if the research confirms it, and log the granted reference space type once at session start in `src/xr/session.ts`
+    - Handle the `XRReferenceSpace` `reset` event in `src/xr/session.ts` and forward it as a `space:reset` event on `AppEvents` (`src/app/events.ts`). Within 0.5 s: re-resolve anchored device positions from their anchors (`src/persistence/anchor-store.ts`, `src/domain/devices/restore.ts`), re-place the mock bulbs from the current head pose (`src/domain/devices/mock-bulb-layout.ts`, `src/ui/mock-bulbs.ts`), and recompute the idle home (`src/domain/placement.ts`)
+    - Never let a localStorage-only position drift silently: on a reset, mark records without an anchor as approximate and list them under "Re-teach lights" (surfaced in the Lights tile in task 33.8; until then, log it and keep the existing re-teach action)
+    - Keep the standing height from the floor-labelled plane (`src/xr/floor-tracker.ts`, Requirement 11.11) under every reference space type
+    - Add unit tests in `tests/unit/` for the fallback to `local-floor` when `unbounded` is refused (fake session), and for the reset handler re-reading anchors, re-placing bulbs, recomputing the idle home, and flagging unanchored records
+    - Append a dated follow-up note to `docs/spike-report.md`: what the documentation says, which reference space the headset granted, whether the boundary still appears, and whether positions stay stable when crossing the old boundary line
+    - Run `npm run --if-present typecheck` and `npm test -- --run`
+    - _Requirements: 33.1, 33.2, 33.3, 33.4, 33.5, 11.11, 12.10_
+
+  - [x] 33.2 Hide the hand joint dots and gate the dev panels behind explicit queries
+    - Add a pure `parseDevQuery(search)` in `src/domain/dev-query.ts` returning `{ hands, dev, handtest }`, each true only when the parameter equals `1`, with no dependence on `import.meta.env.DEV`
+    - Render `src/xr/hand-skeleton.ts` only with `?hands=1`. Show `src/ui/dev-panel.ts` only with `?dev=1` and `src/ui/hand-test-panel.ts` only with `?handtest=1`, in DEV and production builds alike, so the dev server looks like production by default. Wire the flags in `src/main.ts` or `src/app/app.ts`. Keep `?fakehands` and `?perf=1` unchanged
+    - Write the property test for Property 52 in `tests/property/` (fast-check, at least 100 runs, tagged **Feature: capri-spatial-companion, Property 52: Dev query flags are explicit**), and update any existing test that assumed the panels appear in DEV builds
+    - Run `npm run --if-present typecheck` and `npm test -- --run`, and confirm with `browser_screenshot` that no joint dots or dev panels show without the queries
+    - _Requirements: 33.6, 33.7, 33.8, 33.9, 33.10, 9.12_
+
+  - [x] 33.3 Add a visible teach pointer and fix point capture landing at the hand
+    - Root cause to fix in `src/domain/pointing/capture.ts`: `capturePoint` treats every Surface as a world-axis-aligned box and treats a ray that starts inside a box as a hit at the ray origin, and the global room mesh's box contains the user, so captures land at the hand
+    - Change `capturePoint` to the order in the design (Headset feedback revisions, Teach pointer and capture): environment hit-test against the real room mesh first (`src/xr/hit-capture.ts`), then the nearest labelled plane box, then the 2.0 m fallback. Exclude the global or unlabelled room mesh and any box containing the head from box intersection, and never return a hit at or within `POINT_CAPTURE.minAlongRayM` (0.05 m, new constant in `src/config/constants.ts`) of the ray origin
+    - Create `src/ui/teach-pointer.ts`: a thin ray from the dominant index fingertip (`indexTipSpaces`) and a reticle at the capture point, both with low-cost `MeshBasicMaterial`, updated in place every frame while the teach flow waits for a point, with no per-frame allocation. Show the reticle at the 2.0 m fallback together with the existing Nearer/Farther controls when nothing is hit
+    - A dominant pinch places the anchor at the reticle position, not at the hand. Wire it in `src/ui/teach-controller.ts` and `src/app/device-registration.ts`
+    - Write the property test for Property 48 in `tests/property/` (at least 100 runs, tagged **Feature: capri-spatial-companion, Property 48: Point capture never lands at the hand**), with generators that include a global mesh box and boxes containing the ray origin and the head. Update the existing capture tests for the new order
+    - Run `npm run --if-present typecheck` and `npm test -- --run`, and confirm the ray and reticle in the runtime with `browser_screenshot`
+    - _Requirements: 33.11, 33.12, 33.13, 33.14, 33.15, 33.16, 12.2, 12.3_
+
+  - [x] 33.4 Remove the scripted Hermes workflow from Mock Mode
+    - Remove the MockAgent from Mock Mode: `src/backends/select-backend.ts` returns no agent in Mock Mode, `src/backends/agent-slot.ts` reports `not_configured`, and the Hermes chip reads "Not configured" (`src/domain/settings/status.ts`, `src/domain/status-chips-model.ts`)
+    - In `src/domain/contract/tier-router.ts` and `src/app/agent-wiring.ts`, answer Tier 2 requests (task phrases, typed chat) while Hermes is not connected with one short in-character line saying Hermes isn't connected and can be added on the setup page. Add the line to the Persona templates (`src/domain/persona/templates.ts`) within the 2-sentence limit
+    - Remove the "Run my evening routine" entry from Quick_Actions (`src/domain/speech-lang/phrases.ts` quick-action table, `src/ui/panels/quick-actions.ts`). Keep the task phrases in the grammar so live Hermes still receives them
+    - Delete `src/backends/mock/mock-agent.ts` and update or remove its tests (`tests/unit/tier2-wiring.test.ts`, `tests/unit/tier-router.test.ts`) and references (`src/domain/task-panel-view.ts`) cleanly. Keep the `AgentBackend` interface, `src/app/task-flow.ts`, and the Task_Panel for live Hermes
+    - Update the Property 42 test for the not-connected line and add unit tests that Mock Mode has no agent and makes no Hermes request
+    - Run `npm run --if-present typecheck` and `npm test -- --run`
+    - _Requirements: 33.17, 33.18, 33.19, 33.20, 20.8, 20.9, 23.6, 23.8_
+
+  - [x] 33.5 Fix Capri's floating hair
+    - Investigate why the VRM spring-bone hair floats: spring bones initialised before the 0.6 m scale is applied (`src/avatar/avatar-fit.ts`), joints reset in the wrong order, gravity and stiffness interacting with the scaled root, `VRMUtils.combineSkeletons` or `removeUnnecessaryJoints` effects (`src/avatar/avatar-loader.ts`), the spring update order relative to `vrm.update(dt)` (`src/avatar/procedural-animator.ts`), and `dt` spikes
+    - Fix the cause so the hair hangs naturally and settles (for example re-initialise the spring bone state after scaling and clamp the spring `dt`). If a proper fix is not quick, add `AVATAR_HAIR.freezeSpringBones` in `src/config/constants.ts` and hold the spring bones in the rest pose (hair static) as the fallback, and name the chosen route in the task completion note
+    - Add a unit test with `tests/fixtures/test-vrm.ts` for the chosen route (spring state initialised after scaling, or no spring update while frozen)
+    - Run `npm run --if-present typecheck` and `npm test -- --run`, and verify with IWER `browser_screenshot` captures before and after a head turn that the hair hangs down and settles
+    - _Requirements: 33.21, 33.22, 29.3_
+
+  - [x] 33.6 Combine the listening indicator and transcript into one bubble on Capri
+    - Remove the floating mic orb (`src/ui/panels/mic-orb.ts` and its wiring in `src/app/talk-gesture.ts` and `src/ui/voice-ui.ts`). Push-to-talk stays the non-dominant hold-pinch gesture only
+    - Replace the large transcript panel (`src/ui/panels/transcript.ts`) with `src/ui/transcript-bubble.ts`: one small bubble attached above Capri, visually distinct from her Speech_Bubble (`src/ui/speech-bubble.ts`). It shows a listening state (pulsing dots or waveform driven by the mic level) while the pinch is held, then the live partial and final transcript, then hides within 3 s after the result
+    - Extend `src/domain/voice-ui-model.ts` with the bubble states and add a pure `src/domain/bubble-stack.ts` so the two bubbles stack or replace and never overlap. Both face the user
+    - Show failure states (mic not allowed, voice loading) in the same bubble for 2.5 s
+    - Write the property test for Property 53 in `tests/property/` (at least 100 runs, tagged **Feature: capri-spatial-companion, Property 53: Transcript_Bubble states and stacking**), and update the push-to-talk tests that referenced the mic orb
+    - Run `npm run --if-present typecheck` and `npm test -- --run`, and confirm the bubble in the runtime with `browser_screenshot`
+    - _Requirements: 33.23, 33.24, 33.25, 33.26, 33.27, 33.28, 15.6, 15.17_
+
+  - [x] 33.7 Give Capri personal space and keep her inside the walls
+    - Remove the outward push: replace `constrainIdlePosition` (annulus 1.0 to 1.5 m) in `src/domain/placement.ts` with `personalSpace`. When the user approaches she holds her spot, and only inside a comfort radius of about 0.5 m (`COMFORT_RADIUS_M` in `src/config/constants.ts`) does she step aside rather than back. Keep the gentle re-home only after she has been out of view for the existing timeout (`src/domain/follow.ts`)
+    - Add `src/domain/room-bounds.ts` with `insideRoom` and `pullIntoRoom`: a candidate is accepted only when the ray from the head to it crosses no detected wall plane before reaching it and it lies inside the room mesh bounds; otherwise pull it in toward the head. Apply it to the idle home and every move, sit, and perch destination (`src/domain/destination-visibility.ts`, `src/domain/surfaces.ts`, `src/avatar/locomotion.ts`)
+    - Keep the 0.9 m/s glide speed cap (`src/domain/glide.ts`)
+    - Write the property tests for Property 47 and Property 49 in `tests/property/` (at least 100 runs each, tagged **Feature: capri-spatial-companion, Property 47: Personal space holds position and steps aside** and **Property 49: Destinations stay inside the room**), and retire the Property 4 annulus test
+    - Run `npm run --if-present typecheck` and `npm test -- --run`
+    - _Requirements: 33.29, 33.30, 33.31, 33.32, 33.33, 33.34, 11.8_
+
+  - [x] 33.8 Add the wrist-summoned HUD menu and declutter the view
+    - Remove from the always-visible view: the status chips (`src/ui/panels/status-chips-panel.ts`, `src/ui/status-chips.ts`), the Quick_Actions panel and its header (`src/ui/panels/quick-actions.ts`), the keyboard button, the "Teach me your lights" orb beside Capri (delete `src/ui/teach-orb.ts` and `src/domain/devices/teach-orb.ts` and their tests, in all modes), and the always-open My lights / device list panel (`src/ui/panels/device-list.ts` opens only from the Lights tile or the teach flow)
+    - Add the wrist button: `src/domain/hud/palm-facing.ts` (palm normal within 45° of the head direction) and `src/ui/hud/wrist-button.ts`. When the non-dominant palm faces the user, a small glowing button appears on that wrist. Poking it with the dominant index fingertip opens or closes the HUD menu. Do not use a palm-up pinch, which Quest reserves for its system menu
+    - Add `src/domain/hud/hud-model.ts` (pure state machine) and `src/ui/hud/hud-menu.ts`. The HUD is placed once in front of the user in the comfortable seated zone (new `hud` kind in `src/domain/ui-placement.ts`, not head-locked), registered as a pinch-aim UI rect (`src/domain/pointing/ui-aim.ts`), hand-operable by poke and ray-pinch, and auto-hides after 30 s without interaction or when a tile starts a flow
+    - Tiles: Status (mode, Home Assistant, Hermes, voice chips), Lights (teach a light, re-teach, list of registered lights, including lights flagged approximate by task 33.1), Commands (filled in task 33.9), Ask Hermes and Give Hermes a task (filled in task 33.9), Close
+    - Live Hermes Task_Panel and approval buttons still appear on their own when a task runs. The loading card and hand-lost panel are unchanged
+    - Write the property test for Property 51 in `tests/property/` (at least 100 runs, tagged **Feature: capri-spatial-companion, Property 51: HUD toggling, fixed placement, and auto-hide**), extend the Property 46 test to the `hud` kind, and add unit tests for the palm-facing threshold
+    - Run `npm run --if-present typecheck` and `npm test -- --run`, and confirm in the runtime with `browser_screenshot` that the default view is clear and the HUD opens from the wrist button
+    - _Requirements: 33.35, 33.36, 33.37, 33.38, 33.39, 33.40, 33.41, 33.42, 33.43, 33.44, 33.45, 33.46, 33.47, 33.48, 8.1, 8.4, 8.5, 27.2, 27.3_
+
+  - [x] 33.9 Build the Commands tile, switch to the system keyboard, and add Hermes access
+    - (a) Rebuild Quick_Actions as the "Commands" tile in the HUD. Add a pure `buildCommandCatalog` in `src/domain/commands/command-catalog.ts` generated from `src/domain/speech-lang/phrases.ts` so it stays in sync, listing every command type the grammar supports, grouped: Lights (turn on/off, dim, brighten, set to <colour>, with deictic and named forms), Capri (come here, go away, sit on the desk/table/couch, perch, look at me, point at that, remember this as <name>, set a timer for <n> minutes), Hermes (ask, task). Each row shows the exact phrase to say and, where it needs no parameter, is tappable to run through `processQuickAction` / `processText` (`src/domain/speech-lang/process-text.ts`)
+    - (b) Remove the custom Hand_Keyboard (`src/ui/hand-keyboard.ts`, `src/domain/keyboard-model.ts`, and their tests) and use the Meta Quest system keyboard. Research from Meta's Quest Browser WebXR docs how to show the system keyboard during an immersive session (for example focusing a DOM input element and `XRSession.isSystemKeyboardSupported`; verify) and record the finding as a follow-up note in `docs/spike-report.md`. Create `src/ui/system-keyboard.ts`, open it only on demand from the HUD, and route submitted text through `processText` exactly as typed text did. If the system keyboard is unsupported, hide the text-entry tiles and say so in the HUD
+    - (c) Hermes access: the "Ask Hermes" tile (chat; reply shown as Capri's speech bubble) and the "Give Hermes a task" tile (long-running run through `src/app/task-flow.ts`; Task_Panel with steps and approvals) open the system keyboard. Add the spoken phrase "ask hermes" to the grammar (`phrases.ts`, `intent-parser.ts`, and `lexicon.ts` if a word is missing) so it opens the Ask Hermes prompt. When Hermes isn't connected the tiles show "Set up Hermes on the 2D page" and Capri says so in character
+    - Update the setup page Hermes section (`src/ui/setup-page/`) with one plain sentence on what Hermes does in Capri
+    - Write the property test for Property 50 in `tests/property/` (at least 100 runs, tagged **Feature: capri-spatial-companion, Property 50: Commands catalog matches the grammar**), update the Property 18 test to cover system keyboard text, and extend the grammar and parser tests (Properties 14 and 16) for "ask hermes"
+    - Run `npm run --if-present typecheck` and `npm test -- --run`
+    - _Requirements: 33.49, 33.50, 33.51, 33.52, 33.53, 33.54, 33.55, 33.56, 33.57, 33.58, 33.59, 15.2, 15.3, 20.1_
+
+  - [x] 33.10 Update the docs for the new behaviour
+    - Update `docs/demo-path.md`, `docs/demo-video-plan.md`, `docs/submission.md`, `docs/submission-checklist.md`, `README.md`, and `docs/animation-clips.md` where affected: no mic orb, no teach orb, wrist HUD menu, Commands tile, system keyboard, no scripted Hermes routine in Mock Mode, Ask Hermes / Give Hermes a task, teach pointer, boundaryless session, and personal space
+    - The Mock Mode demo path must no longer use "run my evening routine". Replace that beat with a Commands-tile or spatial beat
+    - Run `npm run build` and `npm run check` so README links still resolve, and fix any broken link
+    - _Requirements: 33.60, 33.61, 33.62, 28.5, 31.7_
+
 ## Notes
 
 - Tasks marked with `*` are optional and can be skipped for a faster MVD. The OPTIONAL group (task 31) contains only optional sub-tasks and is cut first.
 - The repository scaffold in task 1.2 is spike preparation. Step 1 (task 3) builds on it, and the Spike items themselves finish before Step 1 begins (Requirement 1.1).
 - Tasks 1 to 20 are the MVD. Task 20 marks the MVD cut-line. Tasks 21 to 30 are Post-MVD. Task 32 (demo fixes) is Post-MVD, runs after task 29.3, and finishes before any task 31 sub-task starts. Tasks 32.1, 32.2, and 32.3 share one wave but all edit `docs/demo-path.md`, and 32.1 and 32.3 both edit `docs/demo-video-plan.md`. Each sub-task edits only the lines it names in those files, re-reads the file just before editing, and leaves the other sub-tasks' lines untouched.
+- Task 33 (headset feedback fixes and HUD declutter) is Post-MVD and runs after every earlier wave, including the OPTIONAL task 31 waves. Its five waves are fixed: 33.1 to 33.5, then 33.6 and 33.7, then 33.8, then 33.9, then 33.10. Sub-tasks in one wave may touch the same shared files (`src/config/constants.ts`, `src/app/app.ts`, `src/main.ts`, `docs/spike-report.md`). Each sub-task edits only the lines it needs, re-reads the file just before editing, and leaves the other sub-tasks' lines untouched. Superseded criteria are kept in `requirements.md` and marked with the Requirement 33 criteria that replace them.
 - Mock Mode (task 17) is built right after Step 7 (task 15), per Requirement 7.1. The mock home reducer is created earlier in task 9.1 so the teach flow and voice loop have a backend, and it is reused unchanged.
 - Gate H (tasks 21.1 to 21.3) must finish before any live Hermes client code (task 21.10). The scripted Hermes task in task 19 uses no real Hermes surface.
 - Each hand-off note tells the user what to test, what they should see, and how to open the build on the Quest. It never blocks the next task. The dev server is started with `npm run dev` outside the agent's foreground shell.
@@ -993,7 +1082,12 @@ Working rules for the developer agent (Requirements 1, 7, 29, 30):
     {"id": 68, "tasks": ["31.1"]},
     {"id": 69, "tasks": ["31.2"]},
     {"id": 70, "tasks": ["31.3"]},
-    {"id": 71, "tasks": ["31.4", "31.5"]}
+    {"id": 71, "tasks": ["31.4", "31.5"]},
+    {"id": 72, "tasks": ["33.1", "33.2", "33.3", "33.4", "33.5"]},
+    {"id": 73, "tasks": ["33.6", "33.7"]},
+    {"id": 74, "tasks": ["33.8"]},
+    {"id": 75, "tasks": ["33.9"]},
+    {"id": 76, "tasks": ["33.10"]}
   ]
 }
 ```

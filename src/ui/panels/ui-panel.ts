@@ -1,7 +1,6 @@
 /**
  * Shared base of the UIKit voice panels (task 13.23). It owns the entity, the `PanelUI` document, the
- * pose, and visibility, so Quick_Actions, the Hand_Keyboard, and the Transcript_Panel only add their
- * own elements.
+ * pose, and visibility, so each panel only adds its own elements.
  *
  * - `interactive` panels get `RayInteractable` and `PokeInteractable`, so a ray pinch and a fingertip
  *   poke both produce a UIKit `click`. Panels the user only reads get neither, so their rectangle

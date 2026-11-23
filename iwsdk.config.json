@@ -19,11 +19,13 @@
         "anchors": true,
         "planeDetection": true,
         "meshDetection": true,
-        "hitTest": true
+        "hitTest": true,
+        "unbounded": true
       },
       "referenceSpace": {
-        "type": "local-floor",
+        "type": "unbounded",
         "fallbackOrder": [
+          "local-floor",
           "local",
           "viewer"
         ]

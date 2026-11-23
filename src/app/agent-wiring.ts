@@ -3,11 +3,11 @@
  * agent for the resolved mode, puts it in the `AgentSlot`, and settles its connection once with
  * `testConnection()` (the tier router only chats while `connected`).
  *
- * - Mock Mode: the scripted `MockAgent` (no network).
+ * - Mock Mode and `agent: 'absent'`: no agent, so no Hermes request (Requirements 23.6, 33.17). The
+ *   slot reports `not_configured`, the Hermes chip reads "Not configured", and Capri says the
+ *   in-character "Hermes isn't connected" line for chat and tasks (Requirement 33.18).
  * - `agent: 'live'`: the `LiveHermesAdapter` on the stored Hermes URL and key, with a `fetch` pinned
  *   to the Hermes origin, so the key can go nowhere else.
- * - `agent: 'absent'`: no agent. The slot reports `not_configured` and Capri says the
- *   in-character "Hermes is unavailable" line for chat and tasks.
  *
  * Credentials come only from a `HermesCredentialsProvider`, which reads the credential store
  * (`storedHermesCredentials`). Secrets are never read from environment variables, the URL, or the

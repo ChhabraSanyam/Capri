@@ -1,15 +1,16 @@
 # Demo video plan
 
-The plan for the submission video (Requirements 31.2 and 31.4). The video must be shorter than 3:00. The target is 2:30, and the hard ceiling for the exported file is 2:55.
+The plan for the submission video (Requirements 31.2, 31.4, 33.60, 33.61). The video must be shorter than 3:00. The standard cut runs about 2:15, and the hard ceiling for the exported file is 2:55.
 
-It shows Mock Mode running from the hosted link `https://capri.sanyamchhabra.in`, hands-only interaction, the signature moment (point, speak, hacking effect, real result), and one Hermes task. Every action, phrase, and on-screen label comes from [`docs/demo-path.md`](demo-path.md), the path verified on a Quest 3. Read that file's pre-flight checklist and "Known limits" before recording.
+It shows Mock Mode running from the hosted link `https://capri.sanyamchhabra.in`, hands-only interaction, the signature moment (point, speak, hacking effect, real result), the wrist menu with its Commands list, and Capri moving around the room. Hermes appears only in the optional Live Mode shot. Every action, phrase, and on-screen label comes from [`docs/demo-path.md`](demo-path.md), which is written from the current code. The wrist menu, Commands, and spatial beats of that path have not been run on the headset yet, so the test take checks them. Read that file's pre-flight checklist and "Known limits" before recording.
 
 A few terms:
 
 - **AR session**: the immersive mode that **Enter AR** starts. The headset shows the real room through its cameras (passthrough), and Capri and the bulbs are drawn into it.
-- **Mock Mode**: the default. Three virtual bulbs and a scripted agent stand in for a smart home and for Hermes. It needs no setup.
-- **Live Mode**: optional. Capri controls the user's own Home Assistant lights and sends tasks to the user's own Hermes agent.
-- **Hermes**: an AI agent that runs longer tasks in the background. Capri hands it a task, shows progress on the **Task_Panel**, and tells you when it finishes.
+- **Mock Mode**: the default. Three virtual bulbs stand in for a smart home. There is no agent in Mock Mode. It needs no setup.
+- **Live Mode**: optional. Capri controls the user's own Home Assistant lights and sends questions and tasks to the user's own Hermes agent.
+- **Hermes**: an AI agent that answers questions and runs longer tasks in the background. Capri hands it a task, shows its steps on the **Task_Panel**, and tells you when it finishes.
+- **Wrist button and menu**: turning the left palm toward your face shows a small glowing dot on the left wrist. Poking it with the right index finger opens the **Capri menu** in front of you, with the tiles **Status**, **Lights**, **Commands**, **Ask Hermes**, **Give Hermes a task**, and **Close**.
 - **Pinch**: thumb tip to index fingertip. **Point**: index finger straight, other fingers curled.
 
 ## Script rules (from the verified path)
@@ -19,13 +20,14 @@ These come from task 27.7 and override older wording in `tasks.md`.
 - **All three mock bulbs start off.** The signature moment is **"turn that on"**. Never open with a "turn off" command.
 - **Spoken word order is "turn that on" / "turn that off".** Both word orders are recognised by voice (task 32.3). The joined order "turn on that" / "turn off that" is the fallback for a misfired take.
 - **Capri says one recorded greeting while she waves on arrival**, once per AR session, picked at random from the voice library's greeting set. It waits for a tracked hand (keep a hand in view after tapping **Enter AR**) and is skipped if none shows within 10 s. It does not replay after the Meta menu, so a retake of the arrival needs a fresh **Enter AR**. Do not script a hello exchange: the user says nothing back.
-- **Mock Mode chat replies are canned.** "hello", "what can you do", and "tell me a joke" all get the same reply. Keep chat out of the video.
+- **Removed from the app:** the floating mic orb, the "Teach me your lights" orb, Quick actions, the hand keyboard, and the scripted Mock Mode evening routine. The old routine shot (shot 8) is replaced by the spatial moves, and a wrist menu shot is added.
+- **Mock Mode has no Hermes.** Chat phrases ("hello", "tell me a joke"), task phrases, and the Hermes tiles all get the line that Hermes isn't connected. Keep them out of the Mock Mode shots.
+- **Keep the left palm down while talking.** While the left palm faces you, the wrist dot shows and the left pinch does not talk. A left pinch with the palm facing you can open the Quest system menu, which pauses Capri and spoils the take.
 - **Lines with a bulb name or a result are speech bubbles with chirps, not spoken audio**, because Quest Browser has no speech synthesis. Examples: "Lit up the desk lamp.", the toggle tease. Caption every one of them.
 - **Capri picks some lines at random.** Lines marked "for example" below may differ in your take. Caption the line that actually appears.
-- **The evening routine changes no bulbs.** It is scripted progress only. Do not imply that it switched lights.
 - **Voice recognition takes about 2.5 s** after you stop speaking. Do not cut this wait out of the signature moment (see the editing checklist).
 
-## Shot list (target 2:30)
+## Shot list (standard cut about 2:15)
 
 Video time is the time in the final cut. "Take source" says where the footage comes from, because the cut reorders the recorded take: the signature moment is filmed after arrival and pointing, but it opens the video.
 
@@ -41,7 +43,7 @@ Caption styles used below:
 - **On screen:** the real room in passthrough. Capri stands ahead and to the right. The desk lamp hangs dark on the left.
 - **Action:** point the right index finger at the desk lamp. A ring appears on it and Capri turns her head to look. Pinch and hold with the left hand, say the phrase, let go.
 - **Spoken:** "turn that on"
-- **Capri:** the transcript shows "turn that on". She says a recorded acknowledgement (for example "On it. Jacking in."), turns to the lamp, flicks her hand, and sends beams and glyphs to it. A pulse lands on the bulb, which then lights warm white. She celebrates with a quip (for example "Too easy. You're welcome.") and a bubble says the result (for example "Lit up the desk lamp.").
+- **Capri:** the small bubble above her shows "turn that on". She says a recorded acknowledgement (for example "On it. Jacking in."), turns to the lamp, flicks her hand, and sends beams and glyphs to it. A pulse lands on the bulb, which then lights warm white. She celebrates with a quip (for example "Too easy. You're welcome.") and a bubble says the result (for example "Lit up the desk lamp.").
 - **Captions:** SPEECH `"turn that on"`. CAPRI the acknowledgement, the quip, and the bubble text.
 - **Lower third (at the pointing, about 0:02):** "Point at a light." Then (at the hacking effect, about 0:09): "Say it. Capri hacks it."
 - **Framing:** turn the head slowly so the lamp sits left of centre and Capri right of centre. The lamp is 35° left and Capri 25° right of the start direction, which is wider than one recorded eye's frame.
@@ -58,7 +60,7 @@ Caption styles used below:
 ### Shot 3. 0:30 to 0:42. Arrival in the real room
 
 - **Take source:** main take, the 0:00 to 0:10 beat.
-- **On screen:** Capri appears about 1.25 m ahead, on the floor if one was scanned, and waves. She breathes, blinks, and follows the head with her eyes. Three dark bulbs hang around her. The status chips above read **Mode: Mock Mode**.
+- **On screen:** Capri appears about 1.25 m ahead, on the floor if one was scanned, and waves. She breathes, blinks, and follows the head with her eyes. Three dark bulbs hang around her. Nothing else floats in the view: no buttons or status panels.
 - **Action:** look at Capri, then glance slowly around the room. Raise both hands into view once, open, to show there are no controllers.
 - **Spoken:** none from the user. Capri says her recorded greeting while she waves (for example "Hello, human. I'm feeling mischievous."). Caption the line that actually plays as CAPRI.
 - **Captions:** LOWER THIRD: "She lives in your real room." Then: "Hands only. No controllers."
@@ -81,52 +83,51 @@ Caption styles used below:
 - **Captions:** SPEECH `"set to red"`. CAPRI the bubble text.
 - **Trim:** the 2.5 s recognition wait may be shortened here, because shot 1 already showed it in real time.
 
-### Shot 6. 1:08 to 1:28. Quick actions and the toggle tease
+### Shot 6. 1:08 to 1:24. The wrist menu
 
-- **Take source:** main take, the 0:50 to 1:10 beat. The tease needs three on/off toggles of the same bulb within 60 s of recording time, counting the "turn that on" of shot 1. Run the take at the demo-path pace and it lands.
-- **On screen:** the desk lamp goes dark. Then the **Quick actions** panel, low on the right, and the left index finger poking **Turn on** while the right hand points at the lamp. The lamp lights again.
-- **Action:** point at the desk lamp, hold the left pinch, say the phrase, let go. When the lamp is dark, keep pointing, poke **Quick actions** if the buttons are hidden, then poke **Turn on** with the left index finger.
+- **Take source:** main take, steps 1 to 3 of the 0:50 to 1:20 beat.
+- **On screen:** the desk lamp goes dark. The left palm turns toward the face and a small glowing dot appears on the left wrist. The right index finger pokes it, and the **Capri menu** opens in front of you on **Status**: **Mode: Mock Mode**, **Hermes: Not configured**. The finger pokes **Commands**: the **Lights** tab lists "turn that on", "turn that off", "dim that", and "brighten that", each with "Tap to run". A poke on **Capri** shows the movement phrases, and **Lights** brings the light rows back.
+- **Action:** point at the desk lamp, hold the left pinch, say the phrase, let go. Then turn the left palm up, poke the dot, lower the left hand, and poke **Commands**, **Capri**, and **Lights**.
 - **Spoken:** "turn that off"
-- **Capri:** a bubble "Lights out on the desk lamp.", then after the button press she teases (for example "On, off, on, off. The desk lamp is getting dizzy.").
-- **Captions:** SPEECH `"turn that off"`. CAPRI both bubble lines. LOWER THIRD (on the poke): "Every command has a poke button too."
-- **Trim:** cut the wait while the Quick actions panel expands.
+- **Capri:** a bubble "Lights out on the desk lamp."
+- **Captions:** SPEECH `"turn that off"`. CAPRI the bubble line. LOWER THIRD (at the wrist dot): "Her menu lives on your wrist." Then (at Commands): "Every phrase she knows, one tap away."
+- **Trim:** shorten the recognition wait. Keep the palm turn and the dot appearing whole: it is the new interaction.
 
-### Shot 7. 1:28 to 1:45. Spatial moves
+### Shot 7. 1:24 to 1:36. A Commands row and the toggle tease
 
-- **Take source:** main take, the 1:10 to 1:22 beat.
-- **On screen:** Capri glides to the scanned desk and sits on it, then glides back to her spot near you.
-- **Action:** hold the left pinch, say the first phrase, let go. When she is seated, say the second.
-- **Spoken:** "sit on the desk", then "come here"
-- **Capri:** no spoken reply to either command. The movement is the response.
-- **Captions:** SPEECH both phrases. LOWER THIRD: "She knows your furniture."
-- **Requires:** a desk or table in the Quest Space Setup scan. Without one, use "go away" then "come here" (she backs off to about 2.5 m and returns) and change the lower third to "She moves around your room."
+- **Take source:** main take, step 4 of the 0:50 to 1:20 beat. The tease needs three on/off toggles of the same bulb within 60 s of recording time, counting the "turn that on" of shot 1. Run the take at the demo-path pace and it lands.
+- **On screen:** the right hand points at the dark desk lamp (ring on it) while the left index finger pokes the **"turn that on"** row. The menu closes, the hacking effect runs, and the lamp lights again.
+- **Action:** point at the desk lamp with the right index finger, poke the row with the left index finger.
+- **Spoken:** none. The bubble above Capri shows "turn that on" from the row.
+- **Capri:** after the lamp lights she teases (for example "On, off, on, off. The desk lamp is getting dizzy.").
+- **Captions:** CAPRI the tease. LOWER THIRD (on the poke): "No voice? Tap the row instead."
+
+### Shot 8. 1:36 to 2:00. Spatial moves
+
+- **Take source:** main take, the 1:20 to 1:45 beat.
+- **On screen:** Capri glides to the scanned desk and sits on it, then glides back to her spot near you and turns her head and eyes to you.
+- **Action:** hold the left pinch, say the first phrase, let go. When she is seated, say the second, then the third.
+- **Spoken:** "sit on the desk", then "come here", then "look at me"
+- **Capri:** no spoken reply to these commands. The movement is the response.
+- **Captions:** SPEECH the phrases. LOWER THIRD: "She knows your furniture." Then: "She keeps to your room and gives you space."
+- **Requires:** a desk or table in the Quest Space Setup scan. Without one, use "go away" then "come here" (she backs off to about 2.5 m and returns) and change the first lower third to "She moves around your room."
 - **Trim:** shorten each glide to about 3 s.
 
-### Shot 8. 1:45 to 2:15. One Hermes task
+### Shot 9 (optional). 2:00 to 2:25. Live Mode: a real lamp and real Hermes
 
-- **Take source:** main take, the 1:22 to 1:50 beat.
-- **On screen:** the Task_Panel opens about 30° to the right with the title **Evening routine** and the status **... Running**. Progress runs Getting started 0 %, Checking the lights 25 % (at 2.5 s), Winding down the room 60 % (at 6 s), and All set 100 % (at 10 s). Capri fidgets and glances around while it runs. At the end the panel shows **+ Done** and "Your evening routine is done."
-- **Action:** hold the left pinch, say the phrase, let go. Turn the head slowly right so both Capri and the panel are in frame.
-- **Spoken:** "run my evening routine"
-- **Capri:** a recorded acknowledgement that claims nothing is done yet (for example "Hmm, let me think."). At completion she plays her notification gesture, says a recorded line (for example "Ding! Your task just came through."), celebrates, and a bubble says (for example) "Wrapped up the routine."
-- **Captions:** SPEECH `"run my evening routine"`. CAPRI the acknowledgement, the completion line, and the bubble. LOWER THIRD (at the panel): "Capri hands long tasks to an agent (Hermes)." Then: "Mock Mode: a scripted agent stands in." During the trimmed progress: "10 s routine, shortened".
-- **Trim:** keep 0 %, 25 %, and 100 %. Cut 60 % or speed-ramp through it. Keep the completion notify and celebration whole.
-
-### Shot 9 (optional). 2:15 to 2:35. Live Mode: a real lamp and real Hermes
-
-Include this shot **only if the full beat has been verified on the headset with the user's own Home Assistant and Hermes**. If it is not verified, drop it and move the closing card to 2:15, which ends the video at 2:30. If it is included, cut shot 5 so the video stays near 2:37.
+This is the only shot with Hermes. Include it **only if the full beat has been verified on the headset with the user's own Home Assistant and Hermes**. If it is not verified, drop it: the closing card starts at 2:00 and the video ends at 2:15.
 
 - **Take source:** a separate Live Mode take, set up off camera, plus phone B-roll of the real lamp.
-- **Setup (off camera):** on the 2D page, open **Connect your own home (optional)**, fill in the Home Assistant and Hermes fields, turn on Live Mode, **Save**, **Test connections**. Teach Capri the real lamp with **Teach me your lights** before recording. Switch the real lamp on. Never film the settings form, the URLs with tokens, or the keys.
-- **On screen:** the chips read **Live Mode** and **Home Assistant: Connected**. No virtual bulbs. The marker sits on the real lamp.
+- **Setup (off camera):** on the 2D page, open **Connect your own home (optional)**, fill in the Home Assistant and Hermes fields, turn on Live Mode, **Save**, **Test connections**. Teach Capri the real lamp before recording (menu, **Lights**, **Teach a light**). Switch the real lamp on. Never film the settings form, the URLs with tokens, or the keys.
+- **On screen:** no virtual bulbs. The marker sits on the real lamp. If the menu is shown, **Status** reads **Live Mode** and **Home Assistant: Connected**, and the Hermes tiles read **Ask Hermes** and **Give Hermes a task**.
 - **Action:** point at the real lamp, hold the left pinch, say the first phrase, let go. Then say the second phrase.
-- **Spoken:** "turn that off", then a Hermes task phrase confirmed on the headset in Live Mode (for example "run my evening routine").
-- **Capri:** the hacking effect, then the real lamp switches off and Capri reacts to the result Home Assistant reports. For the Hermes task, the Task_Panel shows qualitative progress from the real agent (step labels, no percentages) and Capri announces the result.
+- **Spoken:** "turn that off", then a Hermes task phrase confirmed on the headset in Live Mode (for example "research it and tell me when done"). Speaking the task avoids the system keyboard, which pauses Capri while it is up.
+- **Capri:** the hacking effect, then the real lamp switches off and Capri reacts to the result Home Assistant reports. For the Hermes task, the Task_Panel opens on the right with qualitative progress from the real agent (step labels, no percentages), and Capri announces the result.
 - **Captions:** SPEECH both phrases. CAPRI the lines that appear. LOWER THIRD: "Live Mode: my real lamp, through Home Assistant." Then: "My real Hermes agent."
 - **Cut:** split screen or a 2 s cut to the phone B-roll of the physical lamp switching off. This is the proof that the result is real.
 - **Trim:** real Hermes runs can take much longer than 10 s. Show the start and the completion, label the gap "sped up", and drop the task from this shot if it does not complete inside one take.
 
-### Shot 10. 2:15 to 2:30 (2:35 to 2:50 with shot 9). Closing card
+### Shot 10. 2:00 to 2:15 (2:25 to 2:40 with shot 9). Closing card
 
 - **On screen:** a still of Capri in the room, darkened, with text over it.
 - **Text:**
@@ -140,9 +141,9 @@ Include this shot **only if the full beat has been verified on the headset with 
 
 | Cut | Shots | Length |
 | --- | --- | --- |
-| Standard | 1 to 8, 10 | 2:30 |
-| With Live Mode | 1 to 4, 6 to 10 (shot 5 cut) | about 2:37 |
-| With Live Mode and colour | 1 to 10 | about 2:50 (allowed, but no slack) |
+| Standard (Mock Mode only) | 1 to 8, 10 | 2:15 |
+| With Live Mode | 1 to 10 | about 2:40 |
+| With Live Mode, colour cut | 1 to 4, 6 to 10 | about 2:27 |
 
 ## Capture setup on the Quest
 
@@ -203,29 +204,29 @@ Film this in every case. It shows the judges what the headset footage cannot: a 
 
 | Take | Count | Purpose |
 | --- | --- | --- |
-| Test take | 1 | 30 s check of passthrough, audio, and that voice still works while recording |
+| Test take | 1 | 30 s check of passthrough, audio, that voice still works while recording, and that the wrist dot and menu open and read well in the recording |
 | Main take (full demo path, shots 2 to 8) | 3 | Pick the best beat from each. Each must run from a fresh reload in demo-path order, because the bulb states and the toggle tease depend on it. |
 | Signature pickups (reload, Enter AR, point, "turn that on") | 2 to 3 | A clean real-time clip for shot 1, with the lamp and Capri well framed |
 | Phone B-roll | 1 per main take | Hands-only proof and sync |
 | Live Mode take (optional) | 2 | Only after the Live Mode beat has been verified on the headset |
 
-Each main take lasts about 2:30 to 3:00 in real time. Plan about 45 minutes, including reloads and voice model warmups.
+Each main take lasts about 2:00 to 2:30 in real time. Plan about 45 minutes, including reloads and voice model warmups.
 
 ## Editing checklist
 
 - [ ] Assemble the shots in shot-list order. The cold open (shot 1) comes first, so the signature moment lands within the first 15 to 20 s.
 - [ ] Keep shot 1 uncut from the spoken words to the bulb lighting, including the 2.5 s recognition wait. It is the proof that the moment is real.
-- [ ] Trim dead time elsewhere: pauses before commands, panel expansion, glides, and the 10 s routine (label it "shortened" or "sped up"). Never cut so that a result appears before the effect that causes it.
-- [ ] Caption every spoken command exactly as said (`"turn that on"`, not "turn on that", unless you said the joined order). They match the transcript panel.
-- [ ] Caption every Capri line, and always the bubble-only ones (results, the toggle tease, the routine's final bubble). Quest Browser has no speech synthesis, so those lines have no voice, and the bubble is hard to read at 1080p. Use the text from your take, not the "for example" text here.
+- [ ] Trim dead time elsewhere: pauses before commands, recognition waits after shot 1, glides, and in shot 9 the Hermes run (label it "sped up"). Never cut so that a result appears before the effect that causes it.
+- [ ] Caption every spoken command exactly as said (`"turn that on"`, not "turn on that", unless you said the joined order). They match the small bubble above Capri.
+- [ ] Caption every Capri line, and always the bubble-only ones (results, the toggle tease, Hermes replies). Quest Browser has no speech synthesis, so those lines have no voice, and the bubble is hard to read at 1080p. Use the text from your take, not the "for example" text here.
 - [ ] Add the lower thirds and the title card from the shot list.
 - [ ] Burn the captions into the video (open captions). Also export an `.srt` if the submission site accepts one.
 - [ ] Light colour correction: lift the shadows of the passthrough a little. Apply light stabilisation only if a shot is shaky.
 - [ ] Audio: no narration over Capri's lines. If you add music, keep it at least 20 dB under her voice and duck it during speech. Normalise to about -14 LUFS integrated, peaks under -1 dBTP.
-- [ ] Mock Mode honesty: shot 8's lower third says a script stands in for Hermes. If shot 9 is used, its lower thirds say Live Mode.
+- [ ] Mock Mode honesty: no Mock Mode shot shows or implies a Hermes task. If shot 9 is used, its lower thirds say Live Mode.
 - [ ] Privacy: no Home Assistant URL, token, Hermes key, or Live Mode form appears anywhere. Blur anything that slipped in.
 - [ ] Closing card shows `https://capri.sanyamchhabra.in` and "Works in Mock Mode with zero setup" for at least 10 s.
-- [ ] **Length:** under 3:00 is mandatory. Target 2:30, export at 2:55 or less. If over, cut shot 5, then shorten shot 7, then shot 9.
+- [ ] **Length:** under 3:00 is mandatory. The standard cut is about 2:15. Export at 2:55 or less. If over, cut shot 5, then shorten shot 8, then shot 9.
 - [ ] Watch the export once on a phone with the sound off. It must make sense from the captions alone.
 - [ ] Watch it once with sound on headphones. Check that your commands and Capri's lines are audible.
 
@@ -249,6 +250,7 @@ The following could not be confirmed from Meta's current documentation or on the
 - **Frame rates offered in the headset.** Meta's guide recommends 36 fps (variable) in the headset and lists 60 fps through MQDH. Whether the in-headset menu offers 30 or 60 fps on the current software is unverified.
 - **Recording cost on Capri's frame budget.** Recording uses headset resources. Whether the hacking effect still runs at 72 fps while recording has not been measured. If the test take stutters, drop to Method A at a lower frame rate or use Method C.
 - **Opening the universal menu with hands during AR.** It is expected to hide the session and trigger Capri's pause, which stops the mic. Whether Quest Browser ends the session instead is unverified. The plan avoids the menu during takes.
+- **The wrist dot next to Quest's own palm gesture.** Capri's wrist dot shows when the left palm faces you, the same pose Quest uses for its system menu pinch. Capri reads only a right-finger poke on the dot, never a pinch. Whether Quest shows its own palm icon over the dot, or opens its menu during the poke, has not been checked on the headset.
 - **Casting audio and scrcpy on Quest 3.** Whether casting to `oculus.com/casting` carries headset audio, and whether current scrcpy forwards Quest audio or passthrough, were not verified.
 - **The MQDH recording shortcut on a Mac.** Meta documents Ctrl+Shift+R. The Mac shortcut was not checked.
 - **The Live Mode shot.** The real lamp and real Hermes beat, and the Live Mode Task_Panel progress labels, have not been verified on the headset for this video. Shot 9 stays optional until they are.

@@ -1,13 +1,14 @@
 /**
  * Developer test panel (task 7.10, Requirements 11.1 to 11.5, 11.7, 11.8). A hand-operated panel
  * with one button per spatial ability: Come here, Sit on table, Perch on table, Look at me, Point
- * at floor, and Go away, plus "Teach a light", which opens the teach flow (task 32.2: the Mock Mode
- * route while the teach orb is hidden). Poke a button with a fingertip or pinch at it from a distance. It reads no
+ * at floor, and Go away, plus "Teach a light", which opens the teach flow (a dev route; users open it
+ * from the HUD_Menu Lights tile, task 33.8). Poke a button with a fingertip or pinch at it from a distance. It reads no
  * controller input: IWSDK turns hand pokes and pinch rays into click events.
  *
- * It is shown during a session in dev builds, or in any build opened with `?dev=1` (so the hosted
- * site works for a headset check too). It sits to the right of the Step 1 hand test panel, within arm's reach and
- * below eye level, and it appears when a session starts.
+ * It is shown during a session only when the page is opened with `?dev=1`, in dev and production
+ * builds alike (task 33.2), so the dev server looks like the hosted site by default. Without the
+ * query no panel entity and no pinch-aim rectangle exist. It sits to the right of the Step 1 hand
+ * test panel, within arm's reach and below eye level, and it appears when a session starts.
  *
  * The panel only forwards a button id to `onAction` and prints the line that comes back. Mapping
  * the id to an ability lives in `domain/actions/dev-actions.ts` and the dispatcher.
@@ -28,6 +29,7 @@ import type { Logger } from '../app/logger.js';
 import { assetUrl } from '../config/asset-url.js';
 import { DEV_PANEL_RECT } from '../config/constants.js';
 import { DEV_ACTION_IDS, type DevActionId } from '../domain/actions/dev-actions.js';
+import { parseDevQuery } from '../domain/dev-query.js';
 import type { PanelRect } from '../domain/devices/teach-input.js';
 
 export const DEV_PANEL_URL = assetUrl('ui/dev-panel.uikitml');
@@ -38,11 +40,12 @@ const PANEL_DISTANCE_M = 0.45;
 const PANEL_DROP_M = 0.2;
 /** Shift to the user's right, clear of the hand test panel (0.42 m wide, straight ahead). */
 const PANEL_SIDE_M = 0.5;
-/** The button that opens the teach flow, the Mock Mode route while the orb is hidden (task 32.2). */
+/** The button that opens the teach flow (a dev route beside the HUD_Menu Lights tile). */
 const TEACH_BUTTON_ID = 'teach_light';
 
+/** Only with `?dev=1`, in dev and production builds alike (Requirements 33.8, 33.10). */
 export function shouldShowDevPanel(search: string): boolean {
-  return import.meta.env.DEV || new URLSearchParams(search).get('dev') === '1';
+  return parseDevQuery(search).dev;
 }
 
 /** Runs one action and returns the line to show. */
@@ -116,7 +119,7 @@ export class DevPanel {
     this.onClick(id);
   }
 
-  /** The "Teach a light" button: open the teach flow (the Mock Mode route, Requirement 23.12). */
+  /** The "Teach a light" button: open the teach flow (a dev route beside the HUD_Menu Lights tile). */
   pressTeach(): void {
     const onTeach = this.onTeach;
     if (onTeach === undefined) return;

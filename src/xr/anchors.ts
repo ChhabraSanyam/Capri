@@ -14,8 +14,9 @@
  * A restored anchor can be about 10 cm from where it was saved. The position returned by `restore`
  * is approximate and callers must not present it as exact (Requirement 12.12).
  *
- * `createAnchor` and `getPose` only work on an active frame, so every call waits for one through
- * `session.requestAnimationFrame`. Anchor objects stay alive for the session so their handles stay
+ * `createAnchor` and `getPose` only work on an active frame, so every call runs inside a
+ * `session.requestAnimationFrame` callback (`inNextFrame`). In an `unbounded` session a refused
+ * `createAnchor` is retried once against a `local` space (task 33.1). Anchor objects stay alive for the session so their handles stay
  * valid, and are deleted on `release`. Positions are in the session reference space. This adapter
  * never calls `getUserMedia` or reads a gamepad.
  */
@@ -37,8 +38,13 @@ export interface WebXrAnchorOptions {
 const DEFAULT_FRAME_TIMEOUT_MS = 2000;
 const DEFAULT_RESTORE_TIMEOUT_MS = 6000;
 
-/** Resolve with the next XR frame, or `undefined` when the session ends or the wait times out. */
-function nextFrame(session: XRSession, timeoutMs: number): Promise<XRFrame | undefined> {
+/**
+ * Run `use` inside the next XR frame callback, while the frame is still active, and resolve with its
+ * result. `undefined` when the session ends, the wait times out, or `use` throws. Frame calls such as
+ * `createAnchor` and `getPose` must happen inside the callback: after an `await` the frame may be
+ * inactive already (IWER, the emulator, runs every frame callback before any continuation; task 33.1).
+ */
+function inNextFrame<T>(session: XRSession, timeoutMs: number, use: (frame: XRFrame) => T): Promise<T | undefined> {
   return new Promise((resolve) => {
     let done = false;
     const timer = setTimeout(() => {
@@ -52,7 +58,11 @@ function nextFrame(session: XRSession, timeoutMs: number): Promise<XRFrame | und
         if (done) return;
         done = true;
         clearTimeout(timer);
-        resolve(frame);
+        try {
+          resolve(use(frame));
+        } catch {
+          resolve(undefined);
+        }
       });
     } catch {
       done = true;
@@ -60,6 +70,23 @@ function nextFrame(session: XRSession, timeoutMs: number): Promise<XRFrame | und
       resolve(undefined);
     }
   });
+}
+
+/**
+ * `position`, given in `from`, expressed in `to`, or `undefined` when the frame cannot relate the
+ * two spaces. `frame.getPose(from, to)` is the pose of `from`'s origin in `to`, and its column-major
+ * matrix maps `from` coordinates to `to` coordinates.
+ */
+export function positionInSpace(frame: XRFrame, from: XRSpace, to: XRSpace, position: Vec3): Vec3 | undefined {
+  const pose = frame.getPose(from, to);
+  if (pose === undefined || pose === null) return undefined;
+  const m = pose.transform.matrix;
+  const { x, y, z } = position;
+  return {
+    x: m[0]! * x + m[4]! * y + m[8]! * z + m[12]!,
+    y: m[1]! * x + m[5]! * y + m[9]! * z + m[13]!,
+    z: m[2]! * x + m[6]! * y + m[10]! * z + m[14]!,
+  };
 }
 
 function deleteQuietly(anchor: XRAnchor): void {
@@ -75,6 +102,43 @@ export function createWebXrAnchorPort(source: XrAnchorSource, options: WebXrAnch
   const restoreTimeoutMs = options.restoreTimeoutMs ?? DEFAULT_RESTORE_TIMEOUT_MS;
   const live = new Map<string, XRAnchor>();
   let liveSession: XRSession | undefined;
+  let localSpace: { session: XRSession; space: XRReferenceSpace | undefined } | undefined;
+
+  // A `local` space for the anchor fallback, requested once per session.
+  const localSpaceFor = async (session: XRSession): Promise<XRReferenceSpace | undefined> => {
+    if (localSpace?.session === session) return localSpace.space;
+    let space: XRReferenceSpace | undefined;
+    try {
+      space = await session.requestReferenceSpace('local');
+    } catch {
+      space = undefined;
+    }
+    localSpace = { session, space };
+    return space;
+  };
+
+  /**
+   * Create an anchor at `position` (in the session space). Quest Browser has been reported to refuse
+   * `XRFrame.createAnchor` against an `unbounded` space while accepting it in `local-floor` (Babylon.js
+   * forum, Quest 3, April 2025; task 33.1). If the first call fails, the same point is anchored once
+   * more against a `local` space on the next frame. The anchor is fixed in the room either way, and
+   * `restore` reads it back against the session space.
+   */
+  const createAnchorAt = async (session: XRSession, space: XRReferenceSpace, position: Vec3): Promise<XRAnchor | undefined> => {
+    const at = (p: Vec3): XRRigidTransform => new XRRigidTransform({ x: p.x, y: p.y, z: p.z, w: 1 });
+    try {
+      return await inNextFrame(session, frameTimeoutMs, (frame) => frame.createAnchor?.(at(position), space));
+    } catch (first) {
+      const local = await localSpaceFor(session);
+      if (local === undefined || local === space) throw first;
+      const retried = await inNextFrame(session, frameTimeoutMs, (frame) => {
+        const p = positionInSpace(frame, space, local, position);
+        return p === undefined ? undefined : frame.createAnchor?.(at(p), local);
+      });
+      if (retried === undefined) throw first;
+      return retried;
+    }
+  };
 
   // Anchor objects belong to the session that made them. After a new session starts, a handle has to
   // be restored again, so the cache from the old session is dropped.
@@ -101,10 +165,8 @@ export function createWebXrAnchorPort(source: XrAnchorSource, options: WebXrAnch
       if (!supported(session) || space === null) return undefined;
       let anchor: XRAnchor | undefined;
       try {
-        const frame = await nextFrame(session, frameTimeoutMs);
-        if (frame === undefined || typeof frame.createAnchor !== 'function') return undefined;
-        const transform = new XRRigidTransform({ x: position.x, y: position.y, z: position.z, w: 1 });
-        anchor = await frame.createAnchor(transform, space);
+        anchor = await createAnchorAt(session, space, position);
+        if (anchor === undefined) return undefined;
         if (typeof anchor.requestPersistentHandle !== 'function') {
           deleteQuietly(anchor);
           return undefined;
@@ -128,17 +190,21 @@ export function createWebXrAnchorPort(source: XrAnchorSource, options: WebXrAnch
       let anchor = live.get(handle);
       try {
         anchor ??= await session.restorePersistentAnchor!(handle);
+        const target = anchor;
         const deadline = Date.now() + restoreTimeoutMs;
         while (Date.now() < deadline) {
-          const frame = await nextFrame(session, frameTimeoutMs);
-          const space = source.getReferenceSpace();
-          if (frame === undefined || space === null) continue;
-          const tracked = frame.trackedAnchors === undefined || frame.trackedAnchors.has(anchor);
-          const pose = tracked ? frame.getPose(anchor.anchorSpace, space) : undefined;
-          if (pose !== undefined) {
-            live.set(handle, anchor);
+          const found = await inNextFrame(session, frameTimeoutMs, (frame): Vec3 | undefined => {
+            const space = source.getReferenceSpace();
+            if (space === null) return undefined;
+            const tracked = frame.trackedAnchors === undefined || frame.trackedAnchors.has(target);
+            const pose = tracked ? frame.getPose(target.anchorSpace, space) : undefined;
+            if (pose === undefined || pose === null) return undefined;
             const p = pose.transform.position;
             return { x: p.x, y: p.y, z: p.z };
+          });
+          if (found !== undefined) {
+            live.set(handle, target);
+            return found;
           }
         }
       } catch {

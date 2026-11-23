@@ -5,8 +5,8 @@ sees what you point at, talks back with a personality, and hacks your lights wit
 effects. You use her seated, with your hands only: no controllers.
 
 The avatar, her spatial awareness, and her personality are the product. Home Assistant (real lights)
-and Hermes Agent (real long-running tasks) are optional plug-ins. Without them, Capri runs in Mock
-Mode with virtual bulbs and a scripted agent.
+and Hermes Agent (questions and real long-running tasks) are optional plug-ins. Without them, Capri
+runs in Mock Mode with three virtual bulbs and no agent.
 
 **Try it:** open **https://capri.sanyamchhabra.in** in Quest Browser.
 
@@ -18,8 +18,10 @@ Mock Mode is the default and needs no account, no smart home, and no configurati
 2. Tap **Enable microphone** and allow it (optional; buttons work without it).
 3. Wait for **Voice model ready** (about 40 MB on the first visit, cached afterwards).
 4. Look straight ahead and tap **Enter AR**.
-5. Point your right index finger at a bulb, pinch and hold with your left hand, say **"turn on that"**,
+5. Point your right index finger at a bulb, pinch and hold with your left hand, say **"turn that on"**,
    and let go.
+6. Turn your left palm toward you and poke the glowing dot on that wrist with your right index finger.
+   The menu opens. **Commands** lists every phrase, and a lit row runs when you poke it.
 
 The full two-minute script, with the exact words, hand actions, and fallbacks, is in
 [`docs/demo-path.md`](docs/demo-path.md).
@@ -27,30 +29,44 @@ The full two-minute script, with the exact words, hand actions, and fallbacks, i
 ## Features
 
 - **Presence in your room.** A VRM avatar placed on the detected floor (or floating when there is
-  none). She breathes, blinks, follows your head with her eyes, and glides back into view when you
-  look away for 3 s.
+  none), 1.25 m ahead and to your right. She breathes, blinks, and follows your head with her eyes.
+  She holds her spot when you come closer and steps aside only inside a 0.5 m comfort radius. She
+  re-homes only after you have looked away from her for 3 s, and every destination stays inside the
+  detected walls.
 - **Pointing selection.** Point with the right index finger and a ring highlights the bulb; Capri
   looks at it. A right pinch confirms it for 8 s.
-- **Teach your lights (Live Mode).** Point at a real lamp, pinch, and pick the Home Assistant light it
-  is. The position is saved with a WebXR anchor and restored, approximately, on the next visit.
-- **Voice push-to-talk.** Hold a left-hand pinch (or poke the mic orb) and speak. Recognition runs on
-  the headset with Vosk and a restricted grammar, so no audio leaves the device. Commands cover
-  on/off, dim/brighten, 12 colours, named lights, timers, remembered places, and spatial moves
-  ("come here", "go away", "sit on the desk").
-- **Fallbacks without voice.** Quick_Actions (eight poke buttons) and a Hand_Keyboard for typed
-  commands and free-form questions.
+- **A clear view and a wrist menu.** By default you see only Capri, the lights, and her bubbles. With
+  the left palm facing you, a small button shows on the left wrist. Poking it with the right index
+  finger opens a menu in front of you with **Status**, **Lights**, **Commands**, **Ask Hermes**,
+  **Give Hermes a task**, and **Close**. It stays fixed in the room and closes after 30 s untouched.
+- **Commands list.** The **Commands** tile lists every command the grammar supports, in **Lights**,
+  **Capri**, and **Hermes** tabs with pages. Rows that need no parameter run on a poke, through the
+  same path as speech. **Type** opens the Meta Quest system keyboard for typed commands.
+- **Teach your lights.** From **Lights**, **Teach a light**: a thin ray from your right index fingertip
+  and a ring show where the marker will land, and a right pinch places it there. In Live Mode you then
+  pick the Home Assistant light it is. The position is saved with a WebXR anchor and restored,
+  approximately, on the next visit.
+- **Voice push-to-talk.** Hold a left-hand pinch and speak. A small bubble above Capri shows that she
+  is listening, then your words. Recognition runs on the headset with Vosk and a restricted grammar,
+  so no audio leaves the device. Commands cover on/off, dim/brighten, 12 colours, named lights,
+  timers, remembered places, and spatial moves ("come here", "go away", "sit on the desk", "perch on
+  the table", "look at me").
 - **Hacking VFX.** For every light command Capri flicks her hand and sends beams, glyphs, sparks, and
   a pulse to the bulb. The command is sent only when the pulse lands. A quality governor halves
   particle emission when frames run long.
 - **Tier 1 offline intelligence and banter.** Every deterministic command is parsed and answered
   locally. Capri reacts to results with recorded lines and context-aware banter, for example teasing
   you after three toggles of the same bulb within 60 s.
-- **Tier 2 with Hermes (optional).** Free-form questions go to your Hermes Agent as chat. Task phrases
-  start live Hermes runs, shown on the Task_Panel with their steps, and Hermes approval requests
-  appear there with **Approve** and **Deny** buttons. If Hermes is absent or fails, Tier 1 answers in
-  character.
-- **Scripted mock tasks.** In Mock Mode, "run my evening routine" and "research it and tell me when
-  done" complete with progress, and "watch the door" fails with a reason.
+- **Tier 2 with Hermes (optional).** **Ask Hermes** (or saying "ask hermes") opens the system keyboard,
+  and the question goes to your Hermes Agent as chat; the reply shows in Capri's speech bubble.
+  **Give Hermes a task**, or a spoken task phrase, starts a live Hermes run, shown on the Task_Panel
+  with its steps, and Hermes approval requests appear there with **Approve** and **Deny** buttons.
+  Without Hermes, both tiles read "Set up Hermes on the 2D page" and Capri says in character that
+  Hermes isn't connected. If Hermes fails, Tier 1 answers in character.
+- **Greeting.** Capri says one recorded greeting while she waves on arrival, once per AR session.
+- **Stable room tracking.** The session asks for the boundaryless `unbounded` reference space, with
+  `local-floor` as the fallback. On a tracking reset the bulbs and Capri are placed again in front of
+  you, and lights without an anchor are flagged in **Lights** for re-teaching.
 - **Personality idles.** Stretches, fidgets, and glances at real furniture and bulbs every 8 to 18 s,
   and an annoyed tease after 60 s of no input.
 - **Pause and resume.** The Quest system menu or a hidden page pauses animation, timers, effects, the
@@ -59,6 +75,10 @@ The full two-minute script, with the exact words, hand actions, and fallbacks, i
   failure message if the avatar does not load.
 - **Audio mix.** Speech, chirp, and effect sounds each have their own bus level and pass through a
   shared limiter (`AUDIO_MIX` in `src/config/constants.ts`).
+
+Removed after headset feedback (task 33): the floating mic orb, the "Teach me your lights" orb, the
+always-visible status chips, Quick_Actions, and device list, the custom hand keyboard (replaced by
+the Quest system keyboard), and the scripted Mock Mode agent with its evening routine and canned chat.
 
 ## How it works
 
@@ -70,9 +90,14 @@ The full two-minute script, with the exact words, hand actions, and fallbacks, i
   [IWSDK](https://iwsdk.dev/), Meta's WebXR toolkit, and calls the domain through ports.
 - **One system, fixed stages.** The composition root is `src/main.ts`. The single IWSDK system,
   `src/app/capri-system.ts`, calls `CapriApp.tick` (`src/app/app.ts`) with a fixed stage order.
-- **Backends behind one interface.** `src/backends/` has a mock and a live implementation for both the
-  home (`mock/mock-home.ts`, `ha/ha-client.ts`) and the agent (`mock/mock-agent.ts`,
-  `hermes/live-hermes-adapter.ts`). The mode is resolved from the stored settings.
+- **Backends behind one interface.** `src/backends/` has a mock and a live home
+  (`mock/mock-home.ts`, `ha/ha-client.ts`) and the live agent (`hermes/live-hermes-adapter.ts`).
+  Mock Mode has no agent. The mode is resolved from the stored settings.
+- **Menu and Commands.** The wrist button and menu are a pure state machine and layout
+  (`src/domain/hud/`) drawn by `src/ui/hud/` and wired in `src/app/hud-wiring.ts`. The Commands list
+  is built from the phrase table (`src/domain/commands/command-catalog.ts`), so it always matches the
+  speech grammar. Typed text from the system keyboard (`src/ui/system-keyboard.ts`) goes through
+  `src/app/text-entry.ts`.
 - **Tier 1 and Tier 2.** Tier 1 (`src/domain/contract/tier-router.ts` and `src/domain/persona/`)
   handles every deterministic intent on the device and is enough for every feature. Tier 2 sends
   free-form chat and tasks to Hermes and validates each reply against a response contract before
@@ -122,7 +147,9 @@ To open the dev server on the headset:
   It is a different origin, so saved settings and the CORS entries for your backends do not carry
   over.
 
-Add `?perf=1` to the URL for the frame-time overlay.
+The dev server looks like the hosted site by default. Developer overlays need a URL parameter, in
+dev and production builds alike: `?perf=1` for the frame-time overlay, `?hands=1` for the hand joint
+dots, `?dev=1` for the dev panel, and `?handtest=1` for the hand test panel.
 
 Other commands:
 
@@ -144,8 +171,7 @@ Content-Security-Policy, and a post-deploy smoke check are in [`docs/hosting.md`
 
 ## Live Mode
 
-Capri runs in Mock Mode with no setup: virtual bulbs and a scripted agent, and no requests leave
-the page. Live Mode connects her to your own Home Assistant (real lights) and, optionally, your own
+Capri runs in Mock Mode with no setup: virtual bulbs, no agent, and no requests leave the page. Live Mode connects her to your own Home Assistant (real lights) and, optionally, your own
 [Hermes Agent](https://hermes-agent.nousresearch.com/docs/) (real long-running tasks). The app is
 static files only. There is no Capri server in between: the headset's browser talks straight to
 your Home Assistant and your Hermes.
@@ -174,7 +200,7 @@ site. You can still leave Remember off.
 | Backend | Required for Live Mode | You need |
 | --- | --- | --- |
 | Home Assistant | Yes | An `https://` URL the headset can reach, a long-lived access token, and the Capri origin in Home Assistant's CORS allowed origins |
-| Hermes Agent | No (without it, tasks stay scripted) | The API server enabled, an `https://` URL in front of it, its key, and the Capri origin in `API_SERVER_CORS_ORIGINS` |
+| Hermes Agent | No (without it, Capri says Hermes isn't connected) | The API server enabled, an `https://` URL in front of it, its key, and the Capri origin in `API_SERVER_CORS_ORIGINS` |
 
 Both must be HTTPS. Capri refuses `http://` and `ws://` endpoints before sending anything, and the
 site's Content-Security-Policy blocks them too, because an HTTPS page cannot call plain HTTP (mixed
@@ -190,7 +216,8 @@ content).
 5. Turn on **Live Mode**. Choose whether to **Remember on this device**. Select **Save**.
 6. Select **Test connections**. Each backend gets one result line. A network or CORS failure also
    shows the exact origin to allow (see Troubleshooting).
-7. Select **Enter AR**. The status indicators show Live Mode and the state of each backend.
+7. Select **Enter AR**. In AR, the menu's **Status** tile shows Live Mode and the state of each
+   backend. Teach your lamps from **Lights**, **Teach a light**.
 
 To go back to Mock Mode, turn Live Mode off and save, or select **Forget credentials**.
 
@@ -306,7 +333,10 @@ headset while it is stored there, can run commands on that machine. Hermes has n
 per-app key. Use a key only for Capri, keep Remember off if others use the headset, and change the
 key if you suspect it leaked.
 
-Tasks you give Capri run as Hermes runs. When Hermes asks for approval (for example before a
+In AR, reach Hermes from the menu: **Ask Hermes** sends a typed question as chat, and **Give Hermes a
+task** starts a run. Saying "ask hermes" opens the same question prompt, and saying a task phrase
+(for example "research it and tell me when done") starts a run. Tasks you give Capri run as Hermes
+runs. When Hermes asks for approval (for example before a
 command), the request appears on the Task_Panel with **Approve** and **Deny** buttons. Approve allows
 that one operation only. An approval left unanswered is denied by Hermes after its timeout
 (300 s by default).
@@ -375,18 +405,24 @@ means the origin is not allowed or something in front answered instead.
 ## Known limitations
 
 - **Restricted voice grammar.** The recogniser knows a fixed set of phrase pieces
-  (`src/domain/speech-lang/phrases.ts`), so word order matters: "turn off that" works by voice,
-  "turn that off" only when typed. Results arrive about 2.5 s after you stop talking (median on a
-  Quest 3). The working phrases are listed in [`docs/demo-path.md`](docs/demo-path.md).
+  (`src/domain/speech-lang/phrases.ts`), so speech outside them is not understood. "turn that off"
+  and "turn off that" both work. Some forms work only when typed, for example "set the floor lamp to
+  red". Results arrive about 2.5 s after you stop talking (median on a Quest 3). The working phrases
+  are listed in [`docs/demo-path.md`](docs/demo-path.md) and on the **Commands** tile.
 - **Hands only.** Hand tracking is required and controllers are not supported. The right hand is
-  always the pointing hand; there is no setting to swap.
+  always the pointing hand and the wrist button is always on the left; there is no setting to swap.
+  While the left palm faces you, the left pinch does not talk.
+- **Not yet checked on the headset.** The wrist button and menu, the system keyboard in AR, the teach
+  pointer, the hair fix, personal space, and whether the `unbounded` session removes the Quest
+  boundary were tested in code and in the IWER emulator only. If the system keyboard is not offered
+  in AR, **Type** and the Hermes tiles are hidden and the menu says text entry is not available.
+  Capri pauses while the keyboard is up.
 - **Spoken voice only for recorded lines.** Quest Browser has no speech synthesis, so lines outside
-  the voice library (including every Hermes reply) are a bubble with chirps. The arrival greeting is
-  recorded but not played: Capri waves silently.
+  the voice library (including every Hermes reply) are a bubble with chirps.
 - **Approximate light positions.** Taught lights restore from saved anchors about 10 cm from where
   they were taught (95 mm measured once after a reload).
-- **Mock Mode is scripted.** Every chat phrase gets the same canned reply, every bulb starts off, and
-  the evening routine reports progress without changing the bulbs.
+- **Mock Mode has no agent.** Every bulb starts off, and chat phrases, task phrases, and the Hermes
+  tiles get the line that Hermes isn't connected.
 - **Hermes depends on your setup.** Approval buttons appear only if your Hermes approval policy raises
   approval requests for API runs; otherwise Hermes may deny them itself. Hermes reports steps, not
   percentages. Chat needs your model to return bare JSON, and Capri falls back to Tier 1 when it
@@ -404,17 +440,17 @@ means the origin is not allowed or something in front answered instead.
 
 | File | Contents |
 | --- | --- |
-| [`docs/demo-path.md`](docs/demo-path.md) | The two-minute demo script, working phrases, fallbacks |
+| [`docs/demo-path.md`](docs/demo-path.md) | The two-minute demo script, where things appear, the menu tiles, working phrases, fallbacks |
 | [`docs/submission.md`](docs/submission.md) | Competition submission text: form fields, short and long descriptions, limitations |
 | [`docs/demo-video-plan.md`](docs/demo-video-plan.md) | Shot list and Quest recording method for the demo video (under 3 minutes) |
 | [`docs/submission-checklist.md`](docs/submission-checklist.md) | Deploy, headset checks, video, and form steps before the deadline |
 | [`docs/project-plan.md`](docs/project-plan.md) | Step order, cut-line, project structure, IWSDK API check |
-| [`docs/spike-report.md`](docs/spike-report.md) | Milestone 0 headset results and the capability flags they set |
+| [`docs/spike-report.md`](docs/spike-report.md) | Milestone 0 headset results and the capability flags they set, plus the boundaryless session and system keyboard follow-ups |
 | [`docs/hosting.md`](docs/hosting.md) | Vercel build, headers, CSP, deploy and domain steps |
-| [`docs/hermes-integration.md`](docs/hermes-integration.md) | The confirmed Hermes API surface and what is still unconfirmed |
+| [`docs/hermes-integration.md`](docs/hermes-integration.md) | How you reach Hermes in Capri, the confirmed Hermes API surface, and what is still unconfirmed |
 | [`docs/voice-engine.md`](docs/voice-engine.md) | Piper setup, the chosen voice, loudness |
 | [`docs/performance-note.md`](docs/performance-note.md) | Frame-time measurements and performance levers |
-| [`docs/comfort-check.md`](docs/comfort-check.md) | Avatar distance, panel placement, and seated reach checks |
+| [`docs/comfort-check.md`](docs/comfort-check.md) | Personal space, menu and panel placement, and seated reach checks |
 | [`docs/THIRD_PARTY.md`](docs/THIRD_PARTY.md) | Third-party assets in detail |
 | [`docs/animation-clips.md`](docs/animation-clips.md) | Optional idle animation clip: Quest checks, adding and removing clips |
 

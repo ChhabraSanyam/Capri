@@ -7,7 +7,7 @@
  * `getUserMedia`. `createMicStep` also refuses to run while a session is active, as a guard.
  *
  * Enter AR is never blocked by this step. When permission is missing, a hint explains that
- * Quick_Actions and Hand_Keyboard are the fallback.
+ * the Commands_Tile and the System_Keyboard are the fallback (Requirements 33.49, 33.52).
  */
 import { MIC_STORAGE_KEY } from '../../config/constants.js';
 
@@ -64,7 +64,7 @@ export function describeMicState(state: MicPermissionState): string {
 export function micHint(state: MicPermissionState): string {
   return state === 'granted'
     ? ''
-    : 'Voice commands need the microphone. Without it you can still enter AR and use the quick buttons and the hand keyboard.';
+    : 'Voice commands need the microphone. Without it you can still enter AR and use the Commands list and the Quest keyboard in the wrist menu.';
 }
 
 /** Plain-words reason for a failed `getUserMedia` call. */

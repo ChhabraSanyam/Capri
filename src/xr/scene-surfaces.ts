@@ -101,6 +101,11 @@ export class SurfaceStore {
     return this.currentFloorY;
   }
 
+  /** Rescan on the next `update`, for example after a reference space reset (task 33.1). */
+  requestScan(): void {
+    this.dirty = true;
+  }
+
   /** Call once per frame. Rescans poses when the interval has passed or a Surface was added. */
   update(dtS: number): void {
     this.sinceScanS += dtS;

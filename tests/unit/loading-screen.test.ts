@@ -43,7 +43,7 @@ describe('describeLoading (task 27.1)', () => {
     expect(view.lines[0]).toEqual({ text: 'Avatar: could not load', state: 'failed' });
   });
 
-  it('reports the voice model without waiting on it, and hints at the quick buttons', () => {
+  it('reports the voice model without waiting on it, and hints at the Commands list', () => {
     const loading = describeLoading({
       avatar: loadingAvatar(),
       voiceLines: 'missing',
@@ -55,7 +55,7 @@ describe('describeLoading (task 27.1)', () => {
       'Voice lines: none, she talks in text bubbles',
       'Voice commands: 10.0 of 40.0 MB',
     ]);
-    expect(loading.hint).toBe('The quick buttons work while voice loads.');
+    expect(loading.hint).toBe('The Commands list in the wrist menu works while voice loads.');
     const ready = describeLoading({
       avatar: { phase: 'ready', loadedBytes: 0, totalBytes: undefined, message: undefined },
       voiceLines: 'ready',
@@ -63,7 +63,7 @@ describe('describeLoading (task 27.1)', () => {
       where: 'scene',
     });
     expect(ready.title).toBe('Capri is ready');
-    expect(ready.lines[2]).toEqual({ text: 'Voice commands: off, use the quick buttons', state: 'failed' });
+    expect(ready.lines[2]).toEqual({ text: 'Voice commands: off, use the Commands list', state: 'failed' });
     expect(ready.hint).toBeUndefined();
   });
 

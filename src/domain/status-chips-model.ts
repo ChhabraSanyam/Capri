@@ -70,10 +70,11 @@ export function connectionChip(integration: Integration, state: ConnectionState)
 
 /**
  * The voice chip from `describeVoice`: ready (no chip text), loading ("Voice loading", the same
- * words as the transcript chip), or unavailable (the failure text, for example "Mic blocked").
+ * words as the Transcript_Bubble notice), or unavailable (the failure text, for example "Mic blocked").
  */
 export function voiceChip(status: VoiceStatus): ChipView {
-  const tone: IndicatorState = status.orb === 'idle' ? 'ok' : status.orb === 'loading' ? 'pending' : 'error';
+  const tone: IndicatorState =
+    status.indicator === 'ready' ? 'ok' : status.indicator === 'loading' ? 'pending' : 'error';
   return { id: 'voice', title: 'Voice', label: status.chip ?? VOICE_READY, symbol: SYMBOLS[tone], tone };
 }
 
@@ -128,7 +129,7 @@ export class StatusChipsModel {
     if (status === this.voice) return;
     const before = this.voice;
     this.voice = status;
-    if (before !== undefined && before.orb === status.orb && before.chip === status.chip) return;
+    if (before !== undefined && before.indicator === status.indicator && before.chip === status.chip) return;
     this.refresh();
   }
 
@@ -142,7 +143,7 @@ export class StatusChipsModel {
       modeChip(this.mode),
       connectionChip('homeAssistant', this.connections.homeAssistant),
       connectionChip('hermes', this.connections.hermes),
-      voiceChip(this.voice ?? { orb: 'loading', chip: 'Voice loading', hint: undefined, fallback: true }),
+      voiceChip(this.voice ?? { indicator: 'loading', chip: 'Voice loading', hint: undefined, fallback: true }),
     ];
   }
 }

@@ -56,6 +56,8 @@ export type ActionSubject =
  *   (task 13.25). They say what was set up and never that a call finished.
  * - `unsupported`: the request is outside what Capri can do (Requirement 22.10).
  * - `hermes_unavailable`: Tier 2 failed and Tier 1 handles the request.
+ * - `hermes_not_connected`: a Tier 2 request while no Hermes is connected (Mock Mode included). The
+ *   line says Hermes is not connected and can be added on the setup page (Requirement 33.18).
  * - `approval_requested`: a running Hermes task waits for the user's Approve or Deny. Capri asks;
  *   she never says it was allowed.
  * - `call`: the progress of a device call or Hermes task (`state`), with the sanitised backend
@@ -79,6 +81,7 @@ export type PersonaRequest =
   | { readonly kind: 'place_failed' }
   | { readonly kind: 'unsupported'; readonly reason: UnsupportedReason; readonly text?: string }
   | { readonly kind: 'hermes_unavailable' }
+  | { readonly kind: 'hermes_not_connected' }
   | { readonly kind: 'approval_requested' }
   | {
       readonly kind: 'integration_failed';
@@ -107,6 +110,7 @@ const TASK_LABELS: Readonly<Record<TaskKind, string>> = {
   routine: 'routine',
   watch: 'door watch',
   research: 'research',
+  custom: 'task',
 };
 
 /** Text of a bubble-only line while a call is pending, also the safe replacement for a bad `ack`. */
@@ -255,6 +259,8 @@ export class Persona implements PersonaPort {
         return this.neutral('ask_repeat');
       case 'hermes_unavailable':
         return this.neutral('hermes_unavailable');
+      case 'hermes_not_connected':
+        return this.neutral('hermes_not_connected');
       case 'approval_requested':
         return this.neutral('approval_requested');
       case 'timer_set':

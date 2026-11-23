@@ -6,6 +6,19 @@ The paths, header names, and field names below are quoted from the upstream proj
 
 Research date: 2026-11-17.
 
+## How a user reaches Hermes in Capri (task 33.9)
+
+Hermes is reached only in Live Mode, with **Hermes URL** and **Hermes key** saved on the 2D page. The Setup_Page says: "Hermes is an AI agent that answers the questions and runs the longer tasks you give Capri from Ask Hermes and Give Hermes a task in her menu." In AR:
+
+| Route | What it sends | Where the answer shows |
+|---|---|---|
+| Wrist menu, **Ask Hermes**, or saying "ask hermes" | Opens the Quest system keyboard ("Ask Hermes anything"). The typed text goes to `POST /v1/chat/completions` with the Spatial_Context (section D). | Capri's thinking line, then the reply in her Speech_Bubble |
+| Wrist menu, **Give Hermes a task** | Opens the system keyboard ("Give Hermes a task"). The text starts a run, `POST /v1/runs` (section E). A typed task phrase keeps its kind; other text is a free-form task. | Task_Panel with the current step, Cancel, and Approve and Deny |
+| A spoken task phrase ("run my evening routine", "watch the door", "research it and tell me when done") | Starts a run, as above. | Task_Panel |
+| A spoken chat phrase ("hello", "what can you do", ...), or typed text on **Commands**, **Type** that matches no command | Chat, as above. | Speech_Bubble |
+
+The wrist menu opens when the left palm faces you and you poke the dot on that wrist with the right index finger. Without a connected Hermes, both Hermes tiles read "Set up Hermes on the 2D page", the keyboard does not open, and every route above gets one in-character line instead, for example "Hermes isn't connected. You can add it on the setup page." Nothing is sent. Mock Mode has no agent at all (task 33.4): the scripted MockAgent and its evening routine were removed. If the system keyboard is unavailable in the session, the two Hermes tiles are hidden and the spoken task and chat phrases still work.
+
 ## 1. Which "Hermes"
 
 The spec says only "a self-hosted Hermes agent". Candidates found:
@@ -121,7 +134,7 @@ Docs section "CORS" and [`api_server.py` L647 to L676 and L1340 to L1363](https:
 | Key in the browser | The key is typed on the Setup_Page and stored in the headset's browser storage for this origin only (Requirement 24, `docs/hosting.md`). It grants terminal access on the Hermes host, so anyone with the headset unlocked, or script running on this origin, could use it. The API server docs describe no read-only or per-client scoped key. Source references to "room grants" for hosted rooms exist and were not researched. | User decision. Requirement 19.12 forbids adding a bridge server to hide the key. |
 | Approvals | A run waiting for approval stalls until answered (section 7). | Unknown how the user wants this handled. |
 
-If any of HTTPS, CORS, or the key decision cannot be met, Requirement 19.12 applies: report the constraint and keep the scripted Mock Mode task. No backend or bridge server is added.
+If any of HTTPS, CORS, or the key decision cannot be met, Requirement 19.12 applies: report the constraint and keep the scripted Mock Mode task. No backend or bridge server is added. (Since task 33.4 there is no scripted Mock Mode task: without Hermes, Capri says it is not connected.)
 
 ## 10. Unknowns that task 21.2 must resolve
 

@@ -95,12 +95,10 @@ describe('planNavigation', () => {
     });
   });
 
-  it('keeps a move to the floor inside the idle ring', () => {
+  it('sends a move to the floor to the idle home on that floor, not under the user', () => {
     const p = go(planNavigation({ type: 'move_to', surface: 'floor' }, ctx));
     expect(p.purpose).toBe('float');
-    const d = horizontalDistance(p.destination, HEAD.position);
-    expect(d).toBeGreaterThanOrEqual(1.0);
-    expect(d).toBeLessThanOrEqual(1.5);
+    expect(horizontalDistance(p.destination, HEAD.position)).toBeCloseTo(1.25);
     expect(p.destination.y).toBeCloseTo(-0.03);
   });
 
@@ -114,13 +112,31 @@ describe('planNavigation', () => {
     expect(horizontalDistance(p.pointAt!, HEAD.position)).toBeGreaterThan(3);
   });
 
-  it('come_here goes home on the floor, inside the idle ring', () => {
+  it('come_here goes to the idle home on the floor', () => {
     const p = go(planNavigation({ type: 'come_here' }, ctx));
     expect(p.purpose).toBe('home');
     expect(p.destination.y).toBeCloseTo(-0.03);
-    const d = horizontalDistance(p.destination, HEAD.position);
-    expect(d).toBeGreaterThanOrEqual(1.0);
-    expect(d).toBeLessThanOrEqual(1.5);
+    expect(horizontalDistance(p.destination, HEAD.position)).toBeCloseTo(1.25);
+  });
+  it('keeps homes and destinations in front of a wall the user faces (33.32, 33.33)', () => {
+    // A wall 0.8 m ahead of the user, 4 m wide, facing them.
+    const wall = surface('wall', {
+      center: vec3(0, 1.2, -0.8),
+      normal: vec3(0, 0, 1),
+      halfExtents: { x: 2, z: 0 },
+      topY: 2.4,
+    });
+    const room = { head: HEAD, surfaces: [FLOOR, wall] };
+    for (const request of [{ type: 'come_here' } as const, { type: 'go_away' } as const]) {
+      const p = go(planNavigation(request, room));
+      expect(p.destination.z).toBeGreaterThan(-0.8 + 0.15 - 1e-9);
+    }
+    // A table behind the wall: she does not sit there; she floats in front of the wall and points.
+    const behind = surface('table', { center: vec3(0, 0.75, -1.5) });
+    const sit = go(planNavigation({ type: 'sit_on', surface: 'table' }, { head: HEAD, surfaces: [FLOOR, wall, behind] }));
+    expect(sit.purpose).toBe('float');
+    expect(sit.destination.z).toBeGreaterThan(-0.8 + 0.15 - 1e-9);
+    expect(sit.pointAt).toBeDefined();
   });
 
   it('go_away goes 2.5 m out, floating when there is no floor', () => {

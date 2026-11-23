@@ -6,9 +6,10 @@
  * - Mode chip: `setMode(mode.mode)`.
  * - Home Assistant: the backend's current connection state now, then every later change. In Mock Mode
  *   the mock home reports `connected`, so the chip reads "Connected" next to "Mock Mode".
- * - Hermes: with an agent backend (the scripted mock agent in Mock Mode, task 19.3) its current state
- *   now and every later change. Without one (`agent: 'absent'`, or a caller that passes none) the chip
- *   stays `not_configured`, because nothing is there to connect to.
+ * - Hermes: with an agent backend (the live Hermes adapter) its current state now and every later
+ *   change. Without one (Mock Mode, `agent: 'absent'`, or a caller that passes none) the chip stays
+ *   `not_configured` and reads "Not configured", because nothing is there to connect to
+ *   (Requirement 33.17).
  *
  * Returns one teardown function. No IWSDK or Three.js types, so it runs under Vitest.
  */

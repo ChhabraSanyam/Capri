@@ -97,7 +97,9 @@ export class MockBulbs {
   private readonly headForward: MutableVec3 = { x: 0, y: 0, z: -1 };
   private readonly head: HeadPose = { position: this.headPos, forward: this.headForward };
   private placed = false;
+  private replacePending = false;
   private disposed = false;
+  private readonly ids: readonly string[] = MOCK_BULB_LAYOUT.bulbs.map((spec) => spec.entityId);
 
   constructor(private readonly deps: MockBulbsDeps) {
     this.coreGeometry = new SphereGeometry(MOCK_BULB_LAYOUT.coreRadiusM, 16, 12);
@@ -164,14 +166,29 @@ export class MockBulbs {
   update(frame: FrameContext): void {
     if (this.disposed) return;
     if (!frame.inSession) {
+      this.replacePending = false;
       if (this.placed) {
         this.placed = false;
         this.root.visible = false;
       }
       return;
     }
-    if (this.placed || !this.readHead(frame)) return;
+    if ((this.placed && !this.replacePending) || !this.readHead(frame)) return;
+    this.replacePending = false;
     this.place();
+  }
+
+  /** The mock light entity ids, in layout order. */
+  get entityIds(): readonly string[] {
+    return this.ids;
+  }
+
+  /**
+   * Lay the bulbs out again from the next head pose (task 33.1, Requirement 33.3): after a reference
+   * space reset the old positions are in the old origin. Ignored while they are not placed.
+   */
+  replaceFromHead(): void {
+    if (this.placed) this.replacePending = true;
   }
 
   dispose(): void {

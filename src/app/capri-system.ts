@@ -7,10 +7,23 @@
  * Step 1 hand test panel. Every teardown goes into `cleanupFuncs`. `setStage` keeps one handler per
  * stage, so later tasks that need `vfxUi` extend the handler registered here instead of replacing it.
  *
- * Voice UI (task 13.23). `VoiceUi` (mic orb, transcript, Quick_Actions, Hand_Keyboard) is built after the
- * registration, published as `world.globals.voiceUi`, and driven from the `pointing` and `vfxUi`
- * stages. Its panels are registered as pinch-aim rectangles. The voice loop (task 13.25) sets its
- * handlers. The speech bubbles are updated in the `vfxUi` stage.
+ * Voice UI (tasks 13.23, 33.6). `VoiceUi` (the Transcript_Bubble above Capri) is built after the
+ * registration, published as `world.globals.voiceUi`, and driven from the `vfxUi` stage. The speech
+ * bubbles are updated in the `vfxUi` stage too.
+ *
+ * Wrist_Button and HUD_Menu (tasks 33.8, 33.9). The default view shows only Capri and the lights: the
+ * status chips, Quick_Actions, the keyboard button, the teach orb and the always-open device list are
+ * gone. `HudWiring` shows the Wrist_Button while the non-dominant palm faces the head, toggles the
+ * HUD_Menu on a dominant fingertip poke, and runs the tiles (Status chips, Lights with teach and
+ * re-teach, the Commands catalog, Ask Hermes and Give Hermes a task, Close). It runs in the `pointing`
+ * stage before the pointing wiring and in the `vfxUi` stage. Its menu rectangle and button are pinch
+ * aim targets, and while the button shows the non-dominant pinch does not start push-to-talk.
+ * Published as `world.globals.hud` (dev seam `window.__capriHud`).
+ *
+ * Text entry (task 33.9). `SystemKeyboard` shows the Meta Quest system keyboard (an off-screen DOM
+ * input, A22) and `TextEntry` routes its text: Type a command through `processText`, Ask Hermes as
+ * Tier 2 chat, Give Hermes a task through the task flow. "ask hermes" opens the Ask Hermes prompt.
+ * Dev seam `window.__capriKeyboard` (IWER cannot show the system keyboard).
  *
  * The avatar (task 5.11) uses the `idle` and `animator` stages, and the `readFrame` stage also fills
  * the head pose and rescans the floor plane. A later task that needs one of these stages must extend
@@ -24,12 +37,12 @@
  * `idle` stage, so presence reads this frame's pose. It uses the store as its `SurfaceSource`, the
  * presence's animator and head, and a `PlainBubblePersona` (updated in the `vfxUi` stage) for the
  * missing-surface line. An `AbilityDispatcher` is published as `world.globals.abilities`. The
- * hand-operated dev panel (dev builds or `?dev=1`) calls it. A later orchestrator task extends the `orchestrator`
+ * hand-operated dev panel (only with `?dev=1`, task 33.2) calls it. A later orchestrator task extends the `orchestrator`
  * handler registered here.
  *
  * Device registration (task 9.8). `DeviceRegistration` owns the registry, stores, markers, teach flow,
- * floating list panel, and the teach orb. Its `updatePointing` runs inside the shared `pointing`
- * stage handler and its `updateUi` at the end of the `vfxUi` handler below.
+ * and the teach panel (shown only while the flow runs). Its `updatePointing` runs inside the shared
+ * `pointing` stage handler and its `updateUi` at the end of the `vfxUi` handler below.
  *
  * Voice loop (task 13.25). The `Persona` (lines go through a `SpeechQueue` into the audio engine) is the
  * abilities' persona too. `VoiceLoop` is created after the pointing wiring and runs in the `voice` stage.
@@ -39,7 +52,7 @@
  * `orchestrator` stage after the controller. The markers are tinted from the backend's light states.
  *
  * Hermes task flow and Tier 2 (tasks 19.3, 21.12). An `AgentSlot` holds the mode's agent (`connectAgent`:
- * the scripted agent in Mock Mode, the live Hermes adapter for `agent: 'live'`, none for `absent`) and feeds
+ * the live Hermes adapter for `agent: 'live'`, none in Mock Mode or for `absent`) and feeds
  * the Hermes chip. A `TierRouter` on the slot is handed to the voice loop, with a `TaskFlow` (acknowledge,
  * Task_Panel, approvals, playful idles, notify and the real outcome). Without a connected agent the voice
  * loop keeps the "Hermes is unavailable" line. The flow updates in the `orchestrator` stage, the panel's
@@ -49,7 +62,8 @@
  * Personality (task 23.4). `PersonalityWiring` runs the idle scheduler in the `idle` stage, after
  * presence: stretches, fidgets and glances at real Surfaces and markers while she is free, and the
  * ignored reaction (the Persona's `idle_ignored` line) after 60 s with no input. Pinches, pointing,
- * commands, voice panel presses, teach flow steps, the Task_Panel and the dev panel count as input.
+ * commands, keyboard presses, HUD_Menu presses and Wrist_Button pokes, teach flow steps, the
+ * Task_Panel and the dev panel count as input.
  *
  * Pointing (task 11.7). `PointingWiring` extends the `pointing` handler: it runs after the
  * registration, selects the marker the dominant index finger points at, confirms it on a dominant
@@ -89,6 +103,9 @@ import { createLazyLexicon } from './lexicon-loader.js';
 import { VoiceLoop } from './voice-loop.js';
 import { TaskFlow } from './task-flow.js';
 import { PersonalityWiring } from './personality.js';
+import { HudWiring } from './hud-wiring.js';
+import { TextEntry } from './text-entry.js';
+import { SystemKeyboard } from '../ui/system-keyboard.js';
 import type { GestureId } from '../domain/animation-types.js';
 import type { IdleDecision } from '../domain/idle-scheduler.js';
 import type { CapriApp } from './app.js';
@@ -105,7 +122,7 @@ import { AvatarPresence } from '../avatar/avatar-presence.js';
 import { AgentSlot } from '../backends/agent-slot.js';
 import { observeLightStates } from '../backends/select-backend.js';
 import type { AgentBackend } from '../backends/types.js';
-import { TierRouter } from '../domain/contract/tier-router.js';
+import { HERMES_NOT_CONNECTED, TierRouter } from '../domain/contract/tier-router.js';
 import { connectAgent, storedHermesCredentials } from './agent-wiring.js';
 import type { ModeState } from '../domain/settings/mode-resolver.js';
 import { wireModeAndConnections } from './mode-wiring.js';
@@ -121,6 +138,7 @@ import type { Vec3 } from '../domain/geometry.js';
 import { Persona } from '../domain/persona/persona.js';
 import { manifestFromVoiceIndex } from '../domain/speech/voice-index.js';
 import { isPerfOverlayRequested } from '../domain/frame-stats.js';
+import { parseDevQuery } from '../domain/dev-query.js';
 import { HandLostMonitor } from '../domain/hand-lost.js';
 import { createDeviceStore } from '../persistence/anchor-store.js';
 import { HomeScopedDeviceStore, LocalStorageDeviceStore } from '../persistence/device-store.js';
@@ -141,6 +159,8 @@ import { createFakeHandSource, fakeHandsMode } from '../xr/fake-hands.js';
 import { createGazeRay, createHeadGazeProvider } from '../xr/head.js';
 import { createXrHandSource, type HandSource } from '../xr/hands.js';
 import { createWebXrAnchorPort } from '../xr/anchors.js';
+import { watchReferenceSpace } from '../xr/session.js';
+import { wireSpaceReset } from './space-reset.js';
 import { VfxDevHandle } from './vfx-dev.js';
 import { SurfaceStore } from '../xr/scene-surfaces.js';
 import { LoadingStatus } from './loading-status.js';
@@ -204,8 +224,9 @@ export class CapriSystem extends createSystem({
         });
       }
     }
-    const skeleton = new HandSkeleton(player, hands);
-    this.cleanupFuncs.push(() => skeleton.dispose());
+    // Joint dots only with `?hands=1` (task 33.2, Requirements 33.6, 33.7), in every build.
+    const skeleton = parseDevQuery(window.location.search).hands ? new HandSkeleton(player, hands) : undefined;
+    if (skeleton !== undefined) this.cleanupFuncs.push(() => skeleton.dispose());
 
     // Standing height comes from the floor-labelled plane (Requirement 11.11).
     const floor = new FloorTracker(this.queries.planes.entities, AVATAR_PRESENCE.floorScanIntervalS);
@@ -232,7 +253,7 @@ export class CapriSystem extends createSystem({
       app.setStage('readFrame', (frame) => {
         hands.read(frame);
         handGuard.apply(frame);
-        skeleton.sync(frame);
+        skeleton?.sync(frame);
         player.head.getWorldPosition(headPosition);
         player.head.getWorldQuaternion(headRotation);
         headPosition.toArray(frame.head.position);
@@ -306,6 +327,8 @@ export class CapriSystem extends createSystem({
       logger: createLogger('avatar'),
       depthOcclusion: featureFlags.depthOcclusion,
       getFloorY: () => floor.floorY,
+      // Walls and the room mesh box keep her homes and step-aside spots inside the room (task 33.7).
+      getSurfaces: () => surfaceStore.surfaces,
       body: controller,
       loadObserver: loading,
       failureBubble: false,
@@ -318,7 +341,7 @@ export class CapriSystem extends createSystem({
       presenceRef.current = undefined;
       presence.dispose();
     });
-    // Device registration (task 9.8): registry, persistence, markers, teach flow, panel, and the orb.
+    // Device registration (task 9.8): registry, persistence, markers, teach flow, and the teach panel.
     // The session mode comes from `main.ts` (tasks 17.6, 25.10): resolved from the credential store,
     // Mock Mode by default. `backend` is its stable `HomeSwitch` (the mock home or the Home Assistant
     // client behind it), so everything below uses only the `SmartHomeBackend` interface and keeps
@@ -352,8 +375,6 @@ export class CapriSystem extends createSystem({
       getSurfaces: () => surfaceStore.surfaces,
       getAvatarPosition: () => (presence.isSpawned ? presence.position : undefined),
       dominant: hands.dominantHand,
-      // Task 32.2: the teach orb is hidden in Mock Mode (its bulbs are registered already).
-      getHomeKind: () => backend.kind,
     });
     this.cleanupFuncs.push(() => registration.dispose());
     // Marker tint (task 13.25): each marker shows its light's state, so on and off are visible. The
@@ -397,17 +418,35 @@ export class CapriSystem extends createSystem({
       mockBulbsRef.current = undefined;
       if (import.meta.env.DEV) delete devBulbs.__capriMockBulbs;
     });
-    // Voice UI panels (task 13.23): mic orb, transcript, Quick_Actions, and the Hand_Keyboard, placed
-    // once in the seated zones. Published as `world.globals.voiceUi`. The voice loop (task 13.25) sets
-    // the handlers and feeds it the transcript. Until then a press only logs. The panels are added to
-    // the pinch aim rules, so a pinch aimed at them never confirms a device.
+    // Boundaryless session (task 33.1): log the granted reference space once per session and, on its
+    // `reset`, re-read anchors, flag unanchored lights, lay out the mock bulbs, and re-home Capri.
+    this.cleanupFuncs.push(
+      watchReferenceSpace({
+        xr: world.renderer.xr,
+        spec: world.xrDefaults?.referenceSpace,
+        events: app.events,
+        logger: createLogger('xr-space'),
+      }),
+      wireSpaceReset(
+        app.events,
+        {
+          rescans: [floor, surfaceStore],
+          devices: registration,
+          getMockBulbs: () => mockBulbsRef.current,
+          avatar: presence,
+        },
+        createLogger('space-reset'),
+      ),
+    );
+    // Voice UI (tasks 13.23, 33.6): the Transcript_Bubble above Capri. Published as
+    // `world.globals.voiceUi`. The voice loop (task 13.25) feeds it the transcript, and text entry
+    // (task 33.9) shows its prompt and the typed words in it.
     const voiceUi = new VoiceUi(world, {
       logger: createLogger('voice-ui'),
-      dominant: hands.dominantHand,
       model: voiceModel,
+      getAvatarPosition: () => (presence.isSpawned ? presence.position : undefined),
     });
     world.globals.voiceUi = voiceUi;
-    this.cleanupFuncs.push(voiceUi.registerUiRects((getRect) => registration.addUiRect(getRect)));
     this.cleanupFuncs.push(() => {
       if (world.globals.voiceUi === voiceUi) delete world.globals.voiceUi;
       voiceUi.dispose();
@@ -420,11 +459,79 @@ export class CapriSystem extends createSystem({
       });
     }
 
+    // Status chips (tasks 17.5, 33.8): Mode, Home Assistant, Hermes, Voice. Display only, inside the
+    // HUD_Menu Status tile. Published as `world.globals.statusChips`; the mode wiring calls `setMode`.
+    const statusChips = new StatusChips(app.events);
+    world.globals.statusChips = statusChips;
+    // System_Keyboard and text entry (task 33.9). The keyboard reads the live session; the text entry
+    // and the voice loop are built further down, so the HUD reaches them through these holders.
+    const systemKeyboard = new SystemKeyboard({
+      document,
+      getSession: () => world.xrSession ?? undefined,
+      logger: createLogger('keyboard'),
+    });
+    this.cleanupFuncs.push(() => systemKeyboard.dispose());
+    const textEntryRef: { current: TextEntry | undefined } = { current: undefined };
+    const voiceLoopRef: { current: VoiceLoop | undefined } = { current: undefined };
+    const routerRef: { current: TierRouter | undefined } = { current: undefined };
+    // Wrist_Button and HUD_Menu (tasks 33.8, 33.9). Tiles reach the teach flow, the voice loop's text
+    // path (a Commands row) and text entry. Its rectangle and the button are pinch aim targets.
+    const hud = new HudWiring({
+      world,
+      logger: createLogger('hud'),
+      getDominant: () => hands.dominantHand,
+      chips: statusChips,
+      registry: registration.registry,
+      actions: {
+        startTeach: () => registration.startTeach(),
+        startReteach: () => registration.startReteach(),
+        runCommand: (text) => void voiceLoopRef.current?.runCommand(text),
+        openTextEntry: (purpose) => void textEntryRef.current?.open(purpose),
+        isTextEntryAvailable: () => systemKeyboard.supported,
+        isHermesConnected: () => routerRef.current?.connected ?? false,
+      },
+      noteInput: () => noteUserInput(),
+    });
+    world.globals.hud = hud;
+    this.cleanupFuncs.push(registration.addUiRect(() => hud.getRect()));
+    registration.setUiButtonSource(() => hud.buttonCenter);
+    this.cleanupFuncs.push(() => {
+      registration.setUiButtonSource(undefined);
+      if (world.globals.hud === hud) delete world.globals.hud;
+      hud.dispose();
+    });
+    this.cleanupFuncs.push(this.queries.panels.subscribe('qualify', (entity) => hud.attach(entity)));
+    for (const entity of this.queries.panels.entities) hud.attach(entity);
+    if (import.meta.env.DEV) {
+      const dev = window as unknown as { __capriHud?: unknown };
+      dev.__capriHud = {
+        wiring: hud,
+        toggle: () => hud.toggle(app.frame),
+        press: (cellId: string) => hud.press(cellId),
+        state: () => ({
+          open: hud.isOpen,
+          tile: hud.model.state.kind === 'open' ? hud.model.state.tile : null,
+          pose: hud.model.state.kind === 'open' ? hud.model.state.pose : null,
+          lastCloseReason: hud.model.lastCloseReason ?? null,
+          wristButton: hud.buttonCenter === undefined ? null : { ...hud.buttonCenter },
+          blocksTalk: hud.blocksTalk,
+          lights: hud.lightsView,
+          teachPanelUp: registration.isPanelUp,
+          keyboardOpen: systemKeyboard.isOpen,
+          textEntry: hud.menu.textTilesView,
+          commands: hud.commands,
+        }),
+      };
+      this.cleanupFuncs.push(() => {
+        delete dev.__capriHud;
+      });
+    }
+
     // Pointing selection (task 11.7). The `pointing` stage is shared with the registration: its
-    // handler runs the teach flow and orb first, then the pointing wiring. The wiring is told
-    // whether the teach flow was idle at the start of the frame, so a pinch that drives the flow
-    // (or finishes it) never also confirms a device. A pinch aimed at a panel or the orb is a button
-    // press and is ignored too.
+    // handler runs the teach flow first, then the Task_Panel and the HUD, then the
+    // pointing wiring. The wiring is told whether the teach flow was idle at the start of the frame,
+    // so a pinch that drives the flow (or finishes it) never also confirms a device. A pinch aimed at a
+    // panel or the Wrist_Button is a button press and is ignored too.
     // The Task_Panel is built with the task flow below. The `pointing` stage reaches it through this holder.
     const taskPanelRef: { current: TaskPanel | undefined } = { current: undefined };
     const pointing = new PointingWiring({
@@ -441,12 +548,16 @@ export class CapriSystem extends createSystem({
       logger: createLogger('pointing'),
     });
     this.cleanupFuncs.push(() => pointing.dispose());
+    // The keyboard's DOM field is removed once the session ends (Meta's clean-up step, task 33.9).
+    let keyboardInSession = false;
     this.cleanupFuncs.push(
       app.setStage('pointing', (frame) => {
+        if (keyboardInSession && !frame.inSession) systemKeyboard.endSession();
+        keyboardInSession = frame.inSession;
         const teachIdle = registration.isTeachIdle;
         registration.updatePointing(frame);
-        voiceUi.updatePointing(frame);
         taskPanelRef.current?.updatePointing(frame);
+        hud.updatePointing(frame);
         pointing.update(frame, teachIdle);
       }),
     );
@@ -487,6 +598,8 @@ export class CapriSystem extends createSystem({
     // user starts to.
     const capture = (world.globals.micCapture as MicCapture | undefined) ?? new MicCapture();
     const stt = new SttEngine({ model: voiceModel, capture, bargeIn: () => speechQueue.interrupt() });
+    // The Transcript_Bubble's listening bars follow the microphone level (task 33.6).
+    voiceUi.setMicLevelSource(() => stt.inputRms);
     const placeStore = openPlaceBook(new LocalStoragePlaceStore());
     const timers = new TimerService(app.clock);
     const gazeProvider = createHeadGazeProvider();
@@ -513,12 +626,12 @@ export class CapriSystem extends createSystem({
       onError: (error, phase) => createLogger('hack').warn(`hack sequence ${phase} port failed: ${String(error)}`),
     });
     this.cleanupFuncs.push(() => hackRunner.dispose());
-    // Agent and Tier 2 (tasks 19.3, 21.12, 25.10). The `AgentSlot` holds the mode's agent: the scripted
-    // mock in Mock Mode, the live Hermes adapter for `agent: 'live'` (the stored URL and key, with a
-    // `fetch` pinned to the Hermes origin), or none for `agent: 'absent'` (never substituted).
+    // Agent and Tier 2 (tasks 19.3, 21.12, 25.10, 33.4). The `AgentSlot` holds the mode's agent: the
+    // live Hermes adapter for `agent: 'live'` (the stored URL and key, with a `fetch` pinned to the
+    // Hermes origin), or none in Mock Mode and for `agent: 'absent'` (never substituted).
     // `connectAgent` tests the connection once, and again after every mode change; the tier router
     // sends chat and tasks only while it is `connected`, and otherwise the voice loop says the "Hermes
-    // is unavailable" line. The Task_Panel (progress or steps, Approve and Deny, Cancel/Dismiss) is a
+    // isn't connected" line. The Task_Panel (progress or steps, Approve and Deny, Cancel/Dismiss) is a
     // pinch-aim rectangle.
     const agentSlot = new AgentSlot();
     this.cleanupFuncs.push(() => agentSlot.dispose());
@@ -601,19 +714,65 @@ export class CapriSystem extends createSystem({
         return { origin: { ...gazeScratch.origin }, direction: { ...gazeScratch.direction } };
       },
       getUiAim: () => registration.getUiAim(),
-      canTalk: () => registration.canTalk,
+      // The non-dominant pinch is not push-to-talk while the Wrist_Button shows (task 33.8).
+      canTalk: () => registration.canTalk && !hud.blocksTalk,
       getDominant: () => hands.dominantHand,
       getLexicon: () => (lexicon.generated ? lexicon : undefined),
       tasks: taskFlow,
       router,
       getLightState: (entityId) => lightStates?.value.find((state) => state.entityId === entityId),
       getAvatarState: () => (presence.isSpawned ? { position: presence.position, mode: controller.mode } : undefined),
+      // "ask hermes" (task 33.9, Requirement 33.57) opens the Ask Hermes prompt.
+      onHermesPrompt: () => void textEntryRef.current?.open('ask'),
     });
+    voiceLoopRef.current = voiceLoop;
+    routerRef.current = router;
     this.cleanupFuncs.push(() => {
+      voiceLoopRef.current = undefined;
+      routerRef.current = undefined;
       voiceLoop.dispose();
       stt.dispose();
       placeStore.detach();
     });
+    // Text entry (task 33.9): the System_Keyboard's text goes to the voice loop by purpose.
+    const textEntry = new TextEntry({
+      keyboard: systemKeyboard,
+      targets: {
+        command: (text) => voiceLoop.submitText(text, 'keyboard'),
+        ask: (text) => voiceLoop.askHermes(text),
+        task: (text) => voiceLoop.startHermesTask(text),
+      },
+      isHermesConnected: () => router.connected,
+      sayNotConnected: () => persona.say(HERMES_NOT_CONNECTED),
+      showLine: (text) => voiceUi.showFinal(text),
+      logger: createLogger('text-entry'),
+    });
+    textEntryRef.current = textEntry;
+    this.cleanupFuncs.push(() => {
+      textEntryRef.current = undefined;
+    });
+    if (import.meta.env.DEV) {
+      // IWER cannot show the system keyboard: `setSupported(true)` stands in for a Quest session, and
+      // `submit(text)` types text and presses Done. Excluded from the production bundle.
+      const dev = window as unknown as { __capriKeyboard?: unknown };
+      dev.__capriKeyboard = {
+        keyboard: systemKeyboard,
+        textEntry,
+        open: (purpose: 'ask' | 'task' | 'command') => textEntry.open(purpose),
+        submit: (text: string) => systemKeyboard.submit(text),
+        cancel: () => systemKeyboard.cancel(),
+        setSupported: (value: boolean | undefined) => systemKeyboard.setSupportOverride(value),
+        state: () => ({
+          supported: systemKeyboard.supported,
+          open: systemKeyboard.isOpen,
+          shown: systemKeyboard.isShown,
+          hermesConnected: router.connected,
+        }),
+      };
+      this.cleanupFuncs.push(() => {
+        delete dev.__capriKeyboard;
+      });
+    }
     this.cleanupFuncs.push(app.setStage('voice', (frame) => voiceLoop.update(frame)));
     // Live Mode (task 25.10): the Home Assistant connection test at session start (an in-character line
     // when it fails, the session stays live) and the low-frequency light list refresh while visible.
@@ -661,8 +820,6 @@ export class CapriSystem extends createSystem({
     this.cleanupFuncs.push(this.queries.panels.subscribe('qualify', (entity) => registration.panel.attach(entity)));
     // A panel whose document loaded before this subscription still needs binding.
     for (const entity of this.queries.panels.entities) registration.panel.attach(entity);
-    this.cleanupFuncs.push(this.queries.panels.subscribe('qualify', (entity) => voiceUi.attach(entity)));
-    for (const entity of this.queries.panels.entities) voiceUi.attach(entity);
     if (import.meta.env.DEV) {
       const dev = window as unknown as { __capriTeach?: unknown };
       dev.__capriTeach = registration;
@@ -703,7 +860,6 @@ export class CapriSystem extends createSystem({
         : {}),
     });
     personalityRef.current = personality;
-    this.cleanupFuncs.push(voiceUi.onPress(noteUserInput));
     this.cleanupFuncs.push(registration.flow.subscribe(noteUserInput));
     this.cleanupFuncs.push(() => {
       personalityRef.current = undefined;
@@ -818,8 +974,11 @@ export class CapriSystem extends createSystem({
           getAnimator: () => presenceRef.current?.animator,
         }),
       );
+      // The Transcript_Bubble stacks above this bubble so the two never overlap (task 33.6).
+      voiceUi.setSpeechBubbleSource((out) => speechBubble.readRect(out));
       const mouth = new MouthDriver(speech, () => presenceRef.current?.animator);
       this.cleanupFuncs.push(() => {
+        voiceUi.setSpeechBubbleSource(undefined);
         speech.cancel();
         speech.setPresenter(undefined);
         speechBubble.dispose();
@@ -864,8 +1023,8 @@ export class CapriSystem extends createSystem({
       });
     }
 
-    // Hand-tracking-lost message (Requirements 9.9, 9.10) and the status chips stub, both in the
-    // ui stage so they see this frame's hand state from the readFrame stage.
+    // Hand-tracking-lost message (Requirements 9.9, 9.10), in the ui stage so it sees this frame's hand
+    // state from the readFrame stage.
     const monitor = new HandLostMonitor();
     const handLostPanel = new HandLostPanel(world);
     // Loading panel (task 27.1): in the session until Capri has appeared, or with her failure line.
@@ -912,10 +1071,6 @@ export class CapriSystem extends createSystem({
         delete dev.__capriGreeting;
       });
     }
-    // Status chips (task 17.5): Mode, Home Assistant, Hermes, Voice. Published as
-    // `world.globals.statusChips` so the mode wiring (task 17.6) can call `setMode`. Display only.
-    const statusChips = new StatusChips(app.events, { world, dominant: hands.dominantHand });
-    world.globals.statusChips = statusChips;
     // Mode chip and the Home Assistant and Hermes chips (task 17.6): current states now, changes later.
     let stopChips = wireModeAndConnections(app.events, statusChips, modeState, backend, agentSlot);
     this.cleanupFuncs.push(() => stopChips());
@@ -936,8 +1091,6 @@ export class CapriSystem extends createSystem({
       if (world.globals.statusChips === statusChips) delete world.globals.statusChips;
       statusChips.dispose();
     });
-    this.cleanupFuncs.push(this.queries.panels.subscribe('qualify', (entity) => statusChips.attach(entity)));
-    for (const entity of this.queries.panels.entities) statusChips.attach(entity);
     if (import.meta.env.DEV) {
       const dev = window as unknown as { __capriStatusChips?: unknown };
       dev.__capriStatusChips = statusChips;
@@ -954,7 +1107,6 @@ export class CapriSystem extends createSystem({
           handLostPanel.setVisible(false);
         }
         statusChips.setVoice(voiceUi.status);
-        statusChips.update(frame);
         loadingPanel.update(frame);
         greetingInputs.inSession = frame.inSession;
         greetingInputs.avatarSpawned = presence.isSpawned;
@@ -973,6 +1125,7 @@ export class CapriSystem extends createSystem({
         mockBulbsRef.current?.update(frame);
         registration.updateUi(frame);
         voiceUi.updateUi(frame);
+        hud.updateUi(frame);
         taskPanel.update(frame);
         for (let i = 0; i < bubbles.length; i += 1) {
           bubbles[i]!.update(frame.dt, frame.head.position[0]!, frame.head.position[2]!);
@@ -987,7 +1140,8 @@ export class CapriSystem extends createSystem({
       this.cleanupFuncs.push(app.setStage('perf', (frame) => perfOverlay.sample(frame.dt)));
     }
 
-    // Developer controls for the spatial abilities (task 7.10): dev builds, or `?dev=1` in any build.
+    // Developer controls for the spatial abilities (task 7.10): only with `?dev=1`, in every build (task 33.2).
+    // The hand test panel needs `?handtest=1`. Hidden panels create no entity and no pinch-aim rect.
     if (shouldShowDevPanel(window.location.search)) {
       const devLogger = createLogger('dev-panel');
       const devPanel = new DevPanel(
@@ -997,7 +1151,7 @@ export class CapriSystem extends createSystem({
           noteUserInput();
           return describeDispatch(DEV_ACTION_LABELS[id], abilities.runDevAction(id));
         },
-        // Task 32.2: the teach route in Mock Mode, where the teach orb is hidden.
+        // The dev route into the teach flow (the HUD_Menu Lights tile is the user's).
         () =>
           registration.startTeach()
             ? 'Teach a light: point at the lamp and pinch.'

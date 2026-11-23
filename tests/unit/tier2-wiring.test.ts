@@ -13,7 +13,6 @@ import { TaskFlow } from '../../src/app/task-flow.js';
 import { VoiceLoop, type SttPort, type VoiceUiPort } from '../../src/app/voice-loop.js';
 import { connectAgent, storedHermesCredentials } from '../../src/app/agent-wiring.js';
 import { AgentSlot } from '../../src/backends/agent-slot.js';
-import { createMockAgent } from '../../src/backends/mock/mock-agent.js';
 import { createMockHome } from '../../src/backends/mock/mock-home.js';
 import { createStore } from '../../src/backends/observable.js';
 import {
@@ -156,7 +155,6 @@ function rig(agent: AgentBackend | undefined) {
     setGrammar: () => undefined,
   };
   const ui: VoiceUiPort = {
-    setHandlers: () => undefined,
     setListening: () => undefined,
     showPartial: () => undefined,
     showFinal: () => undefined,
@@ -181,14 +179,19 @@ function rig(agent: AgentBackend | undefined) {
     places: new PlaceBook(),
     pointing: { pointed: undefined, selected: undefined, deictic: undefined, confirmPointed: () => undefined },
     persona,
-    abilities: { navigate: () => ({ status: 'started' }), lookAt: () => ({ status: 'done' }), pointAt: () => ({ status: 'done' }) },
+    abilities: {
+      navigate: () => ({ status: 'started' }),
+      lookAt: () => ({ status: 'done' }),
+      pointAt: () => ({ status: 'done' }),
+      lookAtUser: () => ({ status: 'done' }),
+    },
     runner,
     timers: new TimerService(clock),
     getAnimator: () => animator,
     getSurfaces: () => [],
     getHead: () => undefined,
     getGazeRay: () => ({ origin: { x: 0, y: 1.2, z: 0 }, direction: { x: 0, y: 0, z: -1 } }),
-    getUiAim: () => ({ panels: [], orbCenter: undefined }),
+    getUiAim: () => ({ panels: [], buttonCenter: undefined }),
     canTalk: () => true,
     getDominant: () => 'right',
     router: new TierRouter({ agent, timeoutMs: 1000 }),
@@ -261,7 +264,7 @@ describe('VoiceLoop Tier 2 chat', () => {
     await r.loop.submitText('hello there friend', 'keyboard');
     expect(offline.chats).toHaveLength(0);
     expect(r.said).toHaveLength(1);
-    expect(r.said[0]?.text).toMatch(/smart friend|hermes|agent|cloud brain/i);
+    expect(r.said[0]?.text).toMatch(/setup page/i);
   });
 
   it('says the refusal line, and no bubble for the reply, when its action cannot run', async () => {
@@ -442,11 +445,25 @@ describe('AgentSlot and connectAgent', () => {
     expect((await slot.chat({ text: 'x', context: {} as never })).ok).toBe(false);
   });
 
-  it('puts the mock agent in Mock Mode and no agent when Hermes is absent', async () => {
+  it('puts no agent in Mock Mode and makes no Hermes request, and none when Hermes is absent', async () => {
     const slot = new AgentSlot();
-    await connectAgent(resolveMode({}, false), slot, { credentials: noStoredHermes, logger: createLogger('test') });
-    expect(slot.current?.kind).toBe('mock');
-    expect(slot.connection.value).toBe('connected');
+    const requests: string[] = [];
+    let credentialReads = 0;
+    await connectAgent(resolveMode({}, false), slot, {
+      credentials: () => {
+        credentialReads += 1;
+        return { hermes_url: 'https://hermes.example', hermes_key: 'k' };
+      },
+      logger: createLogger('test', () => undefined),
+      fetch: (input) => {
+        requests.push(String(input));
+        return Promise.reject(new TypeError('offline'));
+      },
+    });
+    expect(slot.current).toBeUndefined();
+    expect(slot.connection.value).toBe('not_configured');
+    expect(credentialReads).toBe(0);
+    expect(requests).toEqual([]);
     const absent = resolveMode({ ha_url: 'https://ha.example', ha_token: 't' }, true);
     await connectAgent(absent, slot, { credentials: noStoredHermes, logger: createLogger('test') });
     expect(slot.current).toBeUndefined();
@@ -482,10 +499,22 @@ describe('AgentSlot and connectAgent', () => {
     expect(new Set(origins)).toEqual(new Set(['https://hermes.example']));
   });
 
-  it('the mock agent still answers chat with its canned reply', async () => {
-    const mock = createMockAgent({ timeScale: 0 });
-    const r = rig(mock);
-    await r.loop.submitText('tell me a joke', 'keyboard');
-    expect(r.said.some((l) => /Mock Mode here/.test(l.text))).toBe(true);
+  it('answers task phrases and typed chat in Mock Mode with the not-connected line and starts no task', async () => {
+    const slot = new AgentSlot();
+    await connectAgent(resolveMode({}, false), slot, { credentials: noStoredHermes, logger: createLogger('test', () => undefined) });
+    const r = rig(slot);
+    for (const text of ['run my evening routine', 'watch the door', 'tell me a joke', 'what is the capital of france']) {
+      const before = r.said.length;
+      await r.loop.submitText(text, 'keyboard');
+      const lines = r.said.slice(before);
+      expect(lines, text).toHaveLength(1);
+      expect(lines[0]?.claims, text).toBe('neutral');
+      expect(lines[0]?.text, text).toMatch(/hermes/i);
+      expect(lines[0]?.text, text).toMatch(/setup page/i);
+    }
+    await r.loop.submitText('run my evening routine', 'speech');
+    expect(r.said[r.said.length - 1]?.text).toMatch(/setup page/i);
+    expect(r.started).toEqual([]);
+    expect(r.said.some((l) => l.claims === 'done' || l.claims === 'ack')).toBe(false);
   });
 });

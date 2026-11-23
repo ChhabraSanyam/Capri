@@ -22,6 +22,11 @@ export interface Surface {
   readonly halfExtents: { readonly x: number; readonly z: number };
   /** Height of the top face, for horizontal surfaces. */
   readonly topY?: number;
+  /**
+   * Where the Surface came from: a detected plane or a scene mesh. Point capture skips unlabelled
+   * meshes (the global room mesh), whose box contains the user (task 33.3). Unset counts as a plane.
+   */
+  readonly source?: 'plane' | 'mesh';
 }
 
 const KNOWN_LABELS: ReadonlySet<string> = new Set([

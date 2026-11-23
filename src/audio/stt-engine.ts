@@ -209,6 +209,18 @@ function sameGrammar(a: readonly string[] | undefined, b: readonly string[]): bo
   return a !== undefined && a.length === b.length && a.every((phrase, index) => phrase === b[index]);
 }
 
+/** Root mean square of one audio block. No allocation. */
+function blockRms(samples: Float32Array): number {
+  const n = samples.length;
+  if (n === 0) return 0;
+  let sum = 0;
+  for (let i = 0; i < n; i += 1) {
+    const s = samples[i]!;
+    sum += s * s;
+  }
+  return Math.sqrt(sum / n);
+}
+
 function joinText(parts: readonly string[], tail: string): string {
   return [...parts, tail].join(' ').replace(/\s+/gu, ' ').trim();
 }
@@ -253,6 +265,8 @@ export class SttEngine implements SpeechRecognizerPort {
   private finalWaiter: (() => void) | undefined;
   private readonly sink: PcmSink;
   private disposed = false;
+  /** RMS of the latest captured audio block (task 33.6, the Transcript_Bubble level). */
+  private rms = 0;
 
   constructor(deps: SttEngineDeps) {
     this.deps = deps;
@@ -266,6 +280,7 @@ export class SttEngine implements SpeechRecognizerPort {
       },
     });
     this.sink = (samples, rate) => {
+      this.rms = blockRms(samples);
       this.recognizer?.feed(samples, rate);
     };
     this.cleanups.push(
@@ -282,6 +297,14 @@ export class SttEngine implements SpeechRecognizerPort {
   /** True between a successful `start` and `stop`. */
   get isListening(): boolean {
     return this.phase === 'listening';
+  }
+
+  /**
+   * RMS of the latest microphone block while listening, else 0. Read once per frame for the
+   * Transcript_Bubble's listening bars (Requirement 33.24); `micLevelFromRms` scales it to [0, 1].
+   */
+  get inputRms(): number {
+    return this.phase === 'listening' ? this.rms : 0;
   }
 
   /** True when `start` would succeed now: model ready and microphone permission granted. */
@@ -377,6 +400,7 @@ export class SttEngine implements SpeechRecognizerPort {
 
     this.phase = 'starting';
     this.stopRequested = false;
+    this.rms = 0;
     this.segments = [];
     this.lastAnnounced = '';
     this.scheduler.setHold(true);

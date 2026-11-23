@@ -3,7 +3,8 @@
  * creates `CapriApp`, registers the single `CapriSystem`, and wires the 2D entry page.
  *
  * The XR options (immersive AR, `offer: 'none'`, required hand tracking, anchors, hit-test, plane
- * and mesh detection, local-floor reference space) and the IWSDK feature set (spatialUI, scene
+ * and mesh detection, the boundaryless `unbounded` reference space with `local-floor`, `local`,
+ * `viewer` as fallbacks, task 33.1) and the IWSDK feature set (spatialUI, scene
  * understanding, environment raycast on; physics, locomotion, grabbing off) live in
  * `iwsdk.config.json`, the project authority. The `virtual:iwsdk-project` object is passed whole.
  * The session mode (tasks 17.6, 25.10) comes from the credential store: Mock Mode with no stored

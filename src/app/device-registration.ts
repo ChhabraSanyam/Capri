@@ -9,20 +9,20 @@
  *    build up, and nothing labels them exact;
  *  - one `DeviceMarker` per registered device, reconciled on every registry change, plus a preview
  *    marker for a captured spot, all turned toward the head each frame;
- *  - `HitCapture` (environment raycast while the flow waits for a point), `TeachController` (own
- *    pinch input), and `DeviceListPanel` (floating list with "Teach me your lights" and "Re-teach
- *    lights");
- *  - the `TeachOrb`: a floating entry beside the Avatar, shown in Live Mode only (task 32.2,
- *    Requirement 23.12; `isTeachOrbVisible`). A fingertip poke, or a ray-pinch that dwells on the
- *    orb's own hit volume (Requirement 12.13, `TEACH_ORB_PRESS`), starts the flow, so the flow is
- *    reachable by hand even if UIKit clicks are not. In Mock Mode `startTeach` (the dev panel's
- *    "Teach a light" button) opens it instead.
+ *  - `HitCapture` (environment raycast while the flow waits for a point), `TeachPointer` (the ray
+ *    from the dominant fingertip to the Teach_Reticle, task 33.3; a dominant pinch stores the reticle
+ *    point), `TeachController` (own pinch input), and `DeviceListPanel` (the floating teach panel);
+ *  - the teach flow opens from the HUD_Menu Lights tile ("Teach a light" is `startTeach`, "Re-teach
+ *    lights" is `startReteach`) or the dev panel's "Teach a light" button. The "Teach me your lights"
+ *    orb is gone in every mode (task 33.8, Requirement 33.36). The device list panel shows only while
+ *    the flow runs (Requirement 33.35): it is placed beside the head when the flow leaves idle and
+ *    hidden when it returns to idle.
  *
  * Pointing support (task 11.7): `pointTargets` is the marker list the selector uses (rebuilt only when
  * the registry changes), `setHighlight` shows the pointed marker with its ring and the selected one in
  * green, `isTeachIdle` tells the pointing wiring whether the dominant pinch is free, and `getUiAim`
- * gives the rectangles a pinch may be aimed at instead of a device (the list panel, any extra panel
- * added with `addUiRect`, and the orb).
+ * gives the UI a pinch may be aimed at instead of a device (the list panel, any extra panel added
+ * with `addUiRect`, and the Wrist_Button from `setUiButtonSource`).
  *
  * Stage use: `updatePointing` is for the `pointing` stage and `updateUi` for the `vfxUi` stage.
  * Neither allocates on a quiet frame. A pinch edge builds one ray, and a registry change rebuilds the
@@ -31,9 +31,8 @@
 import type { World } from '@iwsdk/core';
 import type { LightState, SmartHomeBackend } from '../backends/types.js';
 import { featureFlags } from '../config/feature-flags.js';
-import { TEACH_FLOW, TEACH_ORB } from '../config/constants.js';
-import { isTeachOrbVisible, OrbPressDetector, TEACH_ORB_PRESS } from '../domain/devices/teach-orb.js';
-import { adoptStoredHandles, mergeRestoredPositions } from '../domain/devices/restore.js';
+import { TEACH_FLOW } from '../config/constants.js';
+import { adoptStoredHandles, flagUnanchoredApproximate, mergeRestoredPositions } from '../domain/devices/restore.js';
 import { DeviceRegistry, type DeviceRecord, type NewDevice } from '../domain/devices/registry.js';
 import { TeachFlow } from '../domain/devices/teach-flow.js';
 import type { Vec3 } from '../domain/geometry.js';
@@ -46,7 +45,7 @@ import type { DeviceStore } from '../persistence/device-store.js';
 import { DeviceMarker } from '../ui/device-marker.js';
 import { DeviceListPanel } from '../ui/panels/device-list.js';
 import { TeachController } from '../ui/teach-controller.js';
-import { TeachOrb } from '../ui/teach-orb.js';
+import { TeachPointer } from '../ui/teach-pointer.js';
 import { HitCapture } from '../xr/hit-capture.js';
 import type { AppEvents, EventBus } from './events.js';
 import type { FrameContext } from './frame-context.js';
@@ -74,8 +73,6 @@ export interface DeviceRegistrationDeps {
   readonly getAvatarPosition: () => Vec3 | undefined;
   /** The dominant hand. Defaults to the right hand. */
   readonly dominant?: 'left' | 'right';
-  /** The home in use (`HomeSwitch.kind`). The teach orb is hidden in Mock Mode. Defaults to live. */
-  readonly getHomeKind?: () => 'mock' | 'live';
 }
 
 export class DeviceRegistration {
@@ -83,13 +80,12 @@ export class DeviceRegistration {
   readonly flow: TeachFlow;
   readonly panel: DeviceListPanel;
   readonly controller: TeachController;
-  readonly orb: TeachOrb;
   readonly hitCapture: HitCapture;
+  readonly pointer: TeachPointer;
   /** Resolves when the stored devices have been read (and applied, when the registry was still empty). */
   readonly loaded: Promise<void>;
 
   private readonly preview: DeviceMarker;
-  private readonly orbDetector = new OrbPressDetector(TEACH_ORB_PRESS);
   private readonly unsubscribe: () => void;
   private markerById = new Map<string, DeviceMarker>();
   private markers: DeviceMarker[] = [];
@@ -98,6 +94,9 @@ export class DeviceRegistration {
   private selectedId: string | undefined;
   private lightStates: ReadonlyMap<string, LightState> = new Map();
   private readonly extraRects: (() => PanelRect | undefined)[] = [];
+  private uiButton: (() => Vec3 | undefined) | undefined;
+  /** The device list panel is up (the teach flow is running in a session). */
+  private panelUp = false;
   /** True while the registry is changed by a load or a restore, which must not be saved again. */
   private quiet = false;
   private wasInSession = false;
@@ -114,18 +113,31 @@ export class DeviceRegistration {
     });
     this.hitCapture = new HitCapture(deps.world, { hand: dominant, hitTestEnabled: featureFlags.hitTestWork });
     this.preview = new DeviceMarker(deps.world, { name: TEACH_FLOW.previewMarkerName });
-    this.panel = new DeviceListPanel(deps.world, deps.logger, this.flow, this.registry, { dominant });
+    this.pointer = new TeachPointer(deps.world);
+    this.panel = new DeviceListPanel(deps.world, deps.logger, this.flow, this.registry, {
+      dominant,
+      autoShow: false,
+      adjustPointer: (direction) => {
+        if (direction === 'nearer') this.hitCapture.nearer();
+        else this.hitCapture.farther();
+      },
+    });
     this.controller = new TeachController({
       flow: this.flow,
       points: this.hitCapture,
       getSurfaces: deps.getSurfaces,
       getPanelRect: () => this.panel.getRect(),
       preview: this.preview,
+      pointer: this.pointer,
       dominant,
       logger: deps.logger,
     });
-    this.orb = new TeachOrb(deps.world);
-    this.unsubscribe = this.registry.subscribe((records) => this.onRegistryChanged(records));
+    const stopRegistry = this.registry.subscribe((records) => this.onRegistryChanged(records));
+    const stopFlow = this.flow.subscribe(() => this.syncPanel());
+    this.unsubscribe = () => {
+      stopRegistry();
+      stopFlow();
+    };
     this.loaded = this.loadStored();
   }
 
@@ -153,14 +165,27 @@ export class DeviceRegistration {
   }
 
   /**
-   * Open the teach flow from a button (the dev panel's "Teach a light", task 32.2), the Mock Mode
-   * route while the orb is hidden. False when the flow is already open.
+   * Open the teach flow from a button (the HUD_Menu "Teach a light", or the dev panel's). False when
+   * the flow is already open.
    */
   startTeach(): boolean {
     if (this.flow.state.kind !== 'idle') return false;
     this.deps.logger.info('teach: opened from a button');
     this.flow.start('teach');
     return true;
+  }
+
+  /** "Re-teach lights" from the HUD_Menu Lights tile. False when the flow is already open. */
+  startReteach(): boolean {
+    if (this.flow.state.kind !== 'idle') return false;
+    this.deps.logger.info('teach: re-teach opened from a button');
+    this.flow.start('reteach');
+    return true;
+  }
+
+  /** The Wrist_Button centre while it shows (task 33.8), so a pinch at it never confirms a device. */
+  setUiButtonSource(source: (() => Vec3 | undefined) | undefined): void {
+    this.uiButton = source;
   }
 
   /**
@@ -192,7 +217,7 @@ export class DeviceRegistration {
     };
   }
 
-  /** The panels that are shown and the orb, for `isAimedAtUi`. Allocates, so call it on a pinch. */
+  /** The panels that are shown and the Wrist_Button, for `isAimedAtUi`. Allocates, so call it on a pinch. */
   getUiAim(): UiAimTargets {
     const panels: PanelRect[] = [];
     const list = this.panel.getRect();
@@ -201,7 +226,27 @@ export class DeviceRegistration {
       const rect = getRect();
       if (rect !== undefined) panels.push(rect);
     }
-    return { panels, orbCenter: this.orb.isVisible ? { ...this.orb.center } : undefined };
+    const button = this.uiButton?.();
+    return { panels, buttonCenter: button === undefined ? undefined : { x: button.x, y: button.y, z: button.z } };
+  }
+
+  /**
+   * A reference space reset (task 33.1, Requirements 33.3, 33.4). Anchored lights are re-read from
+   * their anchors on the next XR frame (the anchor stays put in the room while the origin moves).
+   * Lights without an anchor, except `skipEntityIds` (the Mock Mode bulbs, laid out again anyway),
+   * are flagged approximate without saving. Returns the spoken names of the flagged lights, which
+   * "Re-teach lights" should offer (`approximateDevices`).
+   */
+  onSpaceReset(skipEntityIds: readonly string[] = []): readonly string[] {
+    const flags = flagUnanchoredApproximate(this.registry.all(), skipEntityIds);
+    if (flags.changed) this.applyQuietly(flags.records);
+    this.restoreAnchors();
+    return flags.names;
+  }
+
+  /** Lights whose position may have drifted after a reset (task 33.1), for "Re-teach lights". */
+  get approximateDevices(): readonly DeviceRecord[] {
+    return this.registry.all().filter((record) => record.approximate === true);
   }
 
   /** The marker of a registered device, for tests and dev inspection. */
@@ -225,50 +270,27 @@ export class DeviceRegistration {
   }
 
   /**
-   * The `pointing` stage. The teach controller runs first, so a pinch that finishes or cancels the
-   * flow cannot also press the orb. The orb only counts while the flow was idle at the start of the
-   * frame, and the controller has already consumed this frame's pinch edge, so the pinch that opens
-   * the flow never also captures a point.
+   * The `pointing` stage. The teach controller reads this frame's pinch edge. A flow opened later in
+   * the frame (from the HUD_Menu) starts on the next frame, so the pinch or poke that opened it
+   * never also captures a point.
    */
   updatePointing(frame: FrameContext): void {
     this.trackSession(frame.inSession);
     if (!frame.inSession) return;
-    const wasIdle = this.flow.state.kind === 'idle';
     this.controller.update(frame);
-    const center = this.orb.isVisible ? this.orb.center : undefined;
-    if (this.orbDetector.update(frame.hands, center, wasIdle && this.flow.state.kind === 'idle', frame.time)) {
-      this.deps.logger.info('teach: orb pressed');
-      this.flow.start('teach');
-    }
+    // Nearer and Farther show while the reticle sits at the fallback (task 33.3). Redraws on change only.
+    this.panel.setPointerFallback(this.controller.pointerFallbackM);
   }
 
-  /** The `vfxUi` stage: orb placement, marker pulse and facing. */
+  /** True while the device list panel is up (the teach flow runs in a session). */
+  get isPanelUp(): boolean {
+    return this.panelUp;
+  }
+
+  /** The `vfxUi` stage: marker pulse and facing. */
   updateUi(frame: FrameContext): void {
     const headX = frame.head.position[0]!;
     const headZ = frame.head.position[2]!;
-    const avatar = this.deps.getAvatarPosition();
-    const showOrb = isTeachOrbVisible({
-      inSession: frame.inSession,
-      avatarPresent: avatar !== undefined,
-      teachIdle: this.flow.state.kind === 'idle',
-      home: this.deps.getHomeKind?.() ?? 'live',
-    });
-    this.orb.setVisible(showOrb);
-    if (showOrb && avatar !== undefined) {
-      // The user's right, seen looking from the head toward the Avatar, is (-uz, ux).
-      let ux = avatar.x - headX;
-      let uz = avatar.z - headZ;
-      const len = Math.hypot(ux, uz);
-      if (len > 1e-6) {
-        ux /= len;
-        uz /= len;
-      } else {
-        ux = 0;
-        uz = -1;
-      }
-      this.orb.setPosition(avatar.x - uz * TEACH_ORB.sideM, avatar.y + TEACH_ORB.riseM, avatar.z + ux * TEACH_ORB.sideM);
-      this.orb.update(frame.time, headX, headZ);
-    }
     this.preview.update(frame.time, headX, headZ);
     for (let i = 0; i < this.markers.length; i += 1) this.markers[i]!.update(frame.time, headX, headZ);
   }
@@ -279,7 +301,7 @@ export class DeviceRegistration {
     this.controller.dispose();
     this.panel.dispose();
     this.hitCapture.dispose();
-    this.orb.dispose();
+    this.pointer.dispose();
     this.preview.dispose();
     for (const marker of this.markers) marker.dispose();
     this.markers = [];
@@ -416,11 +438,19 @@ export class DeviceRegistration {
     this.wasInSession = inSession;
     if (inSession) {
       this.restoreAnchors();
+      this.syncPanel();
       return;
     }
     this.flow.cancel();
     this.controller.reset();
-    this.orbDetector.reset();
-    this.orb.setVisible(false);
+    this.syncPanel();
+  }
+
+  /** Show the device list panel while the teach flow runs in a session, and hide it otherwise. */
+  private syncPanel(): void {
+    const wanted = this.wasInSession && this.flow.state.kind !== 'idle';
+    if (wanted === this.panelUp) return;
+    this.panelUp = wanted;
+    this.panel.setVisible(wanted);
   }
 }

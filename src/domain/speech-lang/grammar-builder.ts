@@ -23,7 +23,10 @@ import {
   DEICTIC_PHRASES,
   DEVICE_VERBS,
   FILLER_WORDS,
+  HERMES_PROMPT_PHRASES,
+  LOOK_AT_ME_PHRASE,
   MINUTE_UNITS,
+  PERCH_SURFACES,
   SIT_SURFACES,
   SPLIT_PARTICLES,
   SPLIT_VERB_WORDS,
@@ -42,7 +45,11 @@ export interface GrammarInput {
   readonly lexicon?: Lexicon;
 }
 
-const SIT_PHRASES = SIT_SURFACES.map((s) => `${AVATAR_HEADS.sit_on} the ${s}`);
+const SIT_PHRASES = [
+  ...SIT_SURFACES.map((s) => `${AVATAR_HEADS.sit_on} the ${s}`),
+  ...PERCH_SURFACES.map((s) => `${AVATAR_HEADS.perch_on} the ${s}`),
+];
+const HERMES_PHRASES = HERMES_PROMPT_PHRASES.map((p) => p.phrase);
 
 function spoken(names: readonly string[]): string[] {
   return names.map((n) => speakableName(n)).filter((n) => n.length > 0);
@@ -68,6 +75,7 @@ function fragmentPhrases(input: GrammarInput): string[] {
     AVATAR_HEADS.come_here,
     AVATAR_HEADS.go_away,
     ...SIT_PHRASES,
+    LOOK_AT_ME_PHRASE,
     AVATAR_HEADS.look_at,
     AVATAR_HEADS.point_at,
     AVATAR_HEADS.remember_place,
@@ -77,6 +85,7 @@ function fragmentPhrases(input: GrammarInput): string[] {
     ...placeNames(input),
     ...CHAT_PHRASES,
     ...TASK_PHRASES.map((t) => t.phrase),
+    ...HERMES_PHRASES,
     ...FILLER_WORDS,
   ];
 }
@@ -101,13 +110,13 @@ function utterancePhrases(input: GrammarInput): string[] {
       for (const target of targets) out.push(`${verb} ${target} ${particle}`);
     }
   }
-  out.push(AVATAR_HEADS.come_here, AVATAR_HEADS.go_away, ...SIT_PHRASES);
+  out.push(AVATAR_HEADS.come_here, AVATAR_HEADS.go_away, LOOK_AT_ME_PHRASE, ...SIT_PHRASES);
   for (const target of [...targets, ...places]) {
     out.push(`${AVATAR_HEADS.look_at} ${target}`, `${AVATAR_HEADS.point_at} ${target}`);
   }
   for (const place of places) out.push(`${AVATAR_HEADS.remember_place} ${place}`);
   out.push(...timerUtterances());
-  out.push('that one', 'this one', ...CHAT_PHRASES, ...TASK_PHRASES.map((t) => t.phrase));
+  out.push('that one', 'this one', ...CHAT_PHRASES, ...TASK_PHRASES.map((t) => t.phrase), ...HERMES_PHRASES);
   return out;
 }
 

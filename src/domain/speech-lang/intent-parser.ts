@@ -9,7 +9,8 @@
  * Low-confidence rule (Requirement 15.24): the recogniser can return several command fragments for
  * a short command (the spike heard "come here" as "turn on turn off"). Text that does not match a
  * template cleanly and holds two or more command fragments, or a lone `[unk]` token, gives
- * `{ type: 'repeat' }`, so no device action ever runs on it.
+ * `{ type: 'repeat' }`, so no device action ever runs on it. "ask hermes" (task 33.9) is a command
+ * fragment too, so "ask hermes turn off" is garble as well.
  */
 import {
   AVATAR_HEADS,
@@ -19,6 +20,8 @@ import {
   CONFIRM_PHRASES,
   DEICTIC_PHRASES,
   DEVICE_VERBS,
+  HERMES_PROMPT_PHRASES,
+  LOOK_AT_ME_PHRASE,
   MINUTE_UNITS,
   normalizeText,
   SPLIT_PARTICLES,
@@ -27,6 +30,7 @@ import {
   UNK,
   WAKE_PHRASE,
   type DeviceVerb,
+  type HermesPromptMode,
   type TaskKind,
 } from './phrases.js';
 import { numberToWords } from '../devices/naming.js';
@@ -52,14 +56,16 @@ export type Intent =
       /** Colour name, present for `set_color`. */
       readonly color?: string;
     }
-  | { readonly type: 'avatar'; readonly ability: 'come_here' | 'go_away' }
-  | { readonly type: 'avatar'; readonly ability: 'sit_on'; readonly surface: string }
+  | { readonly type: 'avatar'; readonly ability: 'come_here' | 'go_away' | 'look_at_me' }
+  | { readonly type: 'avatar'; readonly ability: 'sit_on' | 'perch_on'; readonly surface: string }
   | { readonly type: 'avatar'; readonly ability: 'look_at' | 'point_at'; readonly target: AvatarTargetRef }
   | { readonly type: 'avatar'; readonly ability: 'remember_place'; readonly name: string }
   | { readonly type: 'avatar'; readonly ability: 'set_timer'; readonly minutes: number }
   | { readonly type: 'confirm_pointed' }
   | { readonly type: 'chat'; readonly phrase: string }
   | { readonly type: 'task'; readonly kind: TaskKind; readonly text: string }
+  /** "ask hermes": open the Ask Hermes prompt on the System_Keyboard (Requirement 33.57). */
+  | { readonly type: 'hermes_prompt'; readonly mode: HermesPromptMode }
   /** The result was empty, `[unk]`, or a low-confidence hypothesis (Requirements 15.14, 15.24). */
   | { readonly type: 'repeat' }
   | { readonly type: 'unknown'; readonly text: string };
@@ -105,6 +111,7 @@ const COMMAND_FRAGMENTS: readonly Tokens[] = [
   ...CONFIRM_PHRASES.map((p) => norm(p)),
   ...CHAT_PHRASES.map((p) => norm(p)),
   ...TASK_PHRASES.map((t) => norm(t.phrase)),
+  ...HERMES_PROMPT_PHRASES.map((p) => norm(p.phrase)),
 ].sort((a, b) => b.length - a.length);
 
 /** Count command fragments in `tokens`: left to right, longest first, without overlap. */
@@ -141,7 +148,7 @@ function namedRef(tokens: Tokens, ctx: ParseContext): Extract<DeviceRef, { kind:
 }
 
 /**
- * The device a tail of words means. No words means the Pointed_Device (a Quick_Actions button has
+ * The device a tail of words means. No words means the Pointed_Device (a bare "turn on" has
  * no target). A name that no device answers to is `named` with no candidates, unless it holds
  * command fragments or an "on"/"off" particle (then it is garble, as in "turn on that off") or
  * `strict` is set (the target must be known).
@@ -252,12 +259,14 @@ function parseAvatar(tokens: Tokens, ctx: ParseContext): Intent | undefined {
   const heads = AVATAR_HEADS;
   if (sameTokens(tokens, norm(heads.come_here))) return { type: 'avatar', ability: 'come_here' };
   if (sameTokens(tokens, norm(heads.go_away))) return { type: 'avatar', ability: 'go_away' };
+  if (sameTokens(tokens, norm(LOOK_AT_ME_PHRASE))) return { type: 'avatar', ability: 'look_at_me' };
 
-  const sit = norm(heads.sit_on);
-  if (startsWith(tokens, sit)) {
-    const rest = tokens.slice(sit.length);
+  for (const ability of ['sit_on', 'perch_on'] as const) {
+    const head = norm(heads[ability]);
+    if (!startsWith(tokens, head)) continue;
+    const rest = tokens.slice(head.length);
     return rest.length > 0 && countCommandFragments(rest) === 0
-      ? { type: 'avatar', ability: 'sit_on', surface: rest.join(' ') }
+      ? { type: 'avatar', ability, surface: rest.join(' ') }
       : undefined;
   }
   for (const ability of ['look_at', 'point_at'] as const) {
@@ -281,6 +290,9 @@ function parseWholePhrase(tokens: Tokens): Intent | undefined {
   const text = tokens.join(' ');
   for (const task of TASK_PHRASES) {
     if (sameTokens(norm(task.phrase), tokens)) return { type: 'task', kind: task.kind, text };
+  }
+  for (const prompt of HERMES_PROMPT_PHRASES) {
+    if (sameTokens(norm(prompt.phrase), tokens)) return { type: 'hermes_prompt', mode: prompt.mode };
   }
   for (const phrase of CHAT_PHRASES) {
     if (sameTokens(norm(phrase), tokens)) return { type: 'chat', phrase: text };
@@ -333,8 +345,11 @@ export function renderIntent(intent: Intent): string {
         case 'come_here':
         case 'go_away':
           return AVATAR_HEADS[intent.ability];
+        case 'look_at_me':
+          return LOOK_AT_ME_PHRASE;
         case 'sit_on':
-          return `${AVATAR_HEADS.sit_on} ${intent.surface}`;
+        case 'perch_on':
+          return `${AVATAR_HEADS[intent.ability]} ${intent.surface}`;
         case 'look_at':
         case 'point_at':
           return `${AVATAR_HEADS[intent.ability]} ${targetText(intent.target)}`;
@@ -350,6 +365,8 @@ export function renderIntent(intent: Intent): string {
       return intent.phrase;
     case 'task':
       return intent.text;
+    case 'hermes_prompt':
+      return HERMES_PROMPT_PHRASES.find((p) => p.mode === intent.mode)?.phrase ?? '';
     case 'repeat':
       return UNK;
     case 'unknown':

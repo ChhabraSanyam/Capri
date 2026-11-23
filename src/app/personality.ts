@@ -17,7 +17,7 @@
  *
  * User input (`noteInput`) restarts the gap and the 60 s silence: a pinch on either hand (push to
  * talk, pointing confirm, the teach flow, panel rays), a device pointed at or selected, and every
- * resolved command (voice, Hand_Keyboard, Quick_Actions). The composition root adds the panel
+ * resolved command (voice, System_Keyboard, a Commands row). The composition root adds the panel
  * pokes, the teach flow, and the Task_Panel buttons.
  *
  * Session start and end, and the Avatar appearing, reset the schedule. No Three.js and no IWSDK:

@@ -6,7 +6,14 @@
  * module watches `world.sessionRequestPending` and captures that one console message while the
  * request is pending. It never calls `getUserMedia` (Requirement 15.17).
  */
-import type { World, XROptions } from '@iwsdk/core';
+import {
+  normalizeReferenceSpec,
+  resolveReferenceSpaceType,
+  type ReferenceSpaceSpec,
+  type World,
+  type XROptions,
+} from '@iwsdk/core';
+import type { Logger } from '../app/logger.js';
 import type { FeatureFlags } from '../config/feature-flags.js';
 
 /**
@@ -91,4 +98,95 @@ export function launchSession(world: World, options: SessionLaunchOptions): Prom
       resolve();
     }, pollMs);
   });
+}
+
+// ---- Reference space (task 33.1, Requirements 33.1 to 33.3) -------------------------------------
+
+/**
+ * The reference space type IWSDK picks for `spec` on `session`. `iwsdk.config.json` asks for
+ * `unbounded` (no room-scale boundary in passthrough) with `local-floor`, `local`, `viewer` as
+ * fallbacks. IWSDK 1.1.0 probes them in that order with `session.requestReferenceSpace` and hands the
+ * first one that resolves to three.js (`adoptXRSession` in `@iwsdk/core/dist/init/xr.js`). three.js
+ * keeps that type private, so this runs the same IWSDK probe again to learn it. `undefined` when
+ * none resolves (IWSDK then ends the session).
+ */
+export async function grantedReferenceSpaceType(
+  session: XRSession,
+  spec: ReferenceSpaceSpec | undefined,
+): Promise<string | undefined> {
+  const normalized = normalizeReferenceSpec(spec);
+  try {
+    return await resolveReferenceSpaceType(session, normalized.type, normalized.required ? [] : normalized.fallbackOrder);
+  } catch {
+    return undefined;
+  }
+}
+
+/** The part of three.js's `WebXRManager` (`world.renderer.xr`) the watcher uses. */
+export interface XrManagerPort {
+  addEventListener(type: 'sessionstart' | 'sessionend', listener: () => void): void;
+  removeEventListener(type: 'sessionstart' | 'sessionend', listener: () => void): void;
+  getReferenceSpace(): XRReferenceSpace | null;
+  getSession(): XRSession | null;
+}
+
+export interface ReferenceSpaceWatchDeps {
+  readonly xr: XrManagerPort;
+  /** The project's reference space policy, `world.xrDefaults?.referenceSpace`. */
+  readonly spec: ReferenceSpaceSpec | undefined;
+  readonly events: { emit(name: 'space:reset', payload: { type: string | undefined }): void };
+  readonly logger: Logger;
+}
+
+/**
+ * At every session start: log the granted reference space type once, and forward the space's
+ * `reset` event (the user recentred, or tracking moved the origin) as `space:reset`. Mirrors how
+ * IWSDK's own environment system attaches its reset listener. Returns the teardown.
+ */
+export function watchReferenceSpace(deps: ReferenceSpaceWatchDeps): () => void {
+  const preferred = normalizeReferenceSpec(deps.spec).type;
+  let space: XRReferenceSpace | null = null;
+  let granted: string | undefined;
+  let generation = 0;
+
+  const onReset = (): void => {
+    deps.logger.info(`reference space reset (${granted ?? 'unknown type'}): re-placing devices, bulbs, and Capri`);
+    deps.events.emit('space:reset', { type: granted });
+  };
+  const detach = (): void => {
+    space?.removeEventListener('reset', onReset);
+    space = null;
+  };
+  const onStart = (): void => {
+    detach();
+    generation += 1;
+    const mine = generation;
+    granted = undefined;
+    space = deps.xr.getReferenceSpace();
+    space?.addEventListener('reset', onReset);
+    const session = deps.xr.getSession();
+    if (space === null || session === null) {
+      deps.logger.warn('reference space: the session started without one');
+      return;
+    }
+    void grantedReferenceSpaceType(session, deps.spec).then((type) => {
+      if (mine !== generation) return;
+      granted = type;
+      if (type === preferred) deps.logger.info(`reference space: ${type} granted`);
+      else deps.logger.warn(`reference space: ${preferred} was refused, using ${type ?? 'none'}`);
+    });
+  };
+  const onEnd = (): void => {
+    generation += 1;
+    granted = undefined;
+    detach();
+  };
+
+  deps.xr.addEventListener('sessionstart', onStart);
+  deps.xr.addEventListener('sessionend', onEnd);
+  return () => {
+    deps.xr.removeEventListener('sessionstart', onStart);
+    deps.xr.removeEventListener('sessionend', onEnd);
+    onEnd();
+  };
 }

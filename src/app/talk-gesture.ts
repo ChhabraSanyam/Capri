@@ -5,12 +5,14 @@
  * runs under Node with a fake frame.
  *
  * A pinch does not start talking when
- * - it was aimed at a panel or the orb (a button press, not a talk request). The aim is the hand's
- *   ray from 200 ms before the pinch, the same lookback the pointing wiring uses, because closing
- *   the fingers bends the index finger and drops the ray;
+ * - it was aimed at a panel or the Wrist_Button (a button press, not a talk request). The aim is the
+ *   hand's ray from 200 ms before the pinch, the same lookback the pointing wiring uses, because
+ *   closing the fingers bends the index finger and drops the ray;
  * - `canTalk` is false: only while a teach step uses the non-dominant pinch ("Is this the spot?"
- *   and the pick lists, `teachUsesOtherPinch`). The teach panel then says to poke the mic orb. While
- *   teach waits for a point or shows "Got it", the pinch talks as usual (task 32.2).
+ *   and the pick lists, `teachUsesOtherPinch`), and while the Wrist_Button shows because the
+ *   non-dominant palm faces the user (task 33.8). The teach panel then says that talking waits for the
+ *   step to finish. While teach waits for a point or shows "Got it", the pinch talks as usual
+ *   (task 32.2). This hold-pinch is the only push-to-talk gesture (Requirement 33.23).
  * The matching release of an ignored pinch is ignored too.
  *
  * Frames without a pinch edge allocate nothing. An edge builds one ray and the panel rectangles.

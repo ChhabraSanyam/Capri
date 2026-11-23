@@ -1,14 +1,18 @@
 /**
- * Destination visibility policy (Requirements 8.5, 11.8). Pure: plain `{ x, y, z }` metres.
+ * Destination visibility policy (Requirements 8.5, 11.8, 33.32, 33.33). Pure: plain `{ x, y, z }`
+ * metres.
  *
  * A move destination must lie within `VISIBILITY_POLICY.maxHorizontalM` of the head (horizontal
  * distance) and between the floor and `head.y + maxAboveHeadM`. A destination outside is clamped
  * to the nearest valid point, and the result carries the real target so Capri can point at it
- * instead of walking there.
+ * instead of walking there. With a `room`, the destination must also pass the room check
+ * (`room-bounds.ts`): one behind a wall or outside the room mesh box is pulled in toward the head
+ * and counts as clamped too.
  */
 import { VISIBILITY_POLICY } from '../config/constants.js';
 import type { Vec3 } from './geometry.js';
 import { idleHome, type HeadPose } from './placement.js';
+import { homeInRoom, insideRoom, pullIntoRoom, type RoomView } from './room-bounds.js';
 
 /** Keeps a clamped position strictly inside the radius so a second pass is a no-op. */
 const RADIUS_EPSILON_M = 1e-6;
@@ -31,18 +35,27 @@ export interface VisibleDestination {
  * A destination already inside is returned as the same object with `clamped: false`. A clamped
  * position lies inside the limits, so applying the policy again changes nothing. A non-finite
  * destination yields `idleHome` (floor-anchored when `floorY` is given) with `clamped: true` and no
- * `pointAt`, because there is no real target to point at.
+ * `pointAt`, because there is no real target to point at (the home passes the room check when
+ * `room` is given).
  */
 export function visibilityPolicy(
   head: HeadPose,
   destination: Vec3,
   floorY?: number,
+  room?: RoomView,
 ): VisibleDestination {
   const { x, y, z } = destination;
   if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
     const floor = floorY === undefined ? undefined : { center: { x: 0, y: floorY, z: 0 } };
-    return { position: idleHome(head, floor), clamped: true };
+    return { position: room === undefined ? idleHome(head, floor) : homeInRoom(head, floor, room), clamped: true };
   }
+  const visible = clampToView(head, destination, floorY);
+  if (room === undefined || insideRoom(head.position, visible.position, room)) return visible;
+  return { position: pullIntoRoom(head.position, visible.position, room), clamped: true, pointAt: destination };
+}
+
+function clampToView(head: HeadPose, destination: Vec3, floorY: number | undefined): VisibleDestination {
+  const { x, y, z } = destination;
 
   const { maxHorizontalM, maxAboveHeadM, noFloorMaxBelowHeadM } = VISIBILITY_POLICY;
   const minY = floorY === undefined ? head.position.y - noFloorMaxBelowHeadM : floorY;

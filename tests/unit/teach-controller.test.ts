@@ -5,12 +5,12 @@ import { CORE_JOINT, JOINT_FLOATS } from '../../src/config/constants.js';
 import { DeviceRegistry } from '../../src/domain/devices/registry.js';
 import { TeachFlow } from '../../src/domain/devices/teach-flow.js';
 import { rayHitsPanel, type PanelRect } from '../../src/domain/devices/teach-input.js';
-import { capturePoint } from '../../src/domain/pointing/capture.js';
+import { capturePointInto, type CaptureSource } from '../../src/domain/pointing/capture.js';
 import { rawPointingRay as pointingRay } from '../../src/domain/pointing/ray.js';
 import type { Ray, Vec3 } from '../../src/domain/geometry.js';
 import type { Surface } from '../../src/domain/surfaces.js';
 import { createLexicon } from '../../src/domain/speech-lang/lexicon.js';
-import { TeachController, type PointSource, type PreviewMarker } from '../../src/ui/teach-controller.js';
+import { TeachController, type PointerView, type PointSource, type PreviewMarker } from '../../src/ui/teach-controller.js';
 
 type Side = 'left' | 'right';
 
@@ -58,9 +58,26 @@ function setup(panel?: PanelRect) {
   const captures: Ray[] = [];
   const points: PointSource = {
     setActive: (a) => activeLog.push(a),
-    capture: (ray, surfaces) => {
-      captures.push(ray);
-      return capturePoint(ray, surfaces);
+    captureInto: (out, ray, surfaces, head) => {
+      captures.push({ origin: { ...ray.origin }, direction: { ...ray.direction } });
+      return capturePointInto(out, ray, surfaces, head);
+    },
+  };
+  const pointer = {
+    visible: false,
+    tip: undefined as Vec3 | undefined,
+    point: undefined as Vec3 | undefined,
+    source: undefined as CaptureSource | undefined,
+  };
+  const pointerView: PointerView = {
+    show: (tip, point, source) => {
+      pointer.visible = true;
+      pointer.tip = { ...tip };
+      pointer.point = { ...point };
+      pointer.source = source;
+    },
+    hide: () => {
+      pointer.visible = false;
     },
   };
   const preview = { visible: false, position: undefined as Vec3 | undefined };
@@ -78,14 +95,16 @@ function setup(panel?: PanelRect) {
     getSurfaces: () => [LAMP_WALL],
     getPanelRect: () => panel,
     preview: marker,
+    pointer: pointerView,
   });
   const frame = createFrameContext();
+  frame.head.position.set([0, 1.6, 0.3]);
   const tick = (right: boolean, left = false): void => {
     pose(frame, 'right', TIP, right);
     pose(frame, 'left', LEFT_TIP, left);
     controller.update(frame);
   };
-  return { flow, registry, controller, frame, tick, activeLog, captures, preview };
+  return { flow, registry, controller, frame, tick, activeLog, captures, preview, pointer };
 }
 
 const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
@@ -132,19 +151,60 @@ describe('TeachController', () => {
     t.tick(false);
     expect(t.flow.state.kind).toBe('idle');
     expect(t.captures).toHaveLength(0);
+    expect(t.pointer.visible).toBe(false);
 
     t.flow.start();
     expect(t.activeLog[t.activeLog.length - 1]).toBe(true);
     t.tick(false);
-    t.tick(true); // pinch start captures the wall
-    expect(t.captures).toHaveLength(1);
+    // The pointer shows a ray from the fingertip to the reticle on the wall.
+    expect(t.pointer).toMatchObject({ visible: true, source: 'surface' });
+    expect(t.pointer.tip!.z).toBeCloseTo(TIP.z, 5);
+    expect(t.pointer.point!.z).toBeCloseTo(-2.98, 5);
+    expect(t.controller.pointerFallbackM).toBeUndefined();
+    t.tick(true); // pinch start stores the reticle point
     expect(t.flow.state).toMatchObject({ kind: 'pickEntity', source: 'surface' });
     expect(t.activeLog[t.activeLog.length - 1]).toBe(false);
     expect(t.preview.visible).toBe(true);
-    expect((t.flow.state as { position: Vec3 }).position.z).toBeCloseTo(-3.02, 1);
-    t.tick(true); // still held: no second capture
-    expect(t.captures).toHaveLength(1);
+    expect(t.pointer.visible).toBe(false);
+    expect((t.flow.state as { position: Vec3 }).position.z).toBeCloseTo(-2.98, 5);
+    const calls = t.captures.length;
+    t.tick(true); // still held: no more captures
+    expect(t.captures).toHaveLength(calls);
     await settle();
+  });
+
+  it('stores the reticle point from before the pinch, not where the bent finger points', async () => {
+    const t = setup();
+    t.flow.start();
+    for (let i = 0; i < 30; i += 1) {
+      t.frame.time += 1 / 72;
+      t.tick(false); // aimed at the wall
+    }
+    const aimed = { ...t.pointer.point! };
+    // Pinching bends the finger: the ray now points straight down, at nothing.
+    t.frame.time += 1 / 72;
+    pose(t.frame, 'right', TIP, true);
+    setJoint(t.frame.hands.right.joints, CORE_JOINT.indexProximal, { x: TIP.x, y: TIP.y + 0.05, z: TIP.z });
+    t.controller.update(t.frame);
+    expect(t.flow.state).toMatchObject({ kind: 'pickEntity', source: 'surface' });
+    const stored = (t.flow.state as { position: Vec3 }).position;
+    expect(stored).toEqual(aimed);
+    expect(Math.hypot(stored.x - TIP.x, stored.y - TIP.y, stored.z - TIP.z)).toBeGreaterThan(0.05);
+    await settle();
+  });
+
+  it('reports the fallback distance while nothing is hit, so the panel can offer Nearer and Farther', () => {
+    const t = setup();
+    t.flow.start();
+    pose(t.frame, 'right', TIP, false);
+    setJoint(t.frame.hands.right.joints, CORE_JOINT.indexProximal, { x: TIP.x, y: TIP.y - 0.05, z: TIP.z });
+    t.controller.update(t.frame);
+    expect(t.pointer).toMatchObject({ visible: true, source: 'fallback' });
+    expect(t.pointer.point!.y).toBeCloseTo(TIP.y + 2, 5);
+    expect(t.controller.pointerFallbackM).toBe(2);
+    t.flow.cancel();
+    expect(t.pointer.visible).toBe(false);
+    expect(t.controller.pointerFallbackM).toBeUndefined();
   });
 
   it('confirms a fallback point with a second dominant pinch and retakes with the other hand', async () => {
@@ -202,7 +262,6 @@ describe('TeachController', () => {
     t.tick(false);
     t.tick(true);
     expect(t.flow.state.kind).toBe('awaitPoint');
-    expect(t.captures).toHaveLength(0);
   });
 
   it('stops the point source and hides the preview on dispose', () => {

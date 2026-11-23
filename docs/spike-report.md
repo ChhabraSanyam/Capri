@@ -211,3 +211,66 @@ Recorded in `src/config/feature-flags.ts`.
 - Item (c) passed with a constraint. The Setup_Page requests microphone permission before Enter AR. If permission is not granted there, the app shows Quick_Actions and Hand_Keyboard and does not prompt inside the AR session.
 - The Vosk model took 26.03 s to load cold over the LAN dev server, with no cache. It must load on the Setup_Page before Enter AR, as the design already says. The warm-cache load time and the load time from Vercel were not measured.
 - The anchor restore error of 95 mm is a single measurement. The design has no numeric tolerance for it. It is smaller than the 0.15 m minimum hit-volume radius, so pointing at a restored marker should still select it. The marker itself can sit about 10 cm from the lamp until "Re-teach lights".
+
+## Follow-up, 2026-11-18: boundaryless session (task 33.1, A21)
+
+The user reported that anchors and positions jump when stepping in and out of the Quest room-scale boundary. Passthrough MR does not need that boundary, so the session now asks for the `unbounded` reference space.
+
+### What the sources say
+
+- **Meta Quest Browser documentation does not cover it.** The pages [WebXR mixed reality](https://developers.meta.com/horizon/documentation/web/webxr-mixed-reality/), [Browser specifications](https://developers.meta.com/horizon/documentation/web/browser-specs/), and [WebXR overview](https://developers.meta.com/horizon/documentation/web/webxr-overview/) (checked 2026-11-18) say nothing about `unbounded` or about when Browser shows the boundary. The mixed reality page does say an anchor keeps its real-world position even when the headset origin is reset. That is the property the reset handling below relies on.
+- **Meta documents boundaryless apps for native passthrough apps only.** [Boundaryless Mode for Mixed Reality in Unity](https://developers.meta.com/horizon/documentation/unity/unity-boundaryless/) describes apps that turn the boundary off for the whole passthrough experience. There is no web equivalent in Meta's docs.
+- **A community report (not Meta) covers Quest 3 Browser.** A [Babylon.js forum thread (April 2025)](https://forum.babylonjs.com/t/ar-anchor-creation-fails-with-unbounded-reference-space-on-meta-quest-3/58132) says an `unbounded` `immersive-ar` session on Quest 3 runs without the boundary, while `local-floor` brings it back. The same thread says `XRFrame.createAnchor` failed in `unbounded` with "Anchor creation failed", while anchors created from a hit-test result worked.
+- **IWSDK 1.1.0 supports it.** `ProjectReferenceSpaceType` in `@iwsdk/core/dist/project/types.d.ts` lists `'unbounded'`, and `ProjectXRFeatureOptions` has an `unbounded` feature flag. In `@iwsdk/core/dist/init/xr.js`, `buildSessionInit` always adds `local-floor`, `bounded-floor`, and `layers` as optional features, but adds `unbounded` only when `features.unbounded` is set. WebXR only grants a reference space whose feature was requested, so the flag is needed. `adoptXRSession` calls `resolveReferenceSpaceType`, which tries `type` and then each `fallbackOrder` entry with `session.requestReferenceSpace` and passes the first one that resolves to `renderer.xr.setReferenceSpaceType`. With `required: true` it tries no fallback. If none resolves, IWSDK ends the session.
+
+Content from these sources was rephrased for compliance with licensing restrictions.
+
+### What changed
+
+- `iwsdk.config.json`: `referenceSpace` is `{ "type": "unbounded", "fallbackOrder": ["local-floor", "local", "viewer"] }`, and `features.unbounded` is `true` (optional, so a runtime without it still starts the session and falls back).
+- `src/xr/session.ts`: `watchReferenceSpace` logs the granted type once per session (`[capri:xr-space] reference space: unbounded granted`, or a warning naming the fallback). It forwards the space's `reset` event as `space:reset`. The type comes from re-running IWSDK's own `resolveReferenceSpaceType`, because three.js keeps the type private.
+- `src/app/space-reset.ts`: on `space:reset`, the floor and Surface scans run again on the next frame, the Mock Mode bulbs are laid out again from the next head pose, anchored lights are re-read from their anchors, lights without an anchor get `approximate: true` and a log line pointing at "Re-teach lights", and Capri is re-homed in front of the user.
+- `src/xr/anchors.ts`: because of the Quest 3 report, a refused `createAnchor` is retried once against a `local` reference space. Frame calls now also run inside the XR frame callback. Before this change they ran after an `await`, which IWER rejects because the frame is no longer active, so anchors never persisted in the emulator.
+- Standing height still comes from the floor-labelled plane under every reference space type (Requirement 11.11). `FloorTracker` reads plane world positions, so no change was needed.
+
+### Emulator results (IWER, Meta Quest 3 profile)
+
+- Granted: `unbounded` (`enabledFeatures` included `unbounded`, `local-floor`, `bounded-floor`, `local`, `viewer`). The log showed `reference space: unbounded granted` once per session.
+- Fallback: unit tests with a fake session that refuses `unbounded` get `local-floor` from the real IWSDK probe (`tests/unit/space-reset.test.ts`).
+- Simulated reset (`IWER_DEVICE.recenter()`): `reset` arrived 8 to 16 ms after the call. The bulbs and Capri moved on the next frame, 12 to 26 ms after the call, well inside 0.5 s. An unanchored test light was flagged approximate. An anchored one kept its anchor and was not flagged. IWER moves the head on recenter and leaves anchors where they are, so the anchor position did not change in the emulator. Only the headset can show an anchor re-read to a new value.
+
+### Headset results
+
+Not yet run. To record:
+
+| Check | Result |
+|---|---|
+| Granted reference space (the `[capri:xr-space]` line in remote DevTools) | pending |
+| Does the boundary still appear in passthrough? | pending |
+| Do marker positions stay put when walking across the old boundary line? | pending |
+| Does a taught light get an anchor in `unbounded` (check `capri.v1.devices` for `anchorHandle`), and does it restore after a reload? | pending |
+| After a long Meta-button recenter: do bulbs and Capri re-place in front of you, and do anchored markers stay on their lamps? | pending |
+
+## Follow-up, 2026-11-18: Quest system keyboard in the AR session (task 33.9, A22)
+
+The custom Hand_Keyboard is replaced by the Meta Quest system keyboard for typed commands, Ask Hermes, and Give Hermes a task.
+
+### What the sources say
+
+- **Meta, [System Keyboard in WebXR](https://developers.meta.com/horizon/documentation/web/webxr-keyboard/)** (checked 2026-11-18; needs Browser 26.1 or later). `XRSession.isSystemKeyboardSupported` says whether the keyboard can show. Calling `focus()` on a text `<input>` that is in the DOM shows it, and the session turns `visible-blurred` while it shows and `visible` after. Limits Meta lists: each showing is a new editing session (a key press first replaces the whole value), the only input is the field's `value` (no key events), and a field placed outside the viewport makes the page scroll to it. The Done key, the hide button, the Meta button, and a click outside the keyboard all dismiss it, which blurs the field. Meta says to remove the field when the session ends. Meta's [sample](https://github.com/emmanueljl/webxr-samples/blob/main/system-keyboard.html) calls `focus()` from the session `select` event.
+- **W3C, [WebXR Device API](https://immersive-web.github.io/webxr/#dom-xrsession-issystemkeyboardsupported)**: when `isSystemKeyboardSupported` is true, APIs that would show an overlay keyboard (such as `focus`) show the system keyboard, and the session must be `visible-blurred` while it shows. `@types/webxr` has the attribute.
+
+### What changed
+
+- `src/ui/system-keyboard.ts` keeps one 1 px transparent `<input>` fixed in the top-left of the viewport, opens it with the prompt as placeholder, reads the text on blur (or Enter), treats an empty field as a cancel, never logs the text, and removes the field at session end. Capri's pause (`ui/pause.ts`) runs while the keyboard shows, because the session is `visible-blurred`.
+- A HUD press comes from hand joints, not from a DOM event. If the first `focus()` does not show the keyboard, the next session `select` (a pinch) focuses the field again, the way Meta's sample does.
+- Without `isSystemKeyboardSupported`, the HUD_Menu hides Ask Hermes, Give Hermes a task, and Type, and shows "Text entry is not available here".
+
+### Headset checks
+
+| Check | Result |
+|---|---|
+| `isSystemKeyboardSupported` is true in the `immersive-ar` session (the Hermes tiles and Type show) | pending |
+| Pressing Ask Hermes (or saying "ask hermes") shows the keyboard at once, or after one pinch | pending |
+| Done sends the text; the hide button with an empty field sends nothing | pending |
+| The page does not scroll and the session resumes cleanly after the keyboard closes | pending |
